@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — AXXSPACE Phantom Unit Compensation System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">
+      <div class="logo">AX</div>
+      <div>
+        <h1>AXXSPACE</h1>
+        <small>Admin Console</small>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/admin" class="active">Admin</a>
+      <a href="#" id="logout-link" class="hidden">Log out</a>
+    </div>
+  </nav>
+
+  <!-- Login -->
+  <div class="container login-wrap" id="login-view">
+    <div class="card">
+      <h3>Admin Login</h3>
+      <p class="muted">Enter the admin password to manage accounts and award Contribution Units.</p>
+      <form id="login-form">
+        <label for="password">Admin password</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+        <div style="height:14px"></div>
+        <button class="btn btn-primary btn-block" type="submit">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin console -->
+  <div class="container hidden" id="admin-view">
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="grid-2">
+      <!-- Create contributor -->
+      <div class="card">
+        <h3>Create Account</h3>
+        <p class="muted">Add an eligible contributor (spec §4).</p>
+        <form id="contributor-form">
+          <div class="form-grid">
+            <div class="full">
+              <label for="c-name">Contributor name</label>
+              <input id="c-name" required />
+            </div>
+            <div>
+              <label for="c-email">Email (optional)</label>
+              <input id="c-email" type="email" />
+            </div>
+            <div>
+              <label for="c-category">Eligibility category</label>
+              <select id="c-category" required></select>
+            </div>
+          </div>
+          <div style="height:14px"></div>
+          <button class="btn btn-primary btn-block" type="submit">Create account</button>
+        </form>
+      </div>
+
+      <!-- Award units -->
+      <div class="card">
+        <h3>Award Contribution Units</h3>
+        <p class="muted">Record a verified award to the ledger (spec §5–§7).</p>
+        <form id="award-form">
+          <div class="form-grid">
+            <div class="full">
+              <label for="a-contributor">Contributor</label>
+              <select id="a-contributor" required></select>
+            </div>
+            <div class="full">
+              <label for="a-task">Task description</label>
+              <input id="a-task" required />
+            </div>
+            <div>
+              <label for="a-ref">Task reference #</label>
+              <input id="a-ref" placeholder="e.g. TASK-001" />
+            </div>
+            <div>
+              <label for="a-units">Units awarded (0.1 increments)</label>
+              <input id="a-units" type="number" min="0.1" max="1000" step="0.1" required />
+              <div class="tier-hint" id="tier-hint"></div>
+            </div>
+            <div>
+              <label for="a-reviewer">Approving reviewer</label>
+              <input id="a-reviewer" required />
+            </div>
+            <div>
+              <label for="a-remarks">Remarks (optional)</label>
+              <input id="a-remarks" />
+            </div>
+          </div>
+          <div style="height:14px"></div>
+          <button class="btn btn-primary btn-block" type="submit">Award units</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <div>
+          <h3>Accounts</h3>
+          <p class="muted">All contributor accounts and their current holdings.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Category</th><th>Email</th><th>Units Held</th><th>Value</th></tr></thead>
+          <tbody id="accounts-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Recent Ledger Entries</h3>
+      <p class="muted">Latest awards recorded.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref #</th><th>Units</th><th>Reviewer</th></tr></thead>
+          <tbody id="recent-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

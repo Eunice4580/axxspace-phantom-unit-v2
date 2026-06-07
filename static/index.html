@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AXXSPACE — Phantom Unit Compensation System</title>
+  <meta name="description" content="AXXSPACE Phantom Unit Compensation System — growth dashboard for Contribution Units." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">
+      <div class="logo">AX</div>
+      <div>
+        <h1>AXXSPACE</h1>
+        <small>Phantom Unit Compensation System</small>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="active">Dashboard</a>
+      <a href="/admin">Admin</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="hero">
+      <h2>Contribution Unit Growth</h2>
+      <p>A transparent record of how Contribution Units are earned across all accounts.
+         The pool holds 1,000 units (reference value €10,000 — 0.1 unit = €1).</p>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"><!-- populated by JS --></div>
+
+    <div class="card">
+      <div class="row-between">
+        <div>
+          <h3>Total Pool Growth Over Time</h3>
+          <p class="muted">Cumulative Contribution Units awarded across all accounts.</p>
+        </div>
+      </div>
+      <canvas id="overallChart" height="110"></canvas>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Growth by Account</h3>
+        <p class="muted">Cumulative units per contributor.</p>
+        <canvas id="perContribChart" height="160"></canvas>
+      </div>
+      <div class="card">
+        <h3>Units Held by Account</h3>
+        <p class="muted">Current total Contribution Units per contributor.</p>
+        <canvas id="holdingsChart" height="160"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <div>
+          <h3>Contribution Ledger</h3>
+          <p class="muted">The official record of all earned Contribution Units (spec §7).</p>
+        </div>
+        <span class="pill" id="ledger-count">0 entries</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Contributor</th><th>Task</th><th>Ref #</th>
+              <th>Units</th><th>Value</th><th>Reviewer</th><th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="foot">AXXSPACE Phantom Unit Compensation System v1.0 — recognition &amp; reward mechanism.
+       Contribution Units do not represent shares, equity, voting rights or legal ownership.</p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

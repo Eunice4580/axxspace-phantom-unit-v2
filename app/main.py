@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
-from app.auth import create_admin_token, require_admin, verify_password
+from app.auth import create_admin_token, create_member_token, require_admin, require_member, verify_password
 from app.config import (
     ELIGIBILITY_CATEGORIES,
     EUR_PER_UNIT,
@@ -130,6 +130,56 @@ def growth(db: Session = Depends(get_db)) -> schemas.GrowthResponse:
     return crud.growth(db)
 
 
+# --- Member auth & profile --------------------------------------------------
+@app.post("/api/members/register", response_model=schemas.MemberTokenResponse, status_code=201)
+def member_register(
+    payload: schemas.MemberRegisterRequest,
+    db: Session = Depends(get_db),
+) -> schemas.MemberTokenResponse:
+    from app.config import ELIGIBILITY_CATEGORIES
+    if payload.category not in ELIGIBILITY_CATEGORIES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Category must be one of: {', '.join(ELIGIBILITY_CATEGORIES)}",
+        )
+    try:
+        contributor = crud.register_member(db, payload)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    token = create_member_token(contributor.id)
+    return schemas.MemberTokenResponse(
+        token=token, contributor_id=contributor.id, name=contributor.name
+    )
+
+
+@app.post("/api/members/login", response_model=schemas.MemberTokenResponse)
+def member_login(
+    payload: schemas.MemberLoginRequest,
+    db: Session = Depends(get_db),
+) -> schemas.MemberTokenResponse:
+    contributor = crud.authenticate_member(db, payload.email, payload.password)
+    if contributor is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+        )
+    token = create_member_token(contributor.id)
+    return schemas.MemberTokenResponse(
+        token=token, contributor_id=contributor.id, name=contributor.name
+    )
+
+
+@app.get("/api/members/me", response_model=schemas.MemberProfileOut)
+def member_me(
+    db: Session = Depends(get_db),
+    contributor_id: int = Depends(require_member),
+) -> schemas.MemberProfileOut:
+    profile = crud.get_member_profile(db, contributor_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Contributor not found.")
+    return profile
+
+
 # --- Static frontend ---------------------------------------------------------
 @app.get("/")
 def index() -> FileResponse:
@@ -139,6 +189,16 @@ def index() -> FileResponse:
 @app.get("/admin")
 def admin_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "admin.html")
+
+
+@app.get("/login")
+def login_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "login.html")
+
+
+@app.get("/member")
+def member_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "member.html")
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

@@ -88,3 +88,36 @@ class ContributorGrowth(BaseModel):
 class GrowthResponse(BaseModel):
     overall: list[GrowthPoint]
     per_contributor: list[ContributorGrowth]
+
+
+# --- Member Auth -------------------------------------------------------------
+class MemberRegisterRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200)
+    password: str = Field(..., min_length=6)
+    category: str = Field(..., min_length=1, max_length=100)
+
+
+class MemberLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class MemberTokenResponse(BaseModel):
+    token: str
+    token_type: str = "bearer"
+    contributor_id: int
+    name: str
+
+
+class MemberProfileOut(BaseModel):
+    id: int
+    name: str
+    email: str | None
+    category: str
+    created_at: datetime
+    total_units: float
+    total_value_eur: float
+    rank: int
+    ledger: list[LedgerEntryOut]
+    growth_points: list[GrowthPoint]

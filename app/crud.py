@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.config import EUR_PER_UNIT, TOTAL_POOL_UNITS, UNIT_INCREMENT
+from app.auth import hash_password, verify_member_password
 
 
 class BusinessRuleError(ValueError):
@@ -203,3 +204,98 @@ def growth(db: Session) -> schemas.GrowthResponse:
         )
 
     return schemas.GrowthResponse(overall=overall, per_contributor=per_contributor)
+
+
+# --- Member self-service -----------------------------------------------------
+def get_contributor_by_email(db: Session, email: str) -> models.Contributor | None:
+    return db.execute(
+        select(models.Contributor).where(models.Contributor.email == email)
+    ).scalar_one_or_none()
+
+
+def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.Contributor:
+    """Create a new contributor with a hashed password (self-registration)."""
+    existing = get_contributor_by_email(db, data.email)
+    if existing is not None:
+        if existing.password_hash is not None:
+            raise BusinessRuleError("An account with that email already exists.")
+        # Admin-created contributor claims their account by setting a password.
+        existing.name = data.name.strip()
+        existing.category = data.category.strip()
+        existing.password_hash = hash_password(data.password)
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    contributor = models.Contributor(
+        name=data.name.strip(),
+        email=data.email.strip(),
+        category=data.category.strip(),
+        password_hash=hash_password(data.password),
+    )
+    db.add(contributor)
+    db.commit()
+    db.refresh(contributor)
+    return contributor
+
+
+def authenticate_member(db: Session, email: str, password: str) -> models.Contributor | None:
+    """Return contributor if email+password match, else None."""
+    contributor = get_contributor_by_email(db, email)
+    if contributor is None or contributor.password_hash is None:
+        return None
+    if not verify_member_password(password, contributor.password_hash):
+        return None
+    return contributor
+
+
+def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfileOut | None:
+    """Return a full personal dashboard profile for one contributor."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return None
+
+    total = contributor_total_units(db, contributor_id)
+
+    # Rank = position in descending units leaderboard (1 = most units)
+    all_contributors = list_contributors(db)
+    sorted_contributors = sorted(all_contributors, key=lambda c: c.total_units, reverse=True)
+    rank = next(
+        (i + 1 for i, c in enumerate(sorted_contributors) if c.id == contributor_id), 0
+    )
+
+    # Personal ledger
+    entries = db.execute(
+        select(models.LedgerEntry)
+        .where(models.LedgerEntry.contributor_id == contributor_id)
+        .order_by(models.LedgerEntry.date_awarded.desc())
+    ).scalars().all()
+    ledger = [_entry_to_out(e) for e in entries]
+
+    # Personal growth time series (ascending order)
+    entries_asc = list(reversed(entries))
+    by_day: dict[str, float] = defaultdict(float)
+    for e in entries_asc:
+        day = e.date_awarded.date().isoformat()
+        by_day[day] += e.units_awarded
+
+    growth_points: list[schemas.GrowthPoint] = []
+    running = 0.0
+    for day in sorted(by_day):
+        running += by_day[day]
+        growth_points.append(
+            schemas.GrowthPoint(date=day, cumulative_units=_round_units(running))
+        )
+
+    return schemas.MemberProfileOut(
+        id=contributor.id,
+        name=contributor.name,
+        email=contributor.email,
+        category=contributor.category,
+        created_at=contributor.created_at,
+        total_units=total,
+        total_value_eur=_round_units(total) * EUR_PER_UNIT,
+        rank=rank,
+        ledger=ledger,
+        growth_points=growth_points,
+    )

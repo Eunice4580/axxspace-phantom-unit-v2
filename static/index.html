@@ -22,6 +22,8 @@
     <div class="nav-links">
       <a href="/" class="active">Dashboard</a>
       <a href="/admin">Admin</a>
+      <a href="/member" id="nav-my-progress" style="display:none">My Progress</a>
+      <a href="/login"  id="nav-signin-btn"  class="nav-account-btn">Sign In</a>
     </div>
   </nav>
 
@@ -83,6 +85,17 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <script src="/static/js/auth.js"></script>
+  <script>
+    // Update nav based on session
+    if (isLoggedIn()) {
+      const btn = document.getElementById('nav-signin-btn');
+      const prog = document.getElementById('nav-my-progress');
+      btn.textContent = '👤 ' + (getMemberName() || 'My Account');
+      btn.href = '/member';
+      prog.style.display = '';
+    }
+  </script>
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

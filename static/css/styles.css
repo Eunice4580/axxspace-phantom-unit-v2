@@ -1,12 +1,15 @@
 :root {
   --bg: #0b0f1a;
   --bg-elev: #141a2b;
+  --surface: #161d30;
   --card: #161d30;
   --border: #243049;
   --text: #e8edf7;
   --text-dim: #9aa6c0;
-  --accent: #6d8bff;
+  --muted: #9aa6c0;
+  --accent: #6366f1;
   --accent-2: #36d6c3;
+  --accent-gradient: linear-gradient(135deg, #6366f1, #36d6c3);
   --good: #38c172;
   --warn: #f0a020;
   --danger: #ef5a5a;
@@ -14,6 +17,19 @@
   --radius: 14px;
   font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
+
+/* ── Nav account button ─────────────────────────────────────── */
+.nav-account-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 10px;
+  background: var(--accent-gradient);
+  color: #fff; font-family: inherit;
+  font-size: .85rem; font-weight: 600;
+  border: none; cursor: pointer;
+  text-decoration: none;
+  transition: opacity .2s;
+}
+.nav-account-btn:hover { opacity: .88; color: #fff; }
 
 * { box-sizing: border-box; }
 

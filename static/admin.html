@@ -1,138 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — AXXSPACE Phantom Unit Compensation System</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AXXSPACE — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #111118; --surface2: #16161f;
+    --border: #1e1e2e; --accent: #7c3aed; --accent-glow: rgba(124,58,237,0.2);
+    --text: #e8e8f0; --muted: #6b6b80; --success: #10b981; --error: #ef4444; --gold: #f59e0b;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 1rem; letter-spacing: 0.15em; color: var(--accent); }
+  .admin-tag { font-size: 0.7rem; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .btn-sm { padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
+  main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.4rem; }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.5rem; font-weight: 700; }
+  .stat-val.accent { color: var(--accent); } .stat-val.gold { color: var(--gold); } .stat-val.green { color: var(--success); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  @media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+  .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); margin-bottom: 0.35rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  input, select, textarea { width: 100%; padding: 0.65rem 0.9rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 70px; }
+  .btn { width: 100%; padding: 0.75rem; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 0.25rem; }
+  .btn:hover { opacity: 0.88; } .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { padding: 0.65rem 0.9rem; border-radius: 8px; font-size: 0.825rem; margin-top: 0.75rem; display: none; }
+  .msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--error); display: block; }
+  .msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--success); display: block; }
+  .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; padding: 0.6rem 0.9rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; overflow-x: auto; }
+  .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 500; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 0.5rem; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s; }
+  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .tab { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: inherit; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .panel { display: none; } .panel.active { display: block; }
+  .empty { padding: 2.5rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
+</style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="brand">
-      <div class="logo">AX</div>
-      <div>
-        <h1>AXXSPACE</h1>
-        <small>Admin Console</small>
-      </div>
-    </div>
-    <div class="nav-links">
-      <a href="/">Dashboard</a>
-      <a href="/admin" class="active">Admin</a>
-      <a href="#" id="logout-link" class="hidden">Log out</a>
-    </div>
-  </nav>
-
-  <!-- Login -->
-  <div class="container login-wrap" id="login-view">
-    <div class="card">
-      <h3>Admin Login</h3>
-      <p class="muted">Enter the admin password to manage accounts and award Contribution Units.</p>
-      <form id="login-form">
-        <label for="password">Admin password</label>
-        <input type="password" id="password" autocomplete="current-password" required />
-        <div style="height:14px"></div>
-        <button class="btn btn-primary btn-block" type="submit">Log in</button>
-      </form>
+<nav>
+  <div class="logo">AXXSPACE <span class="admin-tag">Admin</span></div>
+  <button class="btn-sm" onclick="logout()">Sign out</button>
+</nav>
+<main>
+  <!-- Pool Stats -->
+  <div class="stats-grid" id="pool-stats">
+    <div class="stat-card"><div class="stat-label">Total Pool</div><div class="stat-val accent" id="s-total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Allocated</div><div class="stat-val gold" id="s-alloc">—</div></div>
+    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-val green" id="s-remain">—</div></div>
+    <div class="stat-card"><div class="stat-label">Contributors</div><div class="stat-val" id="s-contribs">—</div></div>
+    <div class="stat-card"><div class="stat-label">Awards</div><div class="stat-val" id="s-awards">—</div></div>
+    <div class="stat-card">
+      <div class="stat-label">Pool Usage</div>
+      <div class="stat-val" id="s-pct">—</div>
+      <div class="progress-bar"><div class="progress-fill" id="s-bar" style="width:0%"></div></div>
     </div>
   </div>
 
-  <!-- Admin console -->
-  <div class="container hidden" id="admin-view">
-    <div class="stat-grid" id="stat-grid"></div>
-
-    <div class="grid-2">
-      <!-- Create contributor -->
-      <div class="card">
-        <h3>Create Account</h3>
-        <p class="muted">Add an eligible contributor (spec §4).</p>
-        <form id="contributor-form">
-          <div class="form-grid">
-            <div class="full">
-              <label for="c-name">Contributor name</label>
-              <input id="c-name" required />
-            </div>
-            <div>
-              <label for="c-email">Email (optional)</label>
-              <input id="c-email" type="email" />
-            </div>
-            <div>
-              <label for="c-category">Eligibility category</label>
-              <select id="c-category" required></select>
-            </div>
-          </div>
-          <div style="height:14px"></div>
-          <button class="btn btn-primary btn-block" type="submit">Create account</button>
-        </form>
-      </div>
-
-      <!-- Award units -->
-      <div class="card">
-        <h3>Award Contribution Units</h3>
-        <p class="muted">Record a verified award to the ledger (spec §5–§7).</p>
-        <form id="award-form">
-          <div class="form-grid">
-            <div class="full">
-              <label for="a-contributor">Contributor</label>
-              <select id="a-contributor" required></select>
-            </div>
-            <div class="full">
-              <label for="a-task">Task description</label>
-              <input id="a-task" required />
-            </div>
-            <div>
-              <label for="a-ref">Task reference #</label>
-              <input id="a-ref" placeholder="e.g. TASK-001" />
-            </div>
-            <div>
-              <label for="a-units">Units awarded (0.1 increments)</label>
-              <input id="a-units" type="number" min="0.1" max="1000" step="0.1" required />
-              <div class="tier-hint" id="tier-hint"></div>
-            </div>
-            <div>
-              <label for="a-reviewer">Approving reviewer</label>
-              <input id="a-reviewer" required />
-            </div>
-            <div>
-              <label for="a-remarks">Remarks (optional)</label>
-              <input id="a-remarks" />
-            </div>
-          </div>
-          <div style="height:14px"></div>
-          <button class="btn btn-primary btn-block" type="submit">Award units</button>
-        </form>
-      </div>
+  <!-- Actions -->
+  <div class="grid2">
+    <div class="card">
+      <h2>Add Contributor</h2>
+      <div class="form-group"><label>Full Name</label><input type="text" id="c-name" placeholder="Jane Doe" /></div>
+      <div class="form-group"><label>Email (optional)</label><input type="email" id="c-email" placeholder="jane@example.com" /></div>
+      <div class="form-group"><label>Category</label><select id="c-cat"><option value="">Loading…</option></select></div>
+      <button class="btn" onclick="addContributor()">Add Contributor</button>
+      <div class="msg" id="c-msg"></div>
     </div>
 
     <div class="card">
-      <div class="row-between">
-        <div>
-          <h3>Accounts</h3>
-          <p class="muted">All contributor accounts and their current holdings.</p>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Name</th><th>Category</th><th>Email</th><th>Units Held</th><th>Value</th></tr></thead>
-          <tbody id="accounts-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Recent Ledger Entries</h3>
-      <p class="muted">Latest awards recorded.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref #</th><th>Units</th><th>Reviewer</th></tr></thead>
-          <tbody id="recent-body"></tbody>
-        </table>
-      </div>
+      <h2>Award Units</h2>
+      <div class="form-group"><label>Contributor</label><select id="a-contrib"><option value="">Select contributor…</option></select></div>
+      <div class="form-group"><label>Task Description</label><textarea id="a-task" placeholder="Describe the contribution…"></textarea></div>
+      <div class="form-group"><label>Units Awarded</label><input type="number" id="a-units" placeholder="0.00" step="0.01" min="0.01" /></div>
+      <div class="form-group"><label>Approving Reviewer</label><input type="text" id="a-reviewer" placeholder="Reviewer name" /></div>
+      <div class="form-group"><label>Task Reference (optional)</label><input type="text" id="a-ref" placeholder="TASK-001" /></div>
+      <div class="form-group"><label>Remarks (optional)</label><textarea id="a-remarks" placeholder="Any additional notes…"></textarea></div>
+      <button class="btn" onclick="awardUnits()">Award Units</button>
+      <div class="msg" id="a-msg"></div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="/static/js/admin.js"></script>
+  <!-- Tables -->
+  <div class="tabs">
+    <button class="tab active" onclick="showPanel('contributors')">Contributors</button>
+    <button class="tab" onclick="showPanel('ledger')">Ledger</button>
+  </div>
+
+  <div class="panel active" id="panel-contributors">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Category</th><th>Units</th><th>Value (EUR)</th><th>Since</th></tr></thead>
+        <tbody id="contrib-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-ledger">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref</th><th>Units</th><th>EUR</th><th>Reviewer</th></tr></thead>
+        <tbody id="ledger-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = '/login';
+const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer '+token };
+
+function showPanel(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (name==='contributors'&&i===0)||(name==='ledger'&&i===1)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+async function loadConfig() {
+  const res = await fetch('/api/config');
+  const d = await res.json();
+  const catSel = document.getElementById('c-cat');
+  catSel.innerHTML = d.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+async function loadStats() {
+  const res = await fetch('/api/stats');
+  const d = await res.json();
+  document.getElementById('s-total').textContent = d.total_pool_units.toLocaleString();
+  document.getElementById('s-alloc').textContent = d.allocated_units.toLocaleString();
+  document.getElementById('s-remain').textContent = d.remaining_units.toLocaleString();
+  document.getElementById('s-contribs').textContent = d.contributor_count;
+  document.getElementById('s-awards').textContent = d.award_count;
+  document.getElementById('s-pct').textContent = d.allocated_pct.toFixed(1) + '%';
+  document.getElementById('s-bar').style.width = d.allocated_pct + '%';
+}
+
+async function loadContributors() {
+  const res = await fetch('/api/contributors');
+  const data = await res.json();
+  // populate award dropdown
+  const sel = document.getElementById('a-contrib');
+  sel.innerHTML = '<option value="">Select contributor…</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const tbody = document.getElementById('contrib-body');
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No contributors yet.</td></tr>'; return; }
+  tbody.innerHTML = data.map((c,i) => `
+    <tr>
+      <td style="color:var(--muted);font-family:'Space Mono',monospace">${i+1}</td>
+      <td style="font-weight:500">${c.name}</td>
+      <td style="color:var(--muted)">${c.email||'—'}</td>
+      <td><span class="badge">${c.category}</span></td>
+      <td style="font-family:'Space Mono',monospace;color:var(--accent)">${c.total_units.toFixed(2)}</td>
+      <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${c.total_value_eur.toFixed(2)}</td>
+      <td style="color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</td>
+    </tr>`).join('');
+}
+
+async function loadLedger() {
+  const res = await fetch('/api/ledger');
+  const data = await res.json();
+  const tbody = document.getElementById('ledger-body');
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No ledger entries yet.</td></tr>'; return; }
+  tbody.innerHTML = data.slice().reverse().map(e => `
+    <tr>
+      <td style="color:var(--muted);white-space:nowrap">${new Date(e.date_awarded).toLocaleDateString()}</td>
+      <td style="font-weight:500">${e.contributor_name}</td>
+      <td style="max-width:200px">${e.task_description}</td>
+      <td>${e.task_reference ? '<span class="badge">'+e.task_reference+'</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-family:'Space Mono',monospace;color:var(--accent)">${e.units_awarded.toFixed(2)}</td>
+      <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
+      <td style="color:var(--muted)">${e.approving_reviewer}</td>
+    </tr>`).join('');
+}
+
+async function addContributor() {
+  const msg = document.getElementById('c-msg');
+  msg.className = 'msg';
+  const name = document.getElementById('c-name').value.trim();
+  const email = document.getElementById('c-email').value.trim() || null;
+  const category = document.getElementById('c-cat').value;
+  if (!name || !category) { msg.className='msg error'; msg.textContent='Name and category are required.'; return; }
+  try {
+    const res = await fetch('/api/contributors', { method:'POST', headers, body: JSON.stringify({name, email, category}) });
+    const d = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to add contributor.'; return; }
+    msg.className='msg success'; msg.textContent=`${d.name} added successfully.`;
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-email').value = '';
+    loadContributors(); loadStats();
+  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
+}
+
+async function awardUnits() {
+  const msg = document.getElementById('a-msg');
+  msg.className = 'msg';
+  const contributor_id = parseInt(document.getElementById('a-contrib').value);
+  const task_description = document.getElementById('a-task').value.trim();
+  const units_awarded = parseFloat(document.getElementById('a-units').value);
+  const approving_reviewer = document.getElementById('a-reviewer').value.trim();
+  const task_reference = document.getElementById('a-ref').value.trim() || null;
+  const remarks = document.getElementById('a-remarks').value.trim() || null;
+  if (!contributor_id || !task_description || !units_awarded || !approving_reviewer) {
+    msg.className='msg error'; msg.textContent='Contributor, task, units and reviewer are required.'; return;
+  }
+  try {
+    const res = await fetch('/api/ledger', { method:'POST', headers, body: JSON.stringify({contributor_id, task_description, units_awarded, approving_reviewer, task_reference, remarks}) });
+    const d = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to award units.'; return; }
+    msg.className='msg success'; msg.textContent=`Awarded ${units_awarded} units successfully.`;
+    document.getElementById('a-task').value = '';
+    document.getElementById('a-units').value = '';
+    document.getElementById('a-ref').value = '';
+    document.getElementById('a-remarks').value = '';
+    loadStats(); loadLedger(); loadContributors();
+  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
+}
+
+function logout() { localStorage.clear(); window.location.href = '/login'; }
+
+loadConfig(); loadStats(); loadContributors(); loadLedger();
+</script>
 </body>
 </html>

@@ -1,308 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AXXSPACE — Member Login</title>
-  <meta name="description" content="Sign in or create your AXXSPACE member account to track your Contribution Unit progress." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  <style>
-    /* ── Auth page layout ─────────────────────────────────────────── */
-    .auth-root {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
-      background: radial-gradient(ellipse at 60% 20%, rgba(99,102,241,.18) 0%, transparent 60%),
-                  radial-gradient(ellipse at 10% 80%, rgba(16,185,129,.10) 0%, transparent 50%),
-                  var(--bg);
-    }
-    .auth-card {
-      width: 100%;
-      max-width: 440px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2.5rem 2.5rem 2rem;
-      box-shadow: 0 24px 64px rgba(0,0,0,.45);
-      animation: slideUp .4s ease;
-    }
-    @keyframes slideUp {
-      from { opacity:0; transform:translateY(24px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .auth-brand {
-      display: flex;
-      align-items: center;
-      gap: .9rem;
-      margin-bottom: 2rem;
-    }
-    .auth-brand .logo {
-      width: 44px; height: 44px;
-      background: var(--accent-gradient);
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 1rem; color: #fff;
-      flex-shrink: 0;
-    }
-    .auth-brand h1 { font-size: 1.1rem; font-weight: 700; margin:0; }
-    .auth-brand small { color: var(--muted); font-size: .75rem; display:block; }
-
-    /* Tabs */
-    .auth-tabs {
-      display: flex;
-      background: var(--bg);
-      border-radius: 10px;
-      padding: 4px;
-      margin-bottom: 1.8rem;
-      border: 1px solid var(--border);
-    }
-    .auth-tab {
-      flex: 1;
-      padding: .6rem;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-family: inherit;
-      font-size: .875rem;
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all .2s;
-    }
-    .auth-tab.active {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(99,102,241,.35);
-    }
-
-    /* Form panel */
-    .auth-panel { display: none; }
-    .auth-panel.active { display: block; animation: fadeIn .25s ease; }
-    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-
-    .auth-title { font-size: 1.35rem; font-weight: 700; margin-bottom: .35rem; }
-    .auth-sub   { color: var(--muted); font-size: .875rem; margin-bottom: 1.5rem; }
-
-    .form-group { margin-bottom: 1.1rem; }
-    .form-group label {
-      display: block;
-      font-size: .8rem;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: .4rem;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: .9rem;
-      padding: .75rem 1rem;
-      transition: border-color .2s, box-shadow .2s;
-      box-sizing: border-box;
-    }
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99,102,241,.18);
-    }
-    .form-group select option { background: var(--surface); }
-
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-
-    .btn-auth {
-      width: 100%;
-      padding: .85rem;
-      background: var(--accent-gradient);
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      font-family: inherit;
-      font-size: .95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity .2s, transform .15s;
-      margin-top: .5rem;
-    }
-    .btn-auth:hover  { opacity: .9; transform: translateY(-1px); }
-    .btn-auth:active { transform: translateY(0); }
-    .btn-auth:disabled { opacity: .5; cursor: not-allowed; }
-
-    .auth-error {
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.35);
-      border-radius: 8px;
-      color: #f87171;
-      font-size: .85rem;
-      padding: .65rem .9rem;
-      margin-bottom: 1rem;
-      display: none;
-    }
-    .auth-error.show { display: block; animation: fadeIn .2s ease; }
-
-    .auth-footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
-    .auth-footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AXXSPACE — Login</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #7c3aed;
+    --accent-glow: rgba(124,58,237,0.3);
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --success: #10b981;
+    --error: #ef4444;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .wrap { width: 100%; max-width: 420px; padding: 2rem; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 1.1rem; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.5rem; }
+  h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 2.5rem; }
+  .tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
+  .tab { flex: 1; padding: 0.65rem; text-align: center; cursor: pointer; font-size: 0.875rem; font-weight: 500; background: var(--surface); color: var(--muted); transition: all 0.2s; border: none; font-family: inherit; }
+  .tab.active { background: var(--accent); color: #fff; }
+  .form-group { margin-bottom: 1.25rem; }
+  label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-bottom: 0.4rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  input, select { width: 100%; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  select option { background: var(--surface); }
+  .btn { width: 100%; padding: 0.85rem; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-top: 0.5rem; }
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.99); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; margin-top: 1rem; display: none; }
+  .msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--error); display: block; }
+  .msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--success); display: block; }
+  .panel { display: none; } .panel.active { display: block; }
+  .back { text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--muted); }
+  .back a { color: var(--accent); text-decoration: none; }
+</style>
 </head>
 <body>
-  <div class="auth-root">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <div class="logo">AX</div>
-        <div>
-          <h1>AXXSPACE</h1>
-          <small>Phantom Unit Compensation System</small>
-        </div>
-      </div>
-
-      <div class="auth-tabs" role="tablist">
-        <button class="auth-tab active" id="tab-login" role="tab" aria-selected="true" onclick="switchTab('login')">Sign In</button>
-        <button class="auth-tab"        id="tab-signup" role="tab" aria-selected="false" onclick="switchTab('signup')">Sign Up</button>
-      </div>
-
-      <!-- LOGIN PANEL -->
-      <div class="auth-panel active" id="panel-login">
-        <p class="auth-title">Welcome back</p>
-        <p class="auth-sub">Sign in to view your contribution progress.</p>
-        <div class="auth-error" id="login-error"></div>
-        <form id="login-form" onsubmit="handleLogin(event)">
-          <div class="form-group">
-            <label for="login-email">Email address</label>
-            <input id="login-email" type="email" placeholder="you@example.com" required autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password" />
-          </div>
-          <button class="btn-auth" id="login-btn" type="submit">Sign In →</button>
-        </form>
-      </div>
-
-      <!-- SIGNUP PANEL -->
-      <div class="auth-panel" id="panel-signup">
-        <p class="auth-title">Create your account</p>
-        <p class="auth-sub">Join AXXSPACE to track your Contribution Units.</p>
-        <div class="auth-error" id="signup-error"></div>
-        <form id="signup-form" onsubmit="handleSignup(event)">
-          <div class="form-group">
-            <label for="signup-name">Full name</label>
-            <input id="signup-name" type="text" placeholder="Jane Doe" required autocomplete="name" />
-          </div>
-          <div class="form-group">
-            <label for="signup-email">Email address</label>
-            <input id="signup-email" type="email" placeholder="you@example.com" required autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="signup-category">Role / Category</label>
-            <select id="signup-category" required>
-              <option value="" disabled selected>Select your role…</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="signup-password">Password</label>
-              <input id="signup-password" type="password" placeholder="min 6 chars" required autocomplete="new-password" minlength="6" />
-            </div>
-            <div class="form-group">
-              <label for="signup-confirm">Confirm</label>
-              <input id="signup-confirm" type="password" placeholder="repeat" required autocomplete="new-password" minlength="6" />
-            </div>
-          </div>
-          <button class="btn-auth" id="signup-btn" type="submit">Create Account →</button>
-        </form>
-      </div>
-
-      <div class="auth-footer">
-        <a href="/">← Back to Dashboard</a>
-      </div>
-    </div>
+<div class="wrap">
+  <div class="logo">AXXSPACE</div>
+  <h1>Welcome back</h1>
+  <p class="sub">Sign in to your contributor account or access the admin panel.</p>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('member')">Member</button>
+    <button class="tab" onclick="switchTab('admin')">Admin</button>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="/static/js/auth.js"></script>
-  <script>
-    // Populate category dropdown from API
-    fetch('/api/config').then(r => r.json()).then(cfg => {
-      const sel = document.getElementById('signup-category');
-      cfg.categories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = opt.textContent = cat;
-        sel.appendChild(opt);
-      });
-    });
+  <!-- Member Login -->
+  <div class="panel active" id="panel-member">
+    <div class="form-group"><label>Email</label><input type="email" id="m-email" placeholder="you@example.com" /></div>
+    <div class="form-group"><label>Password</label><input type="password" id="m-password" placeholder="••••••••" /></div>
+    <button class="btn" onclick="memberLogin()">Sign in</button>
+    <div class="msg" id="m-msg"></div>
+    <div class="back">No account? <a href="/register.html">Register here</a></div>
+  </div>
 
-    function switchTab(tab) {
-      document.querySelectorAll('.auth-tab').forEach(t => {
-        t.classList.toggle('active', t.id === `tab-${tab}`);
-        t.setAttribute('aria-selected', t.id === `tab-${tab}`);
-      });
-      document.querySelectorAll('.auth-panel').forEach(p => {
-        p.classList.toggle('active', p.id === `panel-${tab}`);
-      });
-    }
+  <!-- Admin Login -->
+  <div class="panel" id="panel-admin">
+    <div class="form-group"><label>Admin Password</label><input type="password" id="a-password" placeholder="••••••••" /></div>
+    <button class="btn" onclick="adminLogin()">Access Admin Panel</button>
+    <div class="msg" id="a-msg"></div>
+  </div>
+</div>
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      const btn = document.getElementById('login-btn');
-      const errEl = document.getElementById('login-error');
-      errEl.classList.remove('show');
-      btn.disabled = true;
-      btn.textContent = 'Signing in…';
-      try {
-        const data = await authLogin(
-          document.getElementById('login-email').value,
-          document.getElementById('login-password').value
-        );
-        showToast('Welcome back, ' + data.name + '!');
-        setTimeout(() => window.location.href = '/member', 800);
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btn.textContent = 'Sign In →';
-      }
-    }
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (tab==='member'&&i===0)||(tab==='admin'&&i===1)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
 
-    async function handleSignup(e) {
-      e.preventDefault();
-      const btn = document.getElementById('signup-btn');
-      const errEl = document.getElementById('signup-error');
-      errEl.classList.remove('show');
-      const pw  = document.getElementById('signup-password').value;
-      const cpw = document.getElementById('signup-confirm').value;
-      if (pw !== cpw) {
-        errEl.textContent = 'Passwords do not match.';
-        errEl.classList.add('show');
-        return;
-      }
-      btn.disabled = true;
-      btn.textContent = 'Creating account…';
-      try {
-        const data = await authRegister(
-          document.getElementById('signup-name').value,
-          document.getElementById('signup-email').value,
-          pw,
-          document.getElementById('signup-category').value
-        );
-        showToast('Account created! Welcome, ' + data.name + '!');
-        setTimeout(() => window.location.href = '/member', 800);
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btn.textContent = 'Create Account →';
-      }
-    }
-  </script>
+async function memberLogin() {
+  const email = document.getElementById('m-email').value;
+  const password = document.getElementById('m-password').value;
+  const msg = document.getElementById('m-msg');
+  msg.className = 'msg';
+  if (!email || !password) { msg.className='msg error'; msg.textContent='Please fill in all fields.'; return; }
+  try {
+    const res = await fetch('/api/members/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, password}) });
+    const data = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
+    localStorage.setItem('member_token', data.token);
+    localStorage.setItem('contributor_id', data.contributor_id);
+    localStorage.setItem('member_name', data.name);
+    window.location.href = '/member';
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Try again.'; }
+}
+
+async function adminLogin() {
+  const password = document.getElementById('a-password').value;
+  const msg = document.getElementById('a-msg');
+  msg.className = 'msg';
+  if (!password) { msg.className='msg error'; msg.textContent='Enter the admin password.'; return; }
+  try {
+    const res = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password}) });
+    const data = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Incorrect password.'; return; }
+    localStorage.setItem('admin_token', data.token);
+    window.location.href = '/admin';
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Try again.'; }
+}
+</script>
 </body>
 </html>

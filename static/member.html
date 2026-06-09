@@ -1,215 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AXXSPACE — My Dashboard</title>
-  <meta name="description" content="Your personal AXXSPACE Contribution Unit dashboard — track your earnings and growth." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    /* ── Member page extras ─────────────────────────────────── */
-    .welcome-banner {
-      background: linear-gradient(135deg, rgba(99,102,241,.18) 0%, rgba(16,185,129,.10) 100%);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2rem 2.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      animation: slideUp .4s ease;
-    }
-    @keyframes slideUp {
-      from { opacity:0; transform:translateY(18px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .welcome-left h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: .25rem; }
-    .welcome-left p  { color: var(--muted); font-size: .9rem; }
-
-    .member-badges { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
-    .badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: .3rem .85rem;
-      font-size: .78rem;
-      font-weight: 600;
-    }
-    .badge.rank  { border-color: rgba(251,191,36,.5); color: #fbbf24; }
-    .badge.cat   { border-color: rgba(99,102,241,.4); color: #818cf8; }
-    .badge.units { border-color: rgba(16,185,129,.4); color: #34d399; }
-
-    .btn-logout {
-      display: flex; align-items: center; gap: .5rem;
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.3);
-      border-radius: 8px;
-      color: #f87171;
-      font-family: inherit;
-      font-size: .85rem;
-      font-weight: 600;
-      padding: .55rem 1.1rem;
-      cursor: pointer;
-      transition: background .2s;
-    }
-    .btn-logout:hover { background: rgba(239,68,68,.22); }
-
-    .member-stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .member-stat {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.4rem 1.5rem;
-      animation: slideUp .4s ease both;
-    }
-    .member-stat:nth-child(2) { animation-delay: .05s; }
-    .member-stat:nth-child(3) { animation-delay: .10s; }
-    .member-stat:nth-child(4) { animation-delay: .15s; }
-    .member-stat .ms-label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem; }
-    .member-stat .ms-value { font-size: 1.9rem; font-weight: 800; line-height: 1; }
-    .member-stat .ms-sub   { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
-    .ms-value.green { color: #34d399; }
-    .ms-value.indigo{ color: #818cf8; }
-    .ms-value.amber { color: #fbbf24; }
-
-    .empty-ledger {
-      text-align: center;
-      padding: 3rem;
-      color: var(--muted);
-    }
-    .empty-ledger .icon { font-size: 2.5rem; margin-bottom: .75rem; }
-
-    /* Loading skeleton */
-    .skeleton {
-      background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 8px;
-      height: 1rem;
-      margin: .5rem 0;
-    }
-    @keyframes shimmer { to { background-position: -200% 0; } }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AXXSPACE — My Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #111118; --surface2: #16161f;
+    --border: #1e1e2e; --accent: #7c3aed; --accent-glow: rgba(124,58,237,0.2);
+    --text: #e8e8f0; --muted: #6b6b80; --success: #10b981; --gold: #f59e0b;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 1rem; letter-spacing: 0.15em; color: var(--accent); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .user-badge { font-size: 0.875rem; color: var(--muted); }
+  .btn-sm { padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+  .greeting { margin-bottom: 2rem; }
+  .greeting h1 { font-size: 1.75rem; font-weight: 600; }
+  .greeting p { color: var(--muted); margin-top: 0.25rem; font-size: 0.95rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.8rem; font-weight: 700; }
+  .stat-val.accent { color: var(--accent); }
+  .stat-val.gold { color: var(--gold); }
+  .stat-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+  .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  th { text-align: left; padding: 0.6rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); }
+  .rank-badge { font-family: 'Space Mono', monospace; font-size: 0.75rem; background: rgba(245,158,11,0.1); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; }
+  .empty { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+  .loading { color: var(--muted); padding: 3rem; text-align: center; }
+</style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="brand">
-      <div class="logo">AX</div>
-      <div>
-        <h1>AXXSPACE</h1>
-        <small>Phantom Unit Compensation System</small>
-      </div>
+<nav>
+  <div class="logo">AXXSPACE</div>
+  <div class="nav-right">
+    <span class="user-badge" id="nav-name">—</span>
+    <button class="btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+<main>
+  <div class="greeting">
+    <h1 id="greeting-name">Loading…</h1>
+    <p id="greeting-sub">Your contribution summary</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Units</div>
+      <div class="stat-val accent" id="stat-units">—</div>
+      <div class="stat-sub">Contribution units earned</div>
     </div>
-    <div class="nav-links">
-      <a href="/">Dashboard</a>
-      <a href="/member" class="active">My Progress</a>
-      <button class="btn-logout" id="nav-logout-btn" onclick="doLogout()">Sign Out</button>
+    <div class="stat-card">
+      <div class="stat-label">Total Value</div>
+      <div class="stat-val gold" id="stat-eur">—</div>
+      <div class="stat-sub">EUR equivalent</div>
     </div>
-  </nav>
-
-  <div class="container" id="main-content">
-    <!-- Loading state -->
-    <div id="loading-state">
-      <div class="skeleton" style="height:110px; border-radius:16px; margin-bottom:1.5rem;"></div>
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem;">
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Category</div>
+      <div class="stat-val" id="stat-cat" style="font-size:1.1rem;margin-top:0.3rem">—</div>
+      <div class="stat-sub" id="stat-rank">—</div>
     </div>
-
-    <!-- Content (hidden until loaded) -->
-    <div id="member-content" style="display:none;">
-      <!-- Welcome banner -->
-      <div class="welcome-banner">
-        <div class="welcome-left">
-          <h2 id="welcome-name">Loading…</h2>
-          <p id="welcome-email"></p>
-        </div>
-        <div class="member-badges">
-          <span class="badge cat"  id="badge-category">—</span>
-          <span class="badge rank" id="badge-rank">—</span>
-          <span class="badge units" id="badge-units">—</span>
-        </div>
-      </div>
-
-      <!-- Stat cards -->
-      <div class="member-stat-grid">
-        <div class="member-stat">
-          <div class="ms-label">Total Units Held</div>
-          <div class="ms-value green" id="stat-units">—</div>
-          <div class="ms-sub">Contribution Units</div>
-        </div>
-        <div class="member-stat">
-          <div class="ms-label">Reference Value</div>
-          <div class="ms-value indigo" id="stat-value">—</div>
-          <div class="ms-sub">EUR equivalent</div>
-        </div>
-        <div class="member-stat">
-          <div class="ms-label">Awards Received</div>
-          <div class="ms-value" id="stat-awards">—</div>
-          <div class="ms-sub">Total ledger entries</div>
-        </div>
-        <div class="member-stat">
-          <div class="ms-label">Leaderboard Rank</div>
-          <div class="ms-value amber" id="stat-rank">—</div>
-          <div class="ms-sub">Among all contributors</div>
-        </div>
-      </div>
-
-      <!-- Growth chart -->
-      <div class="card" style="margin-bottom:1.5rem;">
-        <div class="row-between">
-          <div>
-            <h3>My Unit Growth Over Time</h3>
-            <p class="muted">Cumulative Contribution Units you have earned.</p>
-          </div>
-        </div>
-        <canvas id="memberGrowthChart" height="110"></canvas>
-      </div>
-
-      <!-- Personal ledger -->
-      <div class="card">
-        <div class="row-between">
-          <div>
-            <h3>My Award Ledger</h3>
-            <p class="muted">Every unit award you have received, most recent first.</p>
-          </div>
-          <span class="pill" id="ledger-count">0 entries</span>
-        </div>
-        <div class="table-wrap" id="ledger-wrap">
-          <div class="empty-ledger" id="empty-ledger" style="display:none;">
-            <div class="icon">📭</div>
-            <p>No awards yet — your ledger is empty.</p>
-          </div>
-          <table id="ledger-table">
-            <thead>
-              <tr>
-                <th>Date</th><th>Task</th><th>Ref #</th>
-                <th>Units</th><th>Value (€)</th><th>Reviewer</th><th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody id="ledger-body"></tbody>
-          </table>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Awards</div>
+      <div class="stat-val" id="stat-awards">—</div>
+      <div class="stat-sub">Total ledger entries</div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="/static/js/auth.js"></script>
-  <script src="/static/js/member.js"></script>
+  <div class="section-title">Ledger History</div>
+  <div class="table-wrap">
+    <div class="loading" id="ledger-loading">Loading ledger…</div>
+    <table id="ledger-table" style="display:none">
+      <thead><tr>
+        <th>Date</th><th>Task</th><th>Ref</th><th>Units</th><th>Value (EUR)</th><th>Reviewer</th>
+      </tr></thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+    <div class="empty" id="ledger-empty" style="display:none">No ledger entries yet.</div>
+  </div>
+</main>
+
+<script>
+const token = localStorage.getItem('member_token');
+if (!token) window.location.href = '/login';
+
+async function load() {
+  try {
+    const res = await fetch('/api/members/me', { headers: { Authorization: 'Bearer '+token } });
+    if (res.status === 401) { logout(); return; }
+    const d = await res.json();
+    document.getElementById('nav-name').textContent = d.name;
+    document.getElementById('greeting-name').textContent = 'Hello, ' + d.name;
+    document.getElementById('greeting-sub').textContent = d.category + ' contributor';
+    document.getElementById('stat-units').textContent = d.total_units.toFixed(2);
+    document.getElementById('stat-eur').textContent = '€' + d.total_value_eur.toFixed(2);
+    document.getElementById('stat-cat').textContent = d.category;
+    document.getElementById('stat-rank').textContent = 'Rank #' + d.rank + ' on leaderboard';
+    document.getElementById('stat-awards').textContent = d.ledger.length;
+
+    document.getElementById('ledger-loading').style.display = 'none';
+    if (d.ledger.length === 0) { document.getElementById('ledger-empty').style.display = 'block'; return; }
+    document.getElementById('ledger-table').style.display = 'table';
+    const tbody = document.getElementById('ledger-body');
+    tbody.innerHTML = d.ledger.map(e => `
+      <tr>
+        <td style="color:var(--muted);white-space:nowrap">${new Date(e.date_awarded).toLocaleDateString()}</td>
+        <td>${e.task_description}</td>
+        <td>${e.task_reference ? '<span class="badge">'+e.task_reference+'</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+        <td style="font-family:'Space Mono',monospace;color:var(--accent)">${e.units_awarded.toFixed(2)}</td>
+        <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
+        <td style="color:var(--muted)">${e.approving_reviewer}</td>
+      </tr>`).join('');
+  } catch { document.getElementById('ledger-loading').textContent = 'Failed to load profile.'; }
+}
+
+function logout() { localStorage.clear(); window.location.href = '/login'; }
+load();
+</script>
 </body>
 </html>

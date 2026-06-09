@@ -1,5 +1,5 @@
 [project]
-name = "axxspace-phantom-unit-system"
+name = "axxspace-phantom-unit"
 version = "1.0.0"
 description = "AXXSPACE Phantom Unit Compensation System v1.0 — contribution unit reward and ledger platform"
 readme = "README.md"
@@ -27,7 +27,6 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B"]
-# B008 is the idiomatic FastAPI dependency-injection pattern (Depends() in defaults).
 ignore = ["B008"]
 
 [tool.pytest.ini_options]

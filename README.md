@@ -90,3 +90,4 @@ on startup. The REST API (`/api/...`) can then be consumed by the main website's
 pytest           # run the test suite
 ruff check .     # lint
 ```
+# redeploy

@@ -83,6 +83,8 @@
       <div class="form-group"><label>Full Name</label><input type="text" id="c-name" placeholder="Jane Doe" /></div>
       <div class="form-group"><label>Email (optional)</label><input type="email" id="c-email" placeholder="jane@example.com" /></div>
       <div class="form-group"><label>Category</label><select id="c-cat"><option value="">Loading…</option></select></div>
+      <div class="form-group"><label>Login Password</label><input type="password" id="c-pass" placeholder="••••••••" /></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="c-pass2" placeholder="••••••••" /></div>
       <button class="btn" onclick="addContributor()">Add Contributor</button>
       <div class="msg" id="c-msg"></div>
     </div>
@@ -126,7 +128,7 @@
 </main>
 
 <script>
-const token = localStorage.getItem('admin_token');
+const token = localStorage.getItem('axxspace_admin_token');
 if (!token) window.location.href = '/login';
 const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer '+token };
 
@@ -198,14 +200,28 @@ async function addContributor() {
   const name = document.getElementById('c-name').value.trim();
   const email = document.getElementById('c-email').value.trim() || null;
   const category = document.getElementById('c-cat').value;
+  const password = document.getElementById('c-pass').value;
+  const password2 = document.getElementById('c-pass2').value;
+
   if (!name || !category) { msg.className='msg error'; msg.textContent='Name and category are required.'; return; }
+  if (password) {
+    if (password.length < 6) { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+    if (password !== password2) { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+  }
+
   try {
-    const res = await fetch('/api/contributors', { method:'POST', headers, body: JSON.stringify({name, email, category}) });
+    const res = await fetch('/api/contributors', {
+      method:'POST',
+      headers,
+      body: JSON.stringify({name, email, category, password: password || null})
+    });
     const d = await res.json();
     if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to add contributor.'; return; }
-    msg.className='msg success'; msg.textContent=`${d.name} added successfully.`;
+    msg.className='msg success'; msg.textContent=`Account created for ${d.name}. They can now log in.`;
     document.getElementById('c-name').value = '';
     document.getElementById('c-email').value = '';
+    document.getElementById('c-pass').value = '';
+    document.getElementById('c-pass2').value = '';
     loadContributors(); loadStats();
   } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
 }
@@ -235,7 +251,7 @@ async function awardUnits() {
   } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
 }
 
-function logout() { localStorage.clear(); window.location.href = '/login'; }
+function logout() { localStorage.removeItem('axxspace_admin_token'); window.location.href = '/login'; }
 
 loadConfig(); loadStats(); loadContributors(); loadLedger();
 </script>

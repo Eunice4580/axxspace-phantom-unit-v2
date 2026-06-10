@@ -28,7 +28,7 @@ function doLogout() {
   window.location.href = '/login';
 }
 
-/** POST /api/members/login  — throws Error on failure */
+/** POST /api/members/login  — throws Error on failure, redirects to /home on success */
 async function authLogin(email, password) {
   const res = await fetch('/api/members/login', {
     method: 'POST',
@@ -38,19 +38,7 @@ async function authLogin(email, password) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Login failed.');
   saveSession(data);
-  return data;
-}
-
-/** POST /api/members/register  — throws Error on failure */
-async function authRegister(name, email, password, category) {
-  const res = await fetch('/api/members/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password, category }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Registration failed.');
-  saveSession(data);
+  window.location.href = '/home';
   return data;
 }
 

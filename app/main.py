@@ -1,16 +1,12 @@
 """FastAPI application for the AXXSPACE Phantom Unit Compensation System."""
-
 from __future__ import annotations
-
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-
 from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-
 from app import crud, schemas
 from app.auth import create_admin_token, create_member_token, require_admin, require_member, verify_password
 from app.config import (
@@ -26,32 +22,26 @@ from app.database import get_db, init_db
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
 
-
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     init_db()
     yield
 
-
 app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
-
 
 # --- Meta --------------------------------------------------------------------
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
 
-
 @app.get("/api/config")
 def get_config() -> dict[str, object]:
-    """Public, non-sensitive configuration used to drive the UI forms."""
     return {
         "total_pool_units": TOTAL_POOL_UNITS,
         "eur_per_unit": EUR_PER_UNIT,
         "categories": ELIGIBILITY_CATEGORIES,
         "task_tiers": TASK_TIERS,
     }
-
 
 # --- Auth --------------------------------------------------------------------
 @app.post("/api/auth/login", response_model=schemas.TokenResponse)
@@ -62,12 +52,10 @@ def login(payload: schemas.LoginRequest) -> schemas.TokenResponse:
         )
     return schemas.TokenResponse(token=create_admin_token())
 
-
 # --- Contributors ------------------------------------------------------------
 @app.get("/api/contributors", response_model=list[schemas.ContributorOut])
 def list_contributors(db: Session = Depends(get_db)) -> list[schemas.ContributorOut]:
     return crud.list_contributors(db)
-
 
 @app.post(
     "/api/contributors",
@@ -91,16 +79,44 @@ def create_contributor(
         email=contributor.email,
         category=contributor.category,
         created_at=contributor.created_at,
+        is_approved=contributor.is_approved,
         total_units=0.0,
         total_value_eur=0.0,
     )
 
+# --- Pending approvals -------------------------------------------------------
+@app.get("/api/contributors/pending", response_model=list[schemas.ContributorOut])
+def list_pending(
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> list[schemas.ContributorOut]:
+    return crud.list_pending_contributors(db)
+
+@app.post("/api/contributors/{contributor_id}/approve", response_model=schemas.ContributorOut)
+def approve_contributor(
+    contributor_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.ContributorOut:
+    contributor = crud.approve_contributor(db, contributor_id)
+    if contributor is None:
+        raise HTTPException(status_code=404, detail="Contributor not found.")
+    total = crud.contributor_total_units(db, contributor.id)
+    return schemas.ContributorOut(
+        id=contributor.id,
+        name=contributor.name,
+        email=contributor.email,
+        category=contributor.category,
+        created_at=contributor.created_at,
+        is_approved=contributor.is_approved,
+        total_units=total,
+        total_value_eur=total * EUR_PER_UNIT,
+    )
 
 # --- Ledger ------------------------------------------------------------------
 @app.get("/api/ledger", response_model=list[schemas.LedgerEntryOut])
 def list_ledger(db: Session = Depends(get_db)) -> list[schemas.LedgerEntryOut]:
     return crud.list_ledger(db)
-
 
 @app.post(
     "/api/ledger",
@@ -118,17 +134,14 @@ def award_units(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return crud._entry_to_out(entry)
 
-
 # --- Dashboard ---------------------------------------------------------------
 @app.get("/api/stats", response_model=schemas.PoolStats)
 def stats(db: Session = Depends(get_db)) -> schemas.PoolStats:
     return crud.pool_stats(db)
 
-
 @app.get("/api/growth", response_model=schemas.GrowthResponse)
 def growth(db: Session = Depends(get_db)) -> schemas.GrowthResponse:
     return crud.growth(db)
-
 
 # --- Member auth & profile --------------------------------------------------
 @app.post("/api/members/register", response_model=schemas.MemberTokenResponse, status_code=201)
@@ -136,7 +149,6 @@ def member_register(
     payload: schemas.MemberRegisterRequest,
     db: Session = Depends(get_db),
 ) -> schemas.MemberTokenResponse:
-    from app.config import ELIGIBILITY_CATEGORIES
     if payload.category not in ELIGIBILITY_CATEGORIES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -151,7 +163,6 @@ def member_register(
         token=token, contributor_id=contributor.id, name=contributor.name
     )
 
-
 @app.post("/api/members/login", response_model=schemas.MemberTokenResponse)
 def member_login(
     payload: schemas.MemberLoginRequest,
@@ -161,13 +172,12 @@ def member_login(
     if contributor is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
+            detail="Your account is pending admin approval. You will be notified once approved.",
         )
     token = create_member_token(contributor.id)
     return schemas.MemberTokenResponse(
         token=token, contributor_id=contributor.id, name=contributor.name
     )
-
 
 @app.get("/api/members/me", response_model=schemas.MemberProfileOut)
 def member_me(
@@ -179,26 +189,25 @@ def member_me(
         raise HTTPException(status_code=404, detail="Contributor not found.")
     return profile
 
-
 # --- Static frontend ---------------------------------------------------------
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> RedirectResponse:
+    return RedirectResponse(url="/login", status_code=302)
 
+@app.get("/home")
+def home_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "home.html")
 
 @app.get("/admin")
 def admin_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "admin.html")
 
-
 @app.get("/login")
 def login_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "login.html")
 
-
 @app.get("/member")
 def member_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "member.html")
-
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

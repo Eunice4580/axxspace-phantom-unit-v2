@@ -1,40 +1,33 @@
 """Pydantic request/response schemas."""
-
 from __future__ import annotations
-
 from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # --- Auth --------------------------------------------------------------------
 class LoginRequest(BaseModel):
     password: str
 
-
 class TokenResponse(BaseModel):
     token: str
     token_type: str = "bearer"
-
 
 # --- Contributors ------------------------------------------------------------
 class ContributorCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     email: str | None = Field(default=None, max_length=200)
     category: str = Field(..., min_length=1, max_length=100)
-
+    password: str | None = Field(default=None, min_length=6)  # admin sets initial password
 
 class ContributorOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     name: str
     email: str | None
     category: str
     created_at: datetime
+    is_approved: bool = False
     total_units: float = 0.0
     total_value_eur: float = 0.0
-
 
 # --- Ledger ------------------------------------------------------------------
 class LedgerEntryCreate(BaseModel):
@@ -45,10 +38,8 @@ class LedgerEntryCreate(BaseModel):
     task_reference: str | None = Field(default=None, max_length=100)
     remarks: str | None = None
 
-
 class LedgerEntryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     contributor_id: int
     contributor_name: str
@@ -59,7 +50,6 @@ class LedgerEntryOut(BaseModel):
     approving_reviewer: str
     remarks: str | None
     date_awarded: datetime
-
 
 # --- Stats / dashboard -------------------------------------------------------
 class PoolStats(BaseModel):
@@ -73,22 +63,18 @@ class PoolStats(BaseModel):
     contributor_count: int
     award_count: int
 
-
 class GrowthPoint(BaseModel):
     date: str
     cumulative_units: float
-
 
 class ContributorGrowth(BaseModel):
     contributor_id: int
     name: str
     points: list[GrowthPoint]
 
-
 class GrowthResponse(BaseModel):
     overall: list[GrowthPoint]
     per_contributor: list[ContributorGrowth]
-
 
 # --- Member Auth -------------------------------------------------------------
 class MemberRegisterRequest(BaseModel):
@@ -97,18 +83,15 @@ class MemberRegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
     category: str = Field(..., min_length=1, max_length=100)
 
-
 class MemberLoginRequest(BaseModel):
     email: str
     password: str
-
 
 class MemberTokenResponse(BaseModel):
     token: str
     token_type: str = "bearer"
     contributor_id: int
     name: str
-
 
 class MemberProfileOut(BaseModel):
     id: int

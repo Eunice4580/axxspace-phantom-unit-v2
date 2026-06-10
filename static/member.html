@@ -3,132 +3,455 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AXXSPACE — My Dashboard</title>
+<title>AXXSPACE — My Account</title>
+<meta name="description" content="Your AXXSPACE contributor account — view your units, EUR value, rank, and full ledger history." />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
-    --bg: #0a0a0f; --surface: #111118; --surface2: #16161f;
-    --border: #1e1e2e; --accent: #7c3aed; --accent-glow: rgba(124,58,237,0.2);
-    --text: #e8e8f0; --muted: #6b6b80; --success: #10b981; --gold: #f59e0b;
+    --bg:          #07070e;
+    --surface:     #0f0f1a;
+    --surface2:    #141428;
+    --border:      #1e1e36;
+    --accent:      #7c3aed;
+    --accent2:     #4f46e5;
+    --accent-glow: rgba(124,58,237,0.18);
+    --text:        #eaeaf5;
+    --muted:       #6b6b90;
+    --success:     #10b981;
+    --gold:        #f59e0b;
+    --info:        #38bdf8;
+    --error:       #ef4444;
   }
-  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
-  .logo { font-family: 'Space Mono', monospace; font-size: 1rem; letter-spacing: 0.15em; color: var(--accent); }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%; left: -10%;
+    width: 700px; height: 700px;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.07) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Nav ──────────────────────────────────────────── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(7,7,14,0.88);
+    backdrop-filter: blur(14px);
+    z-index: 100;
+  }
+  .logo { font-family: 'Space Mono', monospace; font-size: 1rem; letter-spacing: 0.18em; color: var(--accent); font-weight: 700; }
   .nav-right { display: flex; align-items: center; gap: 1rem; }
-  .user-badge { font-size: 0.875rem; color: var(--muted); }
-  .btn-sm { padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
-  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
-  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
-  .greeting { margin-bottom: 2rem; }
-  .greeting h1 { font-size: 1.75rem; font-weight: 600; }
-  .greeting p { color: var(--muted); margin-top: 0.25rem; font-size: 0.95rem; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
-  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
-  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.8rem; font-weight: 700; }
-  .stat-val.accent { color: var(--accent); }
+  .nav-user {
+    font-size: 0.85rem; color: var(--muted);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .nav-user::before {
+    content: ''; display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--success); border-radius: 50%;
+    box-shadow: 0 0 6px var(--success);
+  }
+  .btn-ghost {
+    padding: 0.45rem 1rem; background: transparent;
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--muted); font-family: inherit; font-size: 0.85rem;
+    cursor: pointer; transition: border-color 0.2s, color 0.2s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Layout ───────────────────────────────────────── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 2rem 4rem; position: relative; z-index: 1; }
+
+  /* ── Profile header ───────────────────────────────── */
+  .profile-header {
+    display: flex; align-items: center; gap: 2rem;
+    padding: 3rem 0 2.5rem;
+    flex-wrap: wrap;
+  }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 0 28px rgba(124,58,237,0.4);
+  }
+  .profile-info { flex: 1; min-width: 200px; }
+  .profile-name { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+  .profile-meta { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 0.5rem; }
+  .meta-pill {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 20px;
+    border: 1px solid var(--border); color: var(--muted);
+    background: var(--surface);
+    font-family: 'Space Mono', monospace; letter-spacing: 0.04em;
+  }
+  .meta-pill.rank { border-color: rgba(245,158,11,0.4); color: var(--gold); background: rgba(245,158,11,0.07); }
+  .meta-pill.cat  { border-color: rgba(124,58,237,0.35); color: var(--accent); background: var(--accent-glow); }
+
+  /* ── Stats grid ───────────────────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 3rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    padding: 1.6rem 1.75rem;
+    transition: background 0.2s;
+  }
+  .stat-card:hover { background: var(--surface2); }
+  .stat-label {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); margin-bottom: 0.55rem;
+  }
+  .stat-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.9rem; font-weight: 700;
+    color: var(--accent); line-height: 1;
+    margin-bottom: 0.3rem;
+  }
   .stat-val.gold { color: var(--gold); }
-  .stat-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
-  .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .stat-val.info { color: var(--info); }
+  .stat-val.success { color: var(--success); }
+  .stat-sub { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── Section heading ──────────────────────────────── */
+  .section-hd {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .section-hd h2 { font-size: 1rem; font-weight: 700; }
+  .section-hd::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Growth chart ─────────────────────────────────── */
+  .chart-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+  }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+  .chart-title { font-size: 0.95rem; font-weight: 700; }
+  .chart-sub  { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+  #memberChart { max-height: 280px; }
+  .chart-empty { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.9rem; }
+  .chart-empty span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+
+  /* ── Ledger table ─────────────────────────────────── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-  th { text-align: left; padding: 0.6rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
-  td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th {
+    text-align: left; padding: 0.75rem 1.1rem;
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  td { padding: 0.9rem 1.1rem; border-bottom: 1px solid rgba(30,30,54,0.6); vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); }
-  .rank-badge { font-family: 'Space Mono', monospace; font-size: 0.75rem; background: rgba(245,158,11,0.1); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; }
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; }
-  .empty { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
-  .loading { color: var(--muted); padding: 3rem; text-align: center; }
+  tr:hover td { background: rgba(124,58,237,0.04); }
+  .badge {
+    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 5px;
+    font-size: 0.72rem; font-weight: 500; font-family: 'Space Mono', monospace;
+    background: var(--accent-glow); color: var(--accent);
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+
+  /* Loading / empty states */
+  .loading-state { padding: 3.5rem; text-align: center; color: var(--muted); }
+  .loading-state .spinner {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state { padding: 3.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+  .empty-state span { font-size: 2rem; display: block; margin-bottom: 0.75rem; }
+
+  @media (max-width: 600px) {
+    nav { padding: 1rem 1.25rem; }
+    .page { padding: 0 1rem 3rem; }
+    .profile-header { padding: 2rem 0 1.5rem; gap: 1.25rem; }
+    .stat-val { font-size: 1.5rem; }
+    th, td { padding: 0.65rem 0.75rem; }
+  }
 </style>
 </head>
 <body>
+
 <nav>
   <div class="logo">AXXSPACE</div>
   <div class="nav-right">
-    <a href="/home" class="btn-sm" style="color:var(--muted);text-decoration:none">← Home</a>
-    <span class="user-badge" id="nav-name">—</span>
-    <button class="btn-sm" onclick="logout()">Sign out</button>
+    <span class="nav-user" id="nav-name">Loading…</span>
+    <a href="/home" class="btn-ghost" id="home-link">← Home</a>
+    <button class="btn-ghost" onclick="logout()" id="signout-btn">Sign out</button>
   </div>
 </nav>
-<main>
-  <div class="greeting">
-    <h1 id="greeting-name">Loading…</h1>
-    <p id="greeting-sub">Your contribution summary</p>
+
+<div class="page">
+
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="avatar" id="avatar-initial">?</div>
+    <div class="profile-info">
+      <div class="profile-name" id="profile-name">Loading…</div>
+      <div style="color:var(--muted);font-size:0.9rem;margin-top:0.2rem" id="profile-email">—</div>
+      <div class="profile-meta">
+        <span class="meta-pill cat" id="profile-cat">—</span>
+        <span class="meta-pill rank" id="profile-rank">—</span>
+        <span class="meta-pill" id="profile-joined">—</span>
+      </div>
+    </div>
   </div>
 
-  <div class="stats-grid">
+  <!-- Stats bar -->
+  <div class="stats-grid" id="stats-grid">
     <div class="stat-card">
       <div class="stat-label">Total Units</div>
-      <div class="stat-val accent" id="stat-units">—</div>
+      <div class="stat-val" id="stat-units">—</div>
       <div class="stat-sub">Contribution units earned</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Total Value</div>
+      <div class="stat-label">EUR Value</div>
       <div class="stat-val gold" id="stat-eur">—</div>
-      <div class="stat-sub">EUR equivalent</div>
+      <div class="stat-sub">Reference monetary value</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Category</div>
-      <div class="stat-val" id="stat-cat" style="font-size:1.1rem;margin-top:0.3rem">—</div>
-      <div class="stat-sub" id="stat-rank">—</div>
+      <div class="stat-label">Leaderboard Rank</div>
+      <div class="stat-val info" id="stat-rank">—</div>
+      <div class="stat-sub">Among all contributors</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Awards</div>
-      <div class="stat-val" id="stat-awards">—</div>
-      <div class="stat-sub">Total ledger entries</div>
+      <div class="stat-label">Total Awards</div>
+      <div class="stat-val success" id="stat-awards">—</div>
+      <div class="stat-sub">Ledger entries recorded</div>
     </div>
   </div>
 
-  <div class="section-title">Ledger History</div>
-  <div class="table-wrap">
-    <div class="loading" id="ledger-loading">Loading ledger…</div>
-    <table id="ledger-table" style="display:none">
-      <thead><tr>
-        <th>Date</th><th>Task</th><th>Ref</th><th>Units</th><th>Value (EUR)</th><th>Reviewer</th>
-      </tr></thead>
-      <tbody id="ledger-body"></tbody>
-    </table>
-    <div class="empty" id="ledger-empty" style="display:none">No ledger entries yet.</div>
-  </div>
-</main>
+  <!-- Growth chart -->
+  <section style="margin-bottom:3rem">
+    <div class="section-hd"><h2>📈 My Unit Growth</h2></div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Cumulative Units Over Time</div>
+          <div class="chart-sub">Your personal contribution trajectory</div>
+        </div>
+      </div>
+      <canvas id="memberChart"></canvas>
+      <div class="chart-empty" id="chart-empty" style="display:none">
+        <span>📊</span>No unit awards yet. Your chart will appear once the admin records your first award.
+      </div>
+    </div>
+  </section>
+
+  <!-- Ledger history -->
+  <section>
+    <div class="section-hd"><h2>📋 Ledger History</h2></div>
+    <div class="table-wrap">
+      <div class="loading-state" id="ledger-loading">
+        <div class="spinner"></div>
+        Loading your ledger…
+      </div>
+      <table id="ledger-table" style="display:none">
+        <thead><tr>
+          <th>Date</th>
+          <th>Task Description</th>
+          <th>Reference</th>
+          <th>Units</th>
+          <th>EUR Value</th>
+          <th>Reviewer</th>
+        </tr></thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+      <div class="empty-state" id="ledger-empty" style="display:none">
+        <span>📭</span>No ledger entries yet. Units appear here once the admin records your first award.
+      </div>
+    </div>
+  </section>
+
+</div>
 
 <script>
-const token = localStorage.getItem('member_token');
+// ── Token keys (must match login.html) ─────────────────────────────
+const TOKEN_KEY = 'axxspace_member_token';
+const NAME_KEY  = 'axxspace_member_name';
+const ID_KEY    = 'axxspace_member_id';
+
+const token = localStorage.getItem(TOKEN_KEY);
 if (!token) window.location.href = '/login';
 
-async function load() {
-  try {
-    const res = await fetch('/api/members/me', { headers: { Authorization: 'Bearer '+token } });
-    if (res.status === 401) { logout(); return; }
-    const d = await res.json();
-    document.getElementById('nav-name').textContent = d.name;
-    document.getElementById('greeting-name').textContent = 'Hello, ' + d.name;
-    document.getElementById('greeting-sub').textContent = d.category + ' contributor';
-    document.getElementById('stat-units').textContent = d.total_units.toFixed(2);
-    document.getElementById('stat-eur').textContent = '€' + d.total_value_eur.toFixed(2);
-    document.getElementById('stat-cat').textContent = d.category;
-    document.getElementById('stat-rank').textContent = 'Rank #' + d.rank + ' on leaderboard';
-    document.getElementById('stat-awards').textContent = d.ledger.length;
-
-    document.getElementById('ledger-loading').style.display = 'none';
-    if (d.ledger.length === 0) { document.getElementById('ledger-empty').style.display = 'block'; return; }
-    document.getElementById('ledger-table').style.display = 'table';
-    const tbody = document.getElementById('ledger-body');
-    tbody.innerHTML = d.ledger.map(e => `
-      <tr>
-        <td style="color:var(--muted);white-space:nowrap">${new Date(e.date_awarded).toLocaleDateString()}</td>
-        <td>${e.task_description}</td>
-        <td>${e.task_reference ? '<span class="badge">'+e.task_reference+'</span>' : '<span style="color:var(--muted)">—</span>'}</td>
-        <td style="font-family:'Space Mono',monospace;color:var(--accent)">${e.units_awarded.toFixed(2)}</td>
-        <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
-        <td style="color:var(--muted)">${e.approving_reviewer}</td>
-      </tr>`).join('');
-  } catch { document.getElementById('ledger-loading').textContent = 'Failed to load profile.'; }
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(NAME_KEY);
+  localStorage.removeItem(ID_KEY);
+  window.location.href = '/login';
 }
 
-function logout() { localStorage.clear(); window.location.href = '/login'; }
+// ── Chart instance ─────────────────────────────────────────────────
+let chartInstance = null;
+
+function buildChart(points) {
+  const canvas  = document.getElementById('memberChart');
+  const emptyEl = document.getElementById('chart-empty');
+
+  if (!points || points.length === 0) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  canvas.style.display = '';
+  emptyEl.style.display = 'none';
+
+  const labels = points.map(p => p.date);
+  const values = points.map(p => p.cumulative_units);
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Cumulative Units',
+        data: values,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.10)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#7c3aed',
+        pointRadius: 4,
+        pointHoverRadius: 8,
+        fill: true,
+        tension: 0.4,
+      }],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          borderColor: '#2e2e4e',
+          borderWidth: 1,
+          titleColor: '#eaeaf5',
+          bodyColor: '#9090b0',
+          padding: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toFixed(2)} units`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#6b6b90', font: { size: 11, family: 'Space Grotesk' } },
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#6b6b90',
+            font: { size: 11 },
+            callback: v => v.toFixed(1),
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+        },
+      },
+    },
+  });
+}
+
+// ── Load member profile ────────────────────────────────────────────
+async function load() {
+  try {
+    const res = await fetch('/api/members/me', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+
+    if (res.status === 401) { logout(); return; }
+    if (!res.ok) throw new Error('Failed to load profile');
+
+    const d = await res.json();
+
+    // Nav
+    document.getElementById('nav-name').textContent = d.name;
+
+    // Avatar initial
+    document.getElementById('avatar-initial').textContent = d.name.charAt(0).toUpperCase();
+
+    // Profile header
+    document.getElementById('profile-name').textContent  = d.name;
+    document.getElementById('profile-email').textContent = d.email || '—';
+    document.getElementById('profile-cat').textContent   = d.category;
+    document.getElementById('profile-rank').textContent  = `Rank #${d.rank}`;
+
+    const joined = new Date(d.created_at);
+    document.getElementById('profile-joined').textContent = `Joined ${joined.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}`;
+
+    // Stats
+    document.getElementById('stat-units').textContent  = d.total_units.toFixed(2);
+    document.getElementById('stat-eur').textContent    = '€' + d.total_value_eur.toFixed(2);
+    document.getElementById('stat-rank').textContent   = '#' + d.rank;
+    document.getElementById('stat-awards').textContent = d.ledger.length;
+
+    // Chart
+    buildChart(d.growth_points);
+
+    // Ledger
+    document.getElementById('ledger-loading').style.display = 'none';
+
+    if (d.ledger.length === 0) {
+      document.getElementById('ledger-empty').style.display = 'block';
+    } else {
+      document.getElementById('ledger-table').style.display = 'table';
+      document.getElementById('ledger-body').innerHTML = d.ledger.map(e => `
+        <tr>
+          <td style="color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace;font-size:0.8rem">
+            ${new Date(e.date_awarded).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </td>
+          <td style="max-width:280px">${e.task_description}</td>
+          <td>${e.task_reference ? `<span class="badge">${e.task_reference}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+          <td style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">${e.units_awarded.toFixed(2)}</td>
+          <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
+          <td style="color:var(--muted)">${e.approving_reviewer}</td>
+        </tr>`).join('');
+    }
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('ledger-loading').innerHTML = '<div style="color:var(--error)">Failed to load your profile. Please try refreshing.</div>';
+  }
+}
+
 load();
 </script>
 </body>

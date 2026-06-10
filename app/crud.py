@@ -217,7 +217,7 @@ def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.
         existing.name = data.name.strip()
         existing.category = data.category.strip()
         existing.password_hash = hash_password(data.password)
-        existing.is_approved = False  # Requires admin approval
+        existing.is_approved = True  # Auto-approved on registration
         db.commit()
         db.refresh(existing)
         return existing
@@ -226,7 +226,7 @@ def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.
         email=data.email.strip(),
         category=data.category.strip(),
         password_hash=hash_password(data.password),
-        is_approved=False,  # Requires admin approval
+        is_approved=True,  # Auto-approved on registration
     )
     db.add(contributor)
     db.commit()
@@ -239,8 +239,6 @@ def authenticate_member(db: Session, email: str, password: str) -> models.Contri
         return None
     if not verify_member_password(password, contributor.password_hash):
         return None
-    if not contributor.is_approved:
-        return None  # Block unapproved members
     return contributor
 
 def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfileOut | None:

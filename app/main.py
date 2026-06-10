@@ -172,7 +172,7 @@ def member_login(
     if contributor is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Your account is pending admin approval. You will be notified once approved.",
+            detail="Incorrect email or password.",
         )
     token = create_member_token(contributor.id)
     return schemas.MemberTokenResponse(

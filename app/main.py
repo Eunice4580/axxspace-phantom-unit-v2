@@ -34,16 +34,6 @@ app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=li
 def health() -> dict[str, str]:
     return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
 
-# TEMPORARY DEBUG — remove after diagnosis
-@app.get("/api/debug-auth")
-def debug_auth() -> dict[str, str]:
-    pw = settings.admin_password
-    return {
-        "password_length": str(len(pw)),
-        "password_preview": pw[:3] + "*" * max(0, len(pw) - 3),
-        "database_url_prefix": settings.database_url[:20],
-    }
-
 @app.get("/api/config")
 def get_config() -> dict[str, object]:
     return {

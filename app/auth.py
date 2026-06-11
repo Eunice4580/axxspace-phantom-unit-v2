@@ -78,7 +78,9 @@ def require_admin(
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        _signer.unsign(credentials.credentials, max_age=settings.token_max_age_seconds)
+        subject = _signer.unsign(
+            credentials.credentials, max_age=settings.token_max_age_seconds
+        ).decode()
     except SignatureExpired as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,6 +91,11 @@ def require_admin(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token.",
         ) from exc
+    if subject != _ADMIN_SUBJECT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This token is not an admin token.",
+        )
     return _ADMIN_SUBJECT
 
 

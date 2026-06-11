@@ -156,6 +156,17 @@ const token = localStorage.getItem('axxspace_admin_token');
 if (!token) window.location.href = '/login';
 const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer '+token };
 
+// Auto-redirect to login on any 401 / 403
+function handleAuthError(res) {
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('axxspace_admin_token');
+    alert('Your session has expired or is invalid. Please log in again.');
+    window.location.href = '/login';
+    return true;
+  }
+  return false;
+}
+
 function showPanel(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (name==='contributors'&&i===0)||(name==='ledger'&&i===1)));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -264,6 +275,7 @@ async function deleteContributor(id, name) {
   if (!confirm(`Delete contributor "${name}" and ALL their ledger entries? This cannot be undone.`)) return;
   try {
     const res = await fetch(`/api/contributors/${id}`, { method:'DELETE', headers });
+    if (handleAuthError(res)) return;
     if (res.status === 204) {
       document.getElementById(`ctr-${id}`)?.remove();
       loadStats(); loadLedger(); loadContributors();
@@ -280,12 +292,12 @@ let _lastDeletedEntry = null;
 async function deleteLedgerEntry(id) {
   if (!confirm('Delete this ledger entry? You can undo immediately after.')) return;
   try {
-    // Capture the row data first
     const res0 = await fetch('/api/ledger');
     const all = await res0.json();
     _lastDeletedEntry = all.find(e => e.id === id) || null;
 
     const res = await fetch(`/api/ledger/${id}`, { method:'DELETE', headers });
+    if (handleAuthError(res)) return;
     if (res.status === 204) {
       document.getElementById(`led-${id}`)?.remove();
       document.getElementById('undo-btn').style.display = _lastDeletedEntry ? '' : 'none';

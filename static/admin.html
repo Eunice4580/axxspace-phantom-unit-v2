@@ -36,6 +36,12 @@
   textarea { resize: vertical; min-height: 70px; }
   .btn { width: 100%; padding: 0.75rem; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 0.25rem; }
   .btn:hover { opacity: 0.88; } .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
+  .btn-row .btn { flex: 1; margin-top: 0; }
+  .btn-clear { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-clear:hover { border-color: var(--error); color: var(--error); opacity: 1; }
+  .btn-update { background: var(--gold); color: #0a0a0f; }
+  .btn-update:hover { opacity: 0.85; }
   .msg { padding: 0.65rem 0.9rem; border-radius: 8px; font-size: 0.825rem; margin-top: 0.75rem; display: none; }
   .msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--error); display: block; }
   .msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--success); display: block; }
@@ -45,7 +51,7 @@
   th { text-align: left; padding: 0.6rem 0.9rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
   td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; overflow-x: auto; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; overflow-x: auto; }
   .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 500; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); }
   .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 0.5rem; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s; }
@@ -54,6 +60,13 @@
   .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .panel { display: none; } .panel.active { display: block; }
   .empty { padding: 2.5rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
+  .btn-delete { padding: 0.3rem 0.65rem; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 5px; color: var(--error); font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-delete:hover { background: rgba(239,68,68,0.25); border-color: var(--error); }
+  .btn-undo { padding: 0.4rem 1rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; color: var(--gold); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+  .btn-undo:hover { background: rgba(245,158,11,0.2); }
+  .table-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 0.6rem; min-height: 2rem; }
+  .hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
+  input.invalid { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
 </style>
 </head>
 <body>
@@ -81,7 +94,11 @@
     <div class="card">
       <h2>Add Contributor</h2>
       <div class="form-group"><label>Full Name</label><input type="text" id="c-name" placeholder="Jane Doe" /></div>
-      <div class="form-group"><label>Email (optional)</label><input type="email" id="c-email" placeholder="jane@example.com" /></div>
+      <div class="form-group">
+        <label>Gmail Address <span style="color:var(--error)">*</span></label>
+        <input type="email" id="c-email" placeholder="user@gmail.com" required />
+        <div class="hint">Must be a valid Gmail address (e.g. user@gmail.com)</div>
+      </div>
       <div class="form-group"><label>Category</label><select id="c-cat"><option value="">Loading…</option></select></div>
       <div class="form-group"><label>Login Password</label><input type="password" id="c-pass" placeholder="••••••••" /></div>
       <div class="form-group"><label>Confirm Password</label><input type="password" id="c-pass2" placeholder="••••••••" /></div>
@@ -97,7 +114,11 @@
       <div class="form-group"><label>Approving Reviewer</label><input type="text" id="a-reviewer" placeholder="Reviewer name" /></div>
       <div class="form-group"><label>Task Reference (optional)</label><input type="text" id="a-ref" placeholder="TASK-001" /></div>
       <div class="form-group"><label>Remarks (optional)</label><textarea id="a-remarks" placeholder="Any additional notes…"></textarea></div>
-      <button class="btn" onclick="awardUnits()">Award Units</button>
+      <input type="hidden" id="a-edit-id" value="" />
+      <div class="btn-row">
+        <button class="btn btn-clear" onclick="clearAwardForm()">Clear</button>
+        <button class="btn" id="a-submit-btn" onclick="awardUnits()">Award Units</button>
+      </div>
       <div class="msg" id="a-msg"></div>
     </div>
   </div>
@@ -111,17 +132,20 @@
   <div class="panel active" id="panel-contributors">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Category</th><th>Units</th><th>Value (EUR)</th><th>Since</th></tr></thead>
-        <tbody id="contrib-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Category</th><th>Units</th><th>Value (EUR)</th><th>Since</th><th>Actions</th></tr></thead>
+        <tbody id="contrib-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
 
   <div class="panel" id="panel-ledger">
+    <div class="table-toolbar">
+      <button class="btn-undo" id="undo-btn" onclick="undoLastDelete()" style="display:none">↩ Undo Last Delete</button>
+    </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref</th><th>Units</th><th>EUR</th><th>Reviewer</th></tr></thead>
-        <tbody id="ledger-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref</th><th>Units</th><th>EUR</th><th>Reviewer</th><th>Actions</th></tr></thead>
+        <tbody id="ledger-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -160,13 +184,12 @@ async function loadStats() {
 async function loadContributors() {
   const res = await fetch('/api/contributors');
   const data = await res.json();
-  // populate award dropdown
   const sel = document.getElementById('a-contrib');
   sel.innerHTML = '<option value="">Select contributor…</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   const tbody = document.getElementById('contrib-body');
-  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No contributors yet.</td></tr>'; return; }
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No contributors yet.</td></tr>'; return; }
   tbody.innerHTML = data.map((c,i) => `
-    <tr>
+    <tr id="ctr-${c.id}">
       <td style="color:var(--muted);font-family:'Space Mono',monospace">${i+1}</td>
       <td style="font-weight:500">${c.name}</td>
       <td style="color:var(--muted)">${c.email||'—'}</td>
@@ -174,6 +197,7 @@ async function loadContributors() {
       <td style="font-family:'Space Mono',monospace;color:var(--accent)">${c.total_units.toFixed(2)}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${c.total_value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</td>
+      <td><button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g,"\'")}')" title="Delete contributor">🗑 Delete</button></td>
     </tr>`).join('');
 }
 
@@ -181,9 +205,9 @@ async function loadLedger() {
   const res = await fetch('/api/ledger');
   const data = await res.json();
   const tbody = document.getElementById('ledger-body');
-  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No ledger entries yet.</td></tr>'; return; }
-  tbody.innerHTML = data.slice().reverse().map(e => `
-    <tr>
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No ledger entries yet.</td></tr>'; return; }
+  tbody.innerHTML = data.map(e => `
+    <tr id="led-${e.id}">
       <td style="color:var(--muted);white-space:nowrap">${new Date(e.date_awarded).toLocaleDateString()}</td>
       <td style="font-weight:500">${e.contributor_name}</td>
       <td style="max-width:200px">${e.task_description}</td>
@@ -191,19 +215,29 @@ async function loadLedger() {
       <td style="font-family:'Space Mono',monospace;color:var(--accent)">${e.units_awarded.toFixed(2)}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${e.approving_reviewer}</td>
+      <td><button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry">🗑 Delete</button></td>
     </tr>`).join('');
+}
+
+// --- Gmail validation --------------------------------------------------------
+function isValidGmail(v) {
+  return /^[a-zA-Z0-9._%+\-]+@gmail\.com$/i.test(v.trim());
 }
 
 async function addContributor() {
   const msg = document.getElementById('c-msg');
   msg.className = 'msg';
+  const emailEl = document.getElementById('c-email');
   const name = document.getElementById('c-name').value.trim();
-  const email = document.getElementById('c-email').value.trim() || null;
+  const email = emailEl.value.trim();
   const category = document.getElementById('c-cat').value;
   const password = document.getElementById('c-pass').value;
   const password2 = document.getElementById('c-pass2').value;
 
+  emailEl.classList.remove('invalid');
   if (!name || !category) { msg.className='msg error'; msg.textContent='Name and category are required.'; return; }
+  if (!email) { msg.className='msg error'; msg.textContent='Gmail address is required.'; emailEl.classList.add('invalid'); return; }
+  if (!isValidGmail(email)) { msg.className='msg error'; msg.textContent='Email must be a valid Gmail address (e.g. user@gmail.com).'; emailEl.classList.add('invalid'); return; }
   if (password) {
     if (password.length < 6) { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
     if (password !== password2) { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
@@ -211,19 +245,97 @@ async function addContributor() {
 
   try {
     const res = await fetch('/api/contributors', {
-      method:'POST',
-      headers,
-      body: JSON.stringify({name, email, category, password: password || null})
+      method:'POST', headers,
+      body: JSON.stringify({name, email: email.toLowerCase(), category, password: password || null})
     });
     const d = await res.json();
     if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to add contributor.'; return; }
     msg.className='msg success'; msg.textContent=`Account created for ${d.name}. They can now log in.`;
     document.getElementById('c-name').value = '';
-    document.getElementById('c-email').value = '';
+    emailEl.value = '';
     document.getElementById('c-pass').value = '';
     document.getElementById('c-pass2').value = '';
     loadContributors(); loadStats();
   } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
+}
+
+// --- Delete contributor ------------------------------------------------------
+async function deleteContributor(id, name) {
+  if (!confirm(`Delete contributor "${name}" and ALL their ledger entries? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/api/contributors/${id}`, { method:'DELETE', headers });
+    if (res.status === 204) {
+      document.getElementById(`ctr-${id}`)?.remove();
+      loadStats(); loadLedger(); loadContributors();
+    } else {
+      const d = await res.json();
+      alert(d.detail || 'Failed to delete contributor.');
+    }
+  } catch { alert('Connection error.'); }
+}
+
+// --- Delete & undo ledger entry ----------------------------------------------
+let _lastDeletedEntry = null;
+
+async function deleteLedgerEntry(id) {
+  if (!confirm('Delete this ledger entry? You can undo immediately after.')) return;
+  try {
+    // Capture the row data first
+    const res0 = await fetch('/api/ledger');
+    const all = await res0.json();
+    _lastDeletedEntry = all.find(e => e.id === id) || null;
+
+    const res = await fetch(`/api/ledger/${id}`, { method:'DELETE', headers });
+    if (res.status === 204) {
+      document.getElementById(`led-${id}`)?.remove();
+      document.getElementById('undo-btn').style.display = _lastDeletedEntry ? '' : 'none';
+      loadStats(); loadContributors();
+    } else {
+      const d = await res.json();
+      alert(d.detail || 'Failed to delete ledger entry.');
+      _lastDeletedEntry = null;
+    }
+  } catch { alert('Connection error.'); }
+}
+
+async function undoLastDelete() {
+  if (!_lastDeletedEntry) return;
+  const e = _lastDeletedEntry;
+  try {
+    const res = await fetch('/api/ledger', {
+      method:'POST', headers,
+      body: JSON.stringify({
+        contributor_id: e.contributor_id,
+        task_description: e.task_description,
+        units_awarded: e.units_awarded,
+        approving_reviewer: e.approving_reviewer,
+        task_reference: e.task_reference || null,
+        remarks: e.remarks || null
+      })
+    });
+    if (res.ok) {
+      _lastDeletedEntry = null;
+      document.getElementById('undo-btn').style.display = 'none';
+      loadStats(); loadLedger(); loadContributors();
+    } else {
+      const d = await res.json();
+      alert(d.detail || 'Undo failed.');
+    }
+  } catch { alert('Connection error.'); }
+}
+
+// --- Clear Award Units form --------------------------------------------------
+function clearAwardForm() {
+  document.getElementById('a-contrib').value = '';
+  document.getElementById('a-task').value = '';
+  document.getElementById('a-units').value = '';
+  document.getElementById('a-reviewer').value = '';
+  document.getElementById('a-ref').value = '';
+  document.getElementById('a-remarks').value = '';
+  document.getElementById('a-edit-id').value = '';
+  document.getElementById('a-submit-btn').textContent = 'Award Units';
+  const msg = document.getElementById('a-msg');
+  msg.className = 'msg'; msg.textContent = '';
 }
 
 async function awardUnits() {

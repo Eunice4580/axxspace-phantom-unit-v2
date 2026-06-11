@@ -111,6 +111,15 @@ def approve_contributor(db: Session, contributor_id: int) -> models.Contributor 
     db.refresh(contributor)
     return contributor
 
+def delete_contributor(db: Session, contributor_id: int) -> bool:
+    """Delete a contributor and all their ledger entries."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return False
+    db.delete(contributor)
+    db.commit()
+    return True
+
 # --- Ledger / awards ---------------------------------------------------------
 def award_units(db: Session, data: schemas.LedgerEntryCreate) -> models.LedgerEntry:
     units = validate_units(data.units_awarded)
@@ -148,6 +157,15 @@ def _entry_to_out(entry: models.LedgerEntry) -> schemas.LedgerEntryOut:
         remarks=entry.remarks,
         date_awarded=entry.date_awarded,
     )
+
+def delete_ledger_entry(db: Session, entry_id: int) -> bool:
+    """Delete a single ledger entry by ID."""
+    entry = db.get(models.LedgerEntry, entry_id)
+    if entry is None:
+        return False
+    db.delete(entry)
+    db.commit()
+    return True
 
 def list_ledger(db: Session) -> list[schemas.LedgerEntryOut]:
     entries = db.execute(

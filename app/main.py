@@ -84,6 +84,15 @@ def create_contributor(
         total_value_eur=0.0,
     )
 
+@app.delete("/api/contributors/{contributor_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_contributor(
+    contributor_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> None:
+    if not crud.delete_contributor(db, contributor_id):
+        raise HTTPException(status_code=404, detail="Contributor not found.")
+
 # --- Pending approvals -------------------------------------------------------
 @app.get("/api/contributors/pending", response_model=list[schemas.ContributorOut])
 def list_pending(
@@ -133,6 +142,15 @@ def award_units(
     except BusinessRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return crud._entry_to_out(entry)
+
+@app.delete("/api/ledger/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_ledger_entry(
+    entry_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> None:
+    if not crud.delete_ledger_entry(db, entry_id):
+        raise HTTPException(status_code=404, detail="Ledger entry not found.")
 
 # --- Dashboard ---------------------------------------------------------------
 @app.get("/api/stats", response_model=schemas.PoolStats)

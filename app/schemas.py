@@ -1,7 +1,8 @@
 """Pydantic request/response schemas."""
 from __future__ import annotations
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+import re
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # --- Auth --------------------------------------------------------------------
 class LoginRequest(BaseModel):
@@ -14,9 +15,17 @@ class TokenResponse(BaseModel):
 # --- Contributors ------------------------------------------------------------
 class ContributorCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    email: str | None = Field(default=None, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200, description="Must be a valid Gmail address (e.g. user@gmail.com)")
     category: str = Field(..., min_length=1, max_length=100)
     password: str | None = Field(default=None, min_length=6)  # admin sets initial password
+
+    @field_validator("email")
+    @classmethod
+    def validate_gmail(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.fullmatch(r"[a-zA-Z0-9._%+\-]+@gmail\.com", v):
+            raise ValueError("Email must be a valid Gmail address (e.g. user@gmail.com).")
+        return v
 
 class ContributorOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

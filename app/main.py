@@ -211,8 +211,8 @@ def member_me(
 
 # --- Static frontend ---------------------------------------------------------
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> RedirectResponse:
+    return RedirectResponse(url="/login", status_code=302)
 
 @app.get("/home")
 def home_page() -> FileResponse:

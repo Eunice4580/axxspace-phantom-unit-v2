@@ -113,3 +113,47 @@ class MemberProfileOut(BaseModel):
     rank: int
     ledger: list[LedgerEntryOut]
     growth_points: list[GrowthPoint]
+
+
+# --- Chat --------------------------------------------------------------------
+
+class ChatRoomCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    invitee_ids: list[int] = Field(default_factory=list)  # contributor IDs to invite
+
+
+class ChatRoomOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    created_by_id: int | None
+    is_admin_room: bool
+    created_at: datetime
+    member_ids: list[int] = []
+
+
+class ChatMessageCreate(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000)
+
+
+class ChatMessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    room_id: int
+    sender_id: int | None
+    sender_name: str
+    body: str
+    sent_at: datetime
+
+
+# --- Notifications -----------------------------------------------------------
+
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    kind: str
+    title: str
+    body: str
+    is_read: bool
+    ref_id: int | None
+    created_at: datetime

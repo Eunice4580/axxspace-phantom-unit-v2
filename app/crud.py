@@ -299,3 +299,312 @@ def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfil
         ledger=ledger,
         growth_points=growth_points,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Notifications
+# ─────────────────────────────────────────────────────────────────────────────
+
+def create_notification(
+    db: Session,
+    *,
+    contributor_id: int | None,   # None → admin notification
+    kind: str,
+    title: str,
+    body: str,
+    ref_id: int | None = None,
+) -> models.Notification:
+    n = models.Notification(
+        contributor_id=contributor_id,
+        kind=kind,
+        title=title,
+        body=body,
+        ref_id=ref_id,
+    )
+    db.add(n)
+    db.commit()
+    db.refresh(n)
+    return n
+
+
+def list_notifications(
+    db: Session, contributor_id: int | None
+) -> list[models.Notification]:
+    """Return notifications for a member (or admin when contributor_id is None)."""
+    from sqlalchemy import select as _sel
+    if contributor_id is None:
+        stmt = (
+            _sel(models.Notification)
+            .where(models.Notification.contributor_id.is_(None))
+            .order_by(models.Notification.created_at.desc())
+            .limit(100)
+        )
+    else:
+        stmt = (
+            _sel(models.Notification)
+            .where(models.Notification.contributor_id == contributor_id)
+            .order_by(models.Notification.created_at.desc())
+            .limit(100)
+        )
+    return list(db.execute(stmt).scalars().all())
+
+
+def mark_notification_read(
+    db: Session, notification_id: int, contributor_id: int | None
+) -> bool:
+    n = db.get(models.Notification, notification_id)
+    if n is None or n.contributor_id != contributor_id:
+        return False
+    n.is_read = True
+    db.commit()
+    return True
+
+
+def mark_all_notifications_read(db: Session, contributor_id: int | None) -> None:
+    from sqlalchemy import update as _upd
+    if contributor_id is None:
+        stmt = (
+            _upd(models.Notification)
+            .where(models.Notification.contributor_id.is_(None))
+            .values(is_read=True)
+        )
+    else:
+        stmt = (
+            _upd(models.Notification)
+            .where(models.Notification.contributor_id == contributor_id)
+            .values(is_read=True)
+        )
+    db.execute(stmt)
+    db.commit()
+
+
+def unread_notification_count(db: Session, contributor_id: int | None) -> int:
+    from sqlalchemy import select as _sel
+    if contributor_id is None:
+        stmt = _sel(func.count(models.Notification.id)).where(
+            models.Notification.contributor_id.is_(None),
+            models.Notification.is_read == False,  # noqa: E712
+        )
+    else:
+        stmt = _sel(func.count(models.Notification.id)).where(
+            models.Notification.contributor_id == contributor_id,
+            models.Notification.is_read == False,  # noqa: E712
+        )
+    return int(db.execute(stmt).scalar_one())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Chat rooms & messages
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _room_to_out(room: models.ChatRoom) -> schemas.ChatRoomOut:
+    return schemas.ChatRoomOut(
+        id=room.id,
+        name=room.name,
+        created_by_id=room.created_by_id,
+        is_admin_room=room.is_admin_room,
+        created_at=room.created_at,
+        member_ids=[m.contributor_id for m in room.members],
+    )
+
+
+def create_chat_room(
+    db: Session,
+    name: str,
+    creator_contributor_id: int | None,   # None = admin
+    is_admin_room: bool,
+    invitee_ids: list[int],
+) -> models.ChatRoom:
+    """Create a room, add creator + invitees as members, and send invitations."""
+    room = models.ChatRoom(
+        name=name,
+        created_by_id=creator_contributor_id,
+        is_admin_room=is_admin_room,
+    )
+    db.add(room)
+    db.flush()  # get room.id before commit
+
+    # Collect unique member IDs: creator (if member) + invitees
+    member_set: set[int] = set(invitee_ids)
+    if creator_contributor_id is not None:
+        member_set.add(creator_contributor_id)
+
+    for cid in member_set:
+        db.add(models.ChatRoomMember(room_id=room.id, contributor_id=cid))
+
+    db.commit()
+    db.refresh(room)
+
+    # Determine creator display name
+    if creator_contributor_id is not None:
+        creator = get_contributor(db, creator_contributor_id)
+        creator_name = creator.name if creator else "A member"
+    else:
+        creator_name = "Admin"
+
+    # Notify invitees (exclude the creator)
+    notify_ids = [i for i in member_set if i != creator_contributor_id]
+    for cid in notify_ids:
+        create_notification(
+            db,
+            contributor_id=cid,
+            kind="chat_invite",
+            title=f"You've been invited to \"{name}\"",
+            body=f"{creator_name} invited you to join the chat room \"{name}\".",
+            ref_id=room.id,
+        )
+
+    # Notify admin when a member creates a room
+    if creator_contributor_id is not None:
+        create_notification(
+            db,
+            contributor_id=None,   # admin notification
+            kind="chat_invite",
+            title=f"New chat room: \"{name}\"",
+            body=f"{creator_name} created a new chat room and invited {len(notify_ids)} member(s).",
+            ref_id=room.id,
+        )
+
+    return room
+
+
+def list_rooms_for_member(db: Session, contributor_id: int) -> list[schemas.ChatRoomOut]:
+    from sqlalchemy import select as _sel
+    stmt = (
+        _sel(models.ChatRoom)
+        .join(models.ChatRoomMember, models.ChatRoomMember.room_id == models.ChatRoom.id)
+        .where(models.ChatRoomMember.contributor_id == contributor_id)
+        .order_by(models.ChatRoom.created_at.desc())
+    )
+    rooms = db.execute(stmt).scalars().all()
+    return [_room_to_out(r) for r in rooms]
+
+
+def list_all_rooms(db: Session) -> list[schemas.ChatRoomOut]:
+    from sqlalchemy import select as _sel
+    rooms = db.execute(
+        _sel(models.ChatRoom).order_by(models.ChatRoom.created_at.desc())
+    ).scalars().all()
+    return [_room_to_out(r) for r in rooms]
+
+
+def get_room(db: Session, room_id: int) -> models.ChatRoom | None:
+    return db.get(models.ChatRoom, room_id)
+
+
+def is_room_member(db: Session, room_id: int, contributor_id: int) -> bool:
+    from sqlalchemy import select as _sel
+    row = db.execute(
+        _sel(models.ChatRoomMember).where(
+            models.ChatRoomMember.room_id == room_id,
+            models.ChatRoomMember.contributor_id == contributor_id,
+        )
+    ).scalar_one_or_none()
+    return row is not None
+
+
+def post_message(
+    db: Session,
+    room_id: int,
+    sender_id: int | None,
+    sender_name: str,
+    body: str,
+) -> schemas.ChatMessageOut:
+    msg = models.ChatMessage(
+        room_id=room_id,
+        sender_id=sender_id,
+        sender_name=sender_name,
+        body=body,
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return schemas.ChatMessageOut(
+        id=msg.id,
+        room_id=msg.room_id,
+        sender_id=msg.sender_id,
+        sender_name=msg.sender_name,
+        body=msg.body,
+        sent_at=msg.sent_at,
+    )
+
+
+def list_messages(db: Session, room_id: int) -> list[schemas.ChatMessageOut]:
+    from sqlalchemy import select as _sel
+    msgs = db.execute(
+        _sel(models.ChatMessage)
+        .where(models.ChatMessage.room_id == room_id)
+        .order_by(models.ChatMessage.sent_at)
+    ).scalars().all()
+    return [
+        schemas.ChatMessageOut(
+            id=m.id,
+            room_id=m.room_id,
+            sender_id=m.sender_id,
+            sender_name=m.sender_name,
+            body=m.body,
+            sent_at=m.sent_at,
+        )
+        for m in msgs
+    ]
+
+
+def get_latest_message_id(db: Session, room_ids: list[int]) -> int:
+    """Return the highest message id across the given rooms (0 if none)."""
+    if not room_ids:
+        return 0
+    from sqlalchemy import select as _sel
+    result = db.execute(
+        _sel(func.coalesce(func.max(models.ChatMessage.id), 0)).where(
+            models.ChatMessage.room_id.in_(room_ids)
+        )
+    ).scalar_one()
+    return int(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Patched award_units & delete_ledger_entry (emit notifications)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def award_units_with_notify(
+    db: Session, data: schemas.LedgerEntryCreate
+) -> models.LedgerEntry:
+    """award_units that also fires a notification to the recipient member."""
+    entry = award_units(db, data)
+    contributor = get_contributor(db, data.contributor_id)
+    if contributor:
+        create_notification(
+            db,
+            contributor_id=contributor.id,
+            kind="units_awarded",
+            title=f"+{entry.units_awarded:g} units awarded",
+            body=(
+                f"You received {entry.units_awarded:g} units for: "
+                f"{entry.task_description[:120]}"
+                f"{' …' if len(entry.task_description) > 120 else ''}."
+            ),
+        )
+    return entry
+
+
+def delete_ledger_entry_with_notify(db: Session, entry_id: int) -> bool:
+    """delete_ledger_entry that fires a notification to the affected member."""
+    entry = db.get(models.LedgerEntry, entry_id)
+    if entry is None:
+        return False
+    contributor_id = entry.contributor_id
+    units = entry.units_awarded
+    task = entry.task_description
+    ok = delete_ledger_entry(db, entry_id)
+    if ok:
+        create_notification(
+            db,
+            contributor_id=contributor_id,
+            kind="ledger_deleted",
+            title=f"Ledger entry removed (−{units:g} units)",
+            body=(
+                f"An admin removed a ledger entry of {units:g} units for: "
+                f"{task[:120]}{' …' if len(task) > 120 else ''}."
+            ),
+        )
+    return ok

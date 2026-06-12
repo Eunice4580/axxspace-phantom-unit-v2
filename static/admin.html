@@ -67,12 +67,98 @@
   .table-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 0.6rem; min-height: 2rem; }
   .hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
   input.invalid { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+  .stepper { display: flex; align-items: center; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface2); transition: border-color 0.2s, box-shadow 0.2s; }
+  .stepper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .stepper-btn { flex-shrink: 0; width: 2.4rem; background: transparent; border: none; color: var(--accent); font-size: 1.25rem; font-weight: 700; cursor: pointer; line-height: 1; padding: 0; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; height: 2.5rem; }
+  .stepper-btn:hover { background: var(--accent-glow); color: var(--text); }
+  .stepper-btn:active { background: rgba(124,58,237,0.35); }
+  .stepper input[type="number"] { flex: 1; border: none; border-radius: 0; box-shadow: none; text-align: center; background: transparent; padding: 0.65rem 0.25rem; -moz-appearance: textfield; }
+  .stepper input[type="number"]::-webkit-outer-spin-button,
+  .stepper input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .stepper input[type="number"]:focus { outline: none; box-shadow: none; border-color: transparent; }
+
+  /* ── Notification bell ── */
+  .notif-btn { position:relative; background:transparent; border:1px solid var(--border); border-radius:8px; padding:0.4rem 0.6rem; cursor:pointer; font-size:1.05rem; color:var(--muted); transition:border-color 0.2s,color 0.2s; }
+  .notif-btn:hover { border-color:var(--accent); color:var(--text); }
+  .notif-badge { position:absolute; top:-6px; right:-6px; background:#ef4444; color:#fff; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; display:none; align-items:center; justify-content:center; font-family:'Space Mono',monospace; }
+  .notif-badge.show { display:flex; }
+  /* ── Notification drawer ── */
+  .notif-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; display:none; opacity:0; transition:opacity 0.2s; }
+  .notif-overlay.open { display:block; opacity:1; }
+  .notif-drawer { position:fixed; top:0; right:-380px; width:360px; max-width:96vw; height:100vh; background:var(--surface); border-left:1px solid var(--border); z-index:201; display:flex; flex-direction:column; transition:right 0.28s cubic-bezier(.4,0,.2,1); box-shadow:-8px 0 40px rgba(0,0,0,0.5); }
+  .notif-drawer.open { right:0; }
+  .drawer-header { display:flex; align-items:center; justify-content:space-between; padding:1.2rem 1.2rem 0.9rem; border-bottom:1px solid var(--border); }
+  .drawer-header h3 { font-size:0.95rem; font-weight:700; }
+  .drawer-actions { display:flex; gap:0.5rem; }
+  .drawer-close,.mark-all-btn { background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-family:inherit; font-size:0.75rem; padding:0.3rem 0.65rem; cursor:pointer; transition:all 0.2s; }
+  .drawer-close:hover { border-color:#ef4444; color:#ef4444; } .mark-all-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .notif-list { flex:1; overflow-y:auto; padding:0.75rem; }
+  .notif-item { padding:0.85rem 1rem; border-radius:10px; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--surface2); cursor:pointer; transition:border-color 0.2s; }
+  .notif-item:hover { border-color:var(--accent); }
+  .notif-item.unread { border-color:rgba(124,58,237,0.4); background:rgba(124,58,237,0.06); }
+  .notif-kind { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:0.3rem; }
+  .notif-kind.chat_invite { color:var(--accent); } .notif-kind.units_awarded { color:var(--success); }
+  .notif-title { font-size:0.875rem; font-weight:600; margin-bottom:0.2rem; }
+  .notif-body  { font-size:0.8rem; color:var(--muted); line-height:1.4; }
+  .notif-time  { font-size:0.68rem; color:var(--muted); margin-top:0.4rem; }
+  .notif-empty { padding:3rem; text-align:center; color:var(--muted); font-size:0.875rem; }
+  /* ── Chat widget ── */
+  .chat-widget { position:fixed; bottom:1.5rem; right:1.5rem; z-index:190; display:flex; flex-direction:column; align-items:flex-end; gap:0; }
+  .chat-fab { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#4f46e5); border:none; cursor:pointer; font-size:1.35rem; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(124,58,237,0.5); transition:transform 0.2s,box-shadow 0.2s; position:relative; }
+  .chat-fab:hover { transform:scale(1.08); box-shadow:0 6px 32px rgba(124,58,237,0.65); }
+  .chat-fab-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; display:none; align-items:center; justify-content:center; }
+  .chat-fab-badge.show { display:flex; }
+  .chat-panel { width:340px; max-width:94vw; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:0 8px 48px rgba(0,0,0,0.6); margin-bottom:0.75rem; display:none; flex-direction:column; max-height:78vh; overflow:hidden; animation:slideUp 0.22s ease; }
+  .chat-panel.open { display:flex; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .chat-panel-header { display:flex; align-items:center; justify-content:space-between; padding:0.9rem 1rem 0.75rem; border-bottom:1px solid var(--border); }
+  .chat-panel-header h4 { font-size:0.9rem; font-weight:700; }
+  .chat-back-btn { background:transparent; border:none; color:var(--muted); font-size:1rem; cursor:pointer; padding:0 0.4rem; }
+  .chat-back-btn:hover { color:var(--text); }
+  .btn-new-room { font-size:0.78rem; padding:0.35rem 0.75rem; background:var(--accent); border:none; border-radius:6px; color:#fff; font-family:inherit; cursor:pointer; transition:opacity 0.2s; }
+  .btn-new-room:hover { opacity:0.85; }
+  .room-list { flex:1; overflow-y:auto; }
+  .room-item { padding:0.8rem 1rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; display:flex; align-items:center; gap:0.6rem; }
+  .room-item:hover { background:var(--surface2); }
+  .room-name { font-size:0.875rem; font-weight:500; flex:1; }
+  .room-meta { font-size:0.7rem; color:var(--muted); }
+  .msg-thread { flex:1; overflow-y:auto; padding:0.75rem; display:flex; flex-direction:column; gap:0.5rem; }
+  .msg-bubble { max-width:82%; padding:0.55rem 0.85rem; border-radius:12px; font-size:0.85rem; line-height:1.45; }
+  .msg-bubble.me { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
+  .msg-bubble.other { align-self:flex-start; background:var(--surface2); border:1px solid var(--border); border-bottom-left-radius:4px; }
+  .msg-sender { font-size:0.68rem; color:var(--muted); margin-bottom:0.2rem; }
+  .msg-time   { font-size:0.65rem; margin-top:0.2rem; opacity:0.7; }
+  .msg-input-row { display:flex; gap:0.5rem; padding:0.75rem; border-top:1px solid var(--border); }
+  .msg-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.55rem 0.75rem; color:var(--text); font-family:inherit; font-size:0.875rem; outline:none; transition:border-color 0.2s; }
+  .msg-input:focus { border-color:var(--accent); }
+  .msg-send-btn { background:var(--accent); border:none; border-radius:8px; color:#fff; padding:0 0.85rem; cursor:pointer; font-size:1rem; transition:opacity 0.2s; }
+  .msg-send-btn:hover { opacity:0.85; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; display:none; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; width:360px; max-width:94vw; box-shadow:0 8px 40px rgba(0,0,0,0.7); animation:slideUp 0.2s ease; }
+  .modal-box h3 { font-size:1rem; font-weight:700; margin-bottom:1rem; }
+  .modal-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); margin-bottom:0.3rem; display:block; }
+  .modal-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.6rem 0.85rem; color:var(--text); font-family:inherit; font-size:0.9rem; margin-bottom:0.85rem; outline:none; transition:border-color 0.2s; }
+  .modal-input:focus { border-color:var(--accent); }
+  .invitee-list { max-height:180px; overflow-y:auto; margin-bottom:0.85rem; border:1px solid var(--border); border-radius:8px; }
+  .invitee-item { display:flex; align-items:center; gap:0.6rem; padding:0.6rem 0.85rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; }
+  .invitee-item:last-child { border-bottom:none; } .invitee-item:hover { background:var(--surface2); }
+  .invitee-item input[type=checkbox] { accent-color:var(--accent); width:15px; height:15px; }
+  .modal-footer { display:flex; gap:0.5rem; justify-content:flex-end; }
+  .btn-modal-cancel { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-family:inherit; font-size:0.875rem; padding:0.55rem 1rem; cursor:pointer; }
+  .btn-modal-ok { background:var(--accent); border:none; border-radius:8px; color:#fff; font-family:inherit; font-size:0.875rem; padding:0.55rem 1.2rem; cursor:pointer; }
+  .btn-modal-ok:hover { opacity:0.88; }
 </style>
 </head>
 <body>
 <nav>
   <div class="logo">AXXSPACE <span class="admin-tag">Admin</span></div>
-  <button class="btn-sm" onclick="logout()">Sign out</button>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
+      🔔<span class="notif-badge" id="notif-badge">0</span>
+    </button>
+    <button class="btn-sm" onclick="logout()">Sign out</button>
+  </div>
 </nav>
 <main>
   <!-- Pool Stats -->
@@ -110,7 +196,15 @@
       <h2>Award Units</h2>
       <div class="form-group"><label>Contributor</label><select id="a-contrib"><option value="">Select contributor…</option></select></div>
       <div class="form-group"><label>Task Description</label><textarea id="a-task" placeholder="Describe the contribution…"></textarea></div>
-      <div class="form-group"><label>Units Awarded</label><input type="number" id="a-units" placeholder="0.00" step="0.01" min="0.01" /></div>
+      <div class="form-group">
+        <label>Units Awarded</label>
+        <div class="stepper">
+          <button class="stepper-btn" type="button" onclick="stepUnits(-0.1)" title="Decrease by 0.1">−</button>
+          <input type="number" id="a-units" placeholder="0.0" step="0.1" min="0.1" />
+          <button class="stepper-btn" type="button" onclick="stepUnits(0.1)" title="Increase by 0.1">+</button>
+        </div>
+        <div class="hint">Use ± buttons or type a value. Each step = 0.1 units.</div>
+      </div>
       <div class="form-group"><label>Approving Reviewer</label><input type="text" id="a-reviewer" placeholder="Reviewer name" /></div>
       <div class="form-group"><label>Task Reference (optional)</label><input type="text" id="a-ref" placeholder="TASK-001" /></div>
       <div class="form-group"><label>Remarks (optional)</label><textarea id="a-remarks" placeholder="Any additional notes…"></textarea></div>
@@ -336,6 +430,14 @@ async function undoLastDelete() {
   } catch { alert('Connection error.'); }
 }
 
+// --- Stepper for Units Awarded -----------------------------------------------
+function stepUnits(delta) {
+  const el = document.getElementById('a-units');
+  const current = parseFloat(el.value) || 0;
+  const next = Math.round((current + delta) * 10) / 10;
+  el.value = next < 0.1 ? 0.1 : next;
+}
+
 // --- Clear Award Units form --------------------------------------------------
 function clearAwardForm() {
   document.getElementById('a-contrib').value = '';
@@ -378,6 +480,283 @@ async function awardUnits() {
 function logout() { localStorage.removeItem('axxspace_admin_token'); window.location.href = '/login'; }
 
 loadConfig(); loadStats(); loadContributors(); loadLedger();
+</script>
+
+<!-- Notification drawer -->
+<div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
+<div class="notif-drawer" id="notif-drawer">
+  <div class="drawer-header">
+    <h3>🔔 Notifications</h3>
+    <div class="drawer-actions">
+      <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
+      <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
+    </div>
+  </div>
+  <div class="notif-list" id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
+</div>
+
+<!-- Chat widget -->
+<div class="chat-widget" id="chat-widget">
+  <div class="chat-panel" id="chat-panel">
+    <!-- Room list view -->
+    <div id="view-rooms">
+      <div class="chat-panel-header">
+        <h4>💬 Chats</h4>
+        <button class="btn-new-room" onclick="openNewRoomModal()">+ New Chat</button>
+      </div>
+      <div class="room-list" id="room-list"><div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">Loading rooms…</div></div>
+    </div>
+    <!-- Message thread view -->
+    <div id="view-thread" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="chat-panel-header">
+        <button class="chat-back-btn" onclick="backToRooms()">←</button>
+        <h4 id="thread-room-name" style="flex:1;margin-left:0.3rem">Room</h4>
+      </div>
+      <div class="msg-thread" id="msg-thread"></div>
+      <div class="msg-input-row">
+        <input class="msg-input" id="msg-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg()" />
+        <button class="msg-send-btn" onclick="sendMsg()">↑</button>
+      </div>
+    </div>
+  </div>
+  <button class="chat-fab" onclick="toggleChat()" title="Chat">
+    💬<span class="chat-fab-badge" id="chat-fab-badge">0</span>
+  </button>
+</div>
+
+<!-- New room modal -->
+<div class="modal-overlay" id="new-room-modal">
+  <div class="modal-box">
+    <h3>🗨️ New Chat Room</h3>
+    <label class="modal-label">Room name</label>
+    <input class="modal-input" id="new-room-name" placeholder="e.g. Sprint 3 sync" />
+    <label class="modal-label">Invite members</label>
+    <div class="invitee-list" id="invitee-list">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeNewRoomModal()">Cancel</button>
+      <button class="btn-modal-ok" onclick="createRoom()">Create &amp; Invite</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Admin chat & notification JS ─────────────────────────────────────────
+const _adminTok = localStorage.getItem('axxspace_admin_token');
+const _aHdrs = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _adminTok };
+
+let _notifications = [];
+let _rooms = [];
+let _activeRoomId = null;
+let _chatUnread = 0;
+
+// ── Notification drawer ───────────────────────────────────────────────────
+function openDrawer()  { document.getElementById('notif-overlay').classList.add('open'); document.getElementById('notif-drawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('notif-overlay').classList.remove('open'); document.getElementById('notif-drawer').classList.remove('open'); }
+
+function _updateBadge() {
+  const unread = _notifications.filter(n => !n.is_read).length;
+  const badge = document.getElementById('notif-badge');
+  badge.textContent = unread;
+  badge.classList.toggle('show', unread > 0);
+}
+
+function _renderNotifList() {
+  const list = document.getElementById('notif-list');
+  if (!_notifications.length) { list.innerHTML = '<div class="notif-empty">🔔 No notifications yet.</div>'; return; }
+  list.innerHTML = _notifications.map(n => `
+    <div class="notif-item ${n.is_read ? '' : 'unread'}" id="anotif-${n.id}" onclick="_clickNotif(${n.id},${n.ref_id||'null'},'${n.kind}')">
+      <div class="notif-kind ${n.kind}">${n.kind.replace(/_/g,' ')}</div>
+      <div class="notif-title">${n.title}</div>
+      <div class="notif-body">${n.body}</div>
+      <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+async function _loadNotifications() {
+  try {
+    const res = await fetch('/api/admin/notifications', { headers: _aHdrs });
+    if (!res.ok) return;
+    _notifications = await res.json();
+    _updateBadge();
+    _renderNotifList();
+  } catch {}
+}
+
+async function _clickNotif(id, refId, kind) {
+  _notifications = _notifications.map(n => n.id === id ? {...n, is_read: true} : n);
+  _updateBadge(); _renderNotifList();
+  await fetch(`/api/admin/notifications/${id}/read`, { method: 'POST', headers: _aHdrs });
+  if (kind === 'chat_invite' && refId) {
+    closeDrawer();
+    await _loadRooms();
+    _openRoom(refId);
+    document.getElementById('chat-panel').classList.add('open');
+  }
+}
+
+async function markAllRead() {
+  await fetch('/api/admin/notifications/read-all', { method: 'POST', headers: _aHdrs });
+  _notifications = _notifications.map(n => ({...n, is_read: true}));
+  _updateBadge(); _renderNotifList();
+}
+
+// ── Chat panel ───────────────────────────────────────────────────────────
+function toggleChat() {
+  const panel = document.getElementById('chat-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    _loadRooms();
+    _chatUnread = 0;
+    document.getElementById('chat-fab-badge').classList.remove('show');
+  }
+}
+
+async function _loadRooms() {
+  const res = await fetch(`/api/chat/rooms?token=${_adminTok}`);
+  if (!res.ok) return;
+  _rooms = await res.json();
+  _renderRoomList();
+}
+
+function _renderRoomList() {
+  const el = document.getElementById('room-list');
+  if (!_rooms.length) { el.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">💬 No chats yet. Create one!</div>'; return; }
+  el.innerHTML = _rooms.map(r => `
+    <div class="room-item" onclick="_openRoom(${r.id})">
+      <span style="font-size:1.1rem">💬</span>
+      <span class="room-name">${r.name}</span>
+      <span class="room-meta">${r.member_ids.length} members</span>
+    </div>`).join('');
+}
+
+async function _openRoom(roomId) {
+  _activeRoomId = roomId;
+  const room = _rooms.find(r => r.id === roomId);
+  document.getElementById('thread-room-name').textContent = room ? room.name : 'Chat';
+  document.getElementById('view-rooms').style.display = 'none';
+  const vt = document.getElementById('view-thread');
+  vt.style.display = 'flex';
+  const res = await fetch(`/api/chat/rooms/${roomId}/messages?token=${_adminTok}`);
+  if (!res.ok) return;
+  const msgs = await res.json();
+  _renderMessages(msgs);
+}
+
+function _renderMessages(msgs) {
+  const thread = document.getElementById('msg-thread');
+  thread.innerHTML = msgs.map(m => {
+    const isMe = m.sender_id === null; // admin has no sender_id
+    return `<div>
+      ${!isMe ? `<div class="msg-sender">${m.sender_name}</div>` : ''}
+      <div class="msg-bubble ${isMe ? 'me' : 'other'}">${m.body}
+        <div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>`;
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('msg-input');
+  const body = inp.value.trim();
+  if (!body || !_activeRoomId) return;
+  inp.value = '';
+  try {
+    const res = await fetch(`/api/chat/rooms/${_activeRoomId}/messages?token=${_adminTok}`, {
+      method: 'POST', headers: _aHdrs, body: JSON.stringify({ body })
+    });
+    if (!res.ok) return;
+    const msg = await res.json();
+    const thread = document.getElementById('msg-thread');
+    thread.innerHTML += `<div>
+      <div class="msg-bubble me">${msg.body}
+        <div class="msg-time">${new Date(msg.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>`;
+    thread.scrollTop = thread.scrollHeight;
+  } catch {}
+}
+
+function backToRooms() {
+  _activeRoomId = null;
+  document.getElementById('view-thread').style.display = 'none';
+  document.getElementById('view-rooms').style.display = '';
+  _loadRooms();
+}
+
+async function openNewRoomModal() {
+  document.getElementById('new-room-modal').classList.add('open');
+  document.getElementById('new-room-name').value = '';
+  const il = document.getElementById('invitee-list');
+  il.innerHTML = 'Loading…';
+  try {
+    const res = await fetch(`/api/contributors/for-chat?token=${_adminTok}`);
+    const members = await res.json();
+    il.innerHTML = members.map(m => `
+      <label class="invitee-item">
+        <input type="checkbox" value="${m.id}" />${m.name}
+        <span style="font-size:0.72rem;color:var(--muted);margin-left:auto">${m.category}</span>
+      </label>`).join('');
+  } catch { il.innerHTML = 'Failed to load members.'; }
+}
+
+function closeNewRoomModal() { document.getElementById('new-room-modal').classList.remove('open'); }
+
+async function createRoom() {
+  const name = document.getElementById('new-room-name').value.trim();
+  if (!name) { alert('Please enter a room name.'); return; }
+  const checked = [...document.querySelectorAll('#invitee-list input[type=checkbox]:checked')];
+  const invitee_ids = checked.map(cb => parseInt(cb.value));
+  try {
+    const res = await fetch(`/api/chat/rooms?token=${_adminTok}`, {
+      method: 'POST', headers: _aHdrs, body: JSON.stringify({ name, invitee_ids })
+    });
+    const room = await res.json().catch(() => null);
+    if (!res.ok) { alert(room?.detail || 'Failed to create room.'); return; }
+    closeNewRoomModal();
+    await _loadRooms();
+    if (room) _openRoom(room.id);
+    document.getElementById('chat-panel').classList.add('open');
+  } catch { alert('Connection error.'); }
+}
+
+// ── SSE (real-time) with polling fallback ────────────────────────────────
+function _startSSE() {
+  if (!_adminTok) return;
+  const es = new EventSource(`/api/events?token=${encodeURIComponent(_adminTok)}`);
+  es.addEventListener('notification', e => {
+    const n = JSON.parse(e.data);
+    if (!_notifications.find(x => x.id === n.id)) {
+      _notifications.unshift({ ...n, is_read: false });
+      _updateBadge(); _renderNotifList();
+    }
+  });
+  es.addEventListener('chat_message', e => {
+    const m = JSON.parse(e.data);
+    if (m.room_id === _activeRoomId) {
+      const thread = document.getElementById('msg-thread');
+      if (thread) {
+        const isMe = m.sender_id === null;
+        thread.innerHTML += `<div>
+          ${!isMe ? `<div class="msg-sender">${m.sender_name}</div>` : ''}
+          <div class="msg-bubble ${isMe ? 'me' : 'other'}">${m.body}
+            <div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+        </div>`;
+        thread.scrollTop = thread.scrollHeight;
+      }
+    } else {
+      _chatUnread++;
+      const fab = document.getElementById('chat-fab-badge');
+      fab.textContent = _chatUnread; fab.classList.add('show');
+    }
+  });
+  es.onerror = () => { es.close(); setTimeout(_startSSE, 8000); };
+}
+
+_loadNotifications();
+_startSSE();
+setInterval(_loadNotifications, 30000);
 </script>
 </body>
 </html>

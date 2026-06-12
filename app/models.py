@@ -38,3 +38,73 @@ class LedgerEntry(Base):
         DateTime(timezone=True), default=_utcnow, index=True
     )
     contributor: Mapped[Contributor] = relationship(back_populates="ledger_entries")
+
+
+# ── Chat & Notifications ──────────────────────────────────────────────────────
+
+class ChatRoom(Base):
+    """A named group conversation room."""
+    __tablename__ = "chat_rooms"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # NULL means room was created by admin
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("contributors.id", ondelete="SET NULL"), nullable=True
+    )
+    is_admin_room: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    members: Mapped[list["ChatRoomMember"]] = relationship(
+        back_populates="room", cascade="all, delete-orphan"
+    )
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="room", cascade="all, delete-orphan",
+        order_by="ChatMessage.sent_at",
+    )
+
+
+class ChatRoomMember(Base):
+    """Junction: which contributors are in each room."""
+    __tablename__ = "chat_room_members"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    room_id: Mapped[int] = mapped_column(
+        ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    contributor_id: Mapped[int] = mapped_column(
+        ForeignKey("contributors.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    room: Mapped[ChatRoom] = relationship(back_populates="members")
+    contributor: Mapped[Contributor] = relationship()
+
+
+class ChatMessage(Base):
+    """A single message inside a chat room."""
+    __tablename__ = "chat_messages"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    room_id: Mapped[int] = mapped_column(
+        ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # NULL sender_id = message from admin
+    sender_id: Mapped[int | None] = mapped_column(
+        ForeignKey("contributors.id", ondelete="SET NULL"), nullable=True
+    )
+    sender_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+    room: Mapped[ChatRoom] = relationship(back_populates="messages")
+
+
+class Notification(Base):
+    """In-app notification for a member (or admin when contributor_id IS NULL)."""
+    __tablename__ = "notifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # NULL = notification for admin; an int = notification for that contributor
+    contributor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("contributors.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(50), nullable=False)
+    # kinds: chat_invite | units_awarded | ledger_deleted | chat_message
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ref_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # e.g. room_id
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)

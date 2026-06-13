@@ -154,6 +154,25 @@ def delete_ledger_entry(
     if not crud.delete_ledger_entry_with_notify(db, entry_id):
         raise HTTPException(status_code=404, detail="Ledger entry not found.")
 
+@app.put("/api/ledger/{entry_id}", response_model=schemas.LedgerEntryOut)
+def update_ledger_entry(
+    entry_id: int,
+    payload: schemas.LedgerEntryUpdate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.LedgerEntryOut:
+    entry = db.get(crud.models.LedgerEntry, entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Ledger entry not found.")
+    entry.task_description = payload.task_description
+    entry.units_awarded = payload.units_awarded
+    entry.approving_reviewer = payload.approving_reviewer
+    entry.task_reference = payload.task_reference
+    entry.remarks = payload.remarks
+    db.commit()
+    db.refresh(entry)
+    return crud._entry_to_out(entry)
+
 # --- Dashboard ---------------------------------------------------------------
 @app.get("/api/stats", response_model=schemas.PoolStats)
 def stats(db: Session = Depends(get_db)) -> schemas.PoolStats:
@@ -225,6 +244,10 @@ def admin_page() -> FileResponse:
 @app.get("/login")
 def login_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "login.html")
+
+@app.get("/chat")
+def chat_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "chat.html")
 
 @app.get("/member")
 def member_page() -> FileResponse:

@@ -47,6 +47,13 @@ class LedgerEntryCreate(BaseModel):
     task_reference: str | None = Field(default=None, max_length=100)
     remarks: str | None = None
 
+class LedgerEntryUpdate(BaseModel):
+    task_description: str = Field(..., min_length=1)
+    units_awarded: float = Field(..., gt=0)
+    approving_reviewer: str = Field(..., min_length=1, max_length=200)
+    task_reference: str | None = Field(default=None, max_length=100)
+    remarks: str | None = None
+
 class LedgerEntryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

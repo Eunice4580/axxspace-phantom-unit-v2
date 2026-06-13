@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AXXSPACE — Chat</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07070e; --surface: #0f0f1a; --surface2: #141428;
+    --border: #1e1e36; --accent: #7c3aed; --accent2: #4f46e5;
+    --accent-glow: rgba(124,58,237,0.18); --text: #eaeaf5;
+    --muted: #6b6b90; --success: #10b981; --error: #ef4444;
+  }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; display: flex; flex-direction: column; }
+
+  /* Nav */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.5rem; border-bottom: 1px solid var(--border); background: rgba(7,7,14,0.95); backdrop-filter: blur(12px); flex-shrink: 0; z-index: 10; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 0.95rem; letter-spacing: 0.18em; color: var(--accent); font-weight: 700; }
+  .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+  .btn-ghost { padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); border-radius: 7px; color: var(--muted); font-family: inherit; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s; }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+  .btn-accent { padding: 0.4rem 0.9rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 7px; color: #fff; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  .btn-accent:hover { opacity: 0.88; }
+
+  /* Layout: sidebar + main */
+  .chat-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
+  .sidebar-header { padding: 1rem 1.1rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-header h3 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); text-transform: uppercase; }
+  .new-room-btn { background: var(--accent); border: none; border-radius: 6px; color: #fff; font-family: inherit; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.8rem; cursor: pointer; transition: opacity 0.2s; }
+  .new-room-btn:hover { opacity: 0.85; }
+  .room-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+  .room-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.85rem; border-radius: 10px; cursor: pointer; transition: background 0.15s; margin-bottom: 0.2rem; }
+  .room-item:hover { background: var(--surface2); }
+  .room-item.active { background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25); }
+  .room-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .room-info { flex: 1; min-width: 0; }
+  .room-name { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .room-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; }
+  .room-unread { background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.62rem; font-weight: 700; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; }
+  .sidebar-empty { padding: 2.5rem 1rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
+
+  /* Main chat area */
+  .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .no-room-selected { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 0.75rem; }
+  .no-room-selected span { font-size: 3rem; }
+  .no-room-selected p { font-size: 0.95rem; }
+
+  /* Thread area */
+  .thread-header { padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.85rem; flex-shrink: 0; background: var(--surface); }
+  .thread-room-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .thread-room-info h4 { font-size: 0.95rem; font-weight: 700; }
+  .thread-room-info p { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+  .msg-thread { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .msg-group { display: flex; flex-direction: column; }
+  .msg-sender-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 600; }
+  .msg-sender-label.me { text-align: right; }
+  .msg-bubble { max-width: 65%; padding: 0.75rem 1rem; border-radius: 14px; font-size: 0.9rem; line-height: 1.5; word-break: break-word; }
+  .msg-bubble.me { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-bottom-right-radius: 4px; }
+  .msg-bubble.other { align-self: flex-start; background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg-time { font-size: 0.68rem; color: var(--muted); margin-top: 0.25rem; }
+  .msg-time.me { text-align: right; }
+  .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 0.5rem; font-size: 0.9rem; }
+  .thread-empty span { font-size: 2.5rem; }
+
+  /* Input bar */
+  .input-bar { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem; align-items: flex-end; background: var(--surface); flex-shrink: 0; }
+  .msg-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1.1rem; color: var(--text); font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s; resize: none; max-height: 120px; line-height: 1.5; }
+  .msg-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .send-btn { width: 46px; height: 46px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 12px; color: #fff; font-size: 1.2rem; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s, transform 0.15s; display: flex; align-items: center; justify-content: center; }
+  .send-btn:hover { opacity: 0.88; transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.95); }
+
+  /* New room modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 300; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem; width: 420px; max-width: 94vw; box-shadow: 0 12px 48px rgba(0,0,0,0.7); animation: fadeUp 0.2s ease; }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+  .modal-box h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 1.25rem; }
+  .modal-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.35rem; display: block; }
+  .modal-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.95rem; color: var(--text); font-family: inherit; font-size: 0.9rem; margin-bottom: 1rem; outline: none; transition: border-color 0.2s; }
+  .modal-input:focus { border-color: var(--accent); }
+  .invitee-list { max-height: 200px; overflow-y: auto; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; }
+  .invitee-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.95rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .invitee-item:last-child { border-bottom: none; }
+  .invitee-item:hover { background: var(--surface2); }
+  .invitee-item input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
+  .modal-footer { display: flex; gap: 0.6rem; justify-content: flex-end; }
+  .btn-cancel { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: inherit; font-size: 0.875rem; padding: 0.6rem 1.1rem; cursor: pointer; }
+  .btn-ok { background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.875rem; font-weight: 600; padding: 0.6rem 1.4rem; cursor: pointer; }
+  .btn-ok:hover { opacity: 0.88; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .sidebar { width: 220px; }
+    .msg-bubble { max-width: 85%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">AXXSPACE</div>
+  <div class="nav-right">
+    <span style="font-size:0.85rem;color:var(--muted)" id="nav-name"></span>
+    <a href="/member" class="btn-ghost">← My Account</a>
+  </div>
+</nav>
+
+<div class="chat-layout">
+
+  <!-- Sidebar: room list -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h3>💬 Chats</h3>
+      <button class="new-room-btn" onclick="openModal()">+ New</button>
+    </div>
+    <div class="room-list" id="room-list">
+      <div class="sidebar-empty">Loading rooms…</div>
+    </div>
+  </aside>
+
+  <!-- Main: thread -->
+  <main class="chat-main" id="chat-main">
+    <div class="no-room-selected" id="no-room">
+      <span>💬</span>
+      <p>Select a chat room to start messaging</p>
+    </div>
+    <!-- Thread (hidden until room selected) -->
+    <div id="thread-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="thread-header">
+        <div class="thread-room-avatar">💬</div>
+        <div class="thread-room-info">
+          <h4 id="thread-title">Room</h4>
+          <p id="thread-meta">—</p>
+        </div>
+      </div>
+      <div class="msg-thread" id="msg-thread">
+        <div class="thread-empty" id="thread-empty">
+          <span>🗨️</span><p>No messages yet. Say hello!</p>
+        </div>
+      </div>
+      <div class="input-bar">
+        <textarea class="msg-input" id="msg-input" rows="1"
+          placeholder="Type a message… (Enter to send)"
+          oninput="autoResize(this)"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+        <button class="send-btn" onclick="sendMsg()" title="Send">↑</button>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- New room modal -->
+<div class="modal-overlay" id="new-room-modal">
+  <div class="modal-box">
+    <h3>🗨️ New Chat Room</h3>
+    <label class="modal-label">Room name</label>
+    <input class="modal-input" id="new-room-name" placeholder="e.g. Project sync" />
+    <label class="modal-label">Invite members</label>
+    <div class="invitee-list" id="invitee-list">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-ok" onclick="createRoom()">Create &amp; Invite</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Auth guard ──────────────────────────────────────────────────────
+const _tok  = localStorage.getItem('axxspace_member_token');
+const _myId = parseInt(localStorage.getItem('axxspace_member_id') || '0');
+const _name = localStorage.getItem('axxspace_member_name') || 'Member';
+if (!_tok) { window.location.href = '/login'; }
+document.getElementById('nav-name').textContent = _name;
+const _hdrs = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _tok };
+
+let _rooms        = [];
+let _activeRoomId = null;
+let _activeMsgs   = [];
+let _sentIds      = new Set(); // track IDs we added optimistically
+
+// ── Rooms ───────────────────────────────────────────────────────────
+async function loadRooms() {
+  const res = await fetch(`/api/chat/rooms?token=${_tok}`);
+  if (!res.ok) return;
+  _rooms = await res.json();
+  renderRooms();
+}
+
+function renderRooms() {
+  const el = document.getElementById('room-list');
+  if (!_rooms.length) {
+    el.innerHTML = '<div class="sidebar-empty">No chats yet.<br>Create one with + New</div>';
+    return;
+  }
+  el.innerHTML = _rooms.map(r => `
+    <div class="room-item ${r.id === _activeRoomId ? 'active' : ''}" id="ri-${r.id}" onclick="openRoom(${r.id})">
+      <div class="room-avatar">💬</div>
+      <div class="room-info">
+        <div class="room-name">${escHtml(r.name)}</div>
+        <div class="room-meta">${r.member_ids.length} member${r.member_ids.length !== 1 ? 's' : ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Open room ───────────────────────────────────────────────────────
+async function openRoom(roomId) {
+  _activeRoomId = roomId;
+  _activeMsgs   = [];
+  _sentIds      = new Set();
+
+  const room = _rooms.find(r => r.id === roomId);
+  document.getElementById('no-room').style.display    = 'none';
+  const tv = document.getElementById('thread-view');
+  tv.style.display    = 'flex';
+  tv.style.flexDirection = 'column';
+  document.getElementById('thread-title').textContent = room ? room.name : 'Chat';
+  document.getElementById('thread-meta').textContent  = room ? `${room.member_ids.length} members` : '';
+
+  // Mark active in sidebar
+  renderRooms();
+
+  // Load messages
+  const res = await fetch(`/api/chat/rooms/${roomId}/messages?token=${_tok}`);
+  if (!res.ok) return;
+  _activeMsgs = await res.json();
+  renderMessages();
+  document.getElementById('msg-input').focus();
+}
+
+// ── Render messages ─────────────────────────────────────────────────
+function renderMessages() {
+  const thread = document.getElementById('msg-thread');
+  const empty  = document.getElementById('thread-empty');
+  if (!_activeMsgs.length) {
+    empty.style.display  = 'flex';
+    thread.innerHTML = '';
+    thread.appendChild(empty);
+    return;
+  }
+  empty.style.display = 'none';
+  thread.innerHTML = _activeMsgs.map(m => {
+    const isMe = m.sender_id === _myId;
+    const time = new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `<div>
+      <div class="msg-sender-label ${isMe ? 'me' : ''}">${isMe ? 'You' : escHtml(m.sender_name)}</div>
+      <div class="msg-bubble ${isMe ? 'me' : 'other'}">${escHtml(m.body)}</div>
+      <div class="msg-time ${isMe ? 'me' : ''}">${time}</div>
+    </div>`;
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
+// ── Send message ────────────────────────────────────────────────────
+async function sendMsg() {
+  const inp  = document.getElementById('msg-input');
+  const body = inp.value.trim();
+  if (!body || !_activeRoomId) return;
+  inp.value = '';
+  inp.style.height = '';
+  try {
+    const res = await fetch(`/api/chat/rooms/${_activeRoomId}/messages?token=${_tok}`, {
+      method: 'POST', headers: _hdrs, body: JSON.stringify({ body })
+    });
+    if (res.ok) {
+      const m = await res.json();
+      _sentIds.add(m.id);   // mark as already shown — SSE will skip it
+      _activeMsgs.push(m);
+      renderMessages();
+    }
+  } catch {}
+}
+
+// ── New room modal ──────────────────────────────────────────────────
+let _contributors = [];
+async function openModal() {
+  document.getElementById('new-room-modal').classList.add('open');
+  document.getElementById('new-room-name').value = '';
+  const il = document.getElementById('invitee-list');
+  il.innerHTML = 'Loading…';
+  try {
+    const res = await fetch(`/api/contributors/for-chat?token=${_tok}`);
+    _contributors = (await res.json()).filter(c => c.id !== _myId);
+    il.innerHTML = _contributors.length
+      ? _contributors.map(c => `
+          <label class="invitee-item">
+            <input type="checkbox" value="${c.id}" />
+            <span>${escHtml(c.name)}</span>
+            <span style="font-size:0.72rem;color:var(--muted);margin-left:auto">${escHtml(c.category)}</span>
+          </label>`).join('')
+      : '<div style="padding:1rem;color:var(--muted);font-size:0.875rem">No other members yet.</div>';
+  } catch { il.innerHTML = 'Failed to load.'; }
+}
+function closeModal() { document.getElementById('new-room-modal').classList.remove('open'); }
+
+async function createRoom() {
+  const name = document.getElementById('new-room-name').value.trim();
+  if (!name) { alert('Please enter a room name.'); return; }
+  const invitee_ids = [...document.querySelectorAll('#invitee-list input:checked')].map(el => parseInt(el.value));
+  try {
+    const res  = await fetch(`/api/chat/rooms?token=${_tok}`, {
+      method: 'POST', headers: _hdrs, body: JSON.stringify({ name, invitee_ids })
+    });
+    const room = await res.json().catch(() => null);
+    if (!res.ok) { alert(room?.detail || 'Failed to create room.'); return; }
+    closeModal();
+    await loadRooms();
+    if (room) openRoom(room.id);
+  } catch { alert('Connection error.'); }
+}
+
+// ── SSE real-time ───────────────────────────────────────────────────
+let _sseRetry = 1000;
+function connectSSE() {
+  if (!_tok) return;
+  const es = new EventSource(`/api/events?token=${encodeURIComponent(_tok)}`);
+  es.addEventListener('chat_message', e => {
+    const m = JSON.parse(e.data);
+    if (m.room_id !== _activeRoomId) return;
+    // Skip if we already added this message optimistically in sendMsg()
+    if (_sentIds.has(m.id)) { _sentIds.delete(m.id); return; }
+    _activeMsgs.push(m);
+    renderMessages();
+    _sseRetry = 1000;
+  });
+  es.addEventListener('connected', () => { _sseRetry = 1000; });
+  es.onerror = () => {
+    es.close();
+    _sseRetry = Math.min(_sseRetry * 2, 30000);
+    setTimeout(connectSSE, _sseRetry);
+  };
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = '';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────
+async function boot() {
+  await loadRooms();
+  connectSSE();
+  // Auto-open a room if ?room=ID is in the URL (e.g. from notification click)
+  const roomParam = new URLSearchParams(window.location.search).get('room');
+  if (roomParam) {
+    const targetId = parseInt(roomParam);
+    const found = _rooms.find(r => r.id === targetId);
+    if (found) openRoom(targetId);
+  }
+}
+boot();
+</script>
+</body>
+</html>

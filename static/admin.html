@@ -320,7 +320,10 @@ async function loadLedger() {
       <td style="font-family:'Space Mono',monospace;color:var(--accent)">${e.units_awarded.toFixed(2)}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${e.approving_reviewer}</td>
-      <td><button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry">🗑 Delete</button></td>
+      <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <button class="btn-delete" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);color:var(--accent)" onclick="editLedger(${e.id},${e.contributor_id},'${e.task_description.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',${e.units_awarded},'${e.approving_reviewer.replace(/'/g,"\\'")  }','${(e.task_reference||'').replace(/'/g,"\\'")  }','${(e.remarks||'').replace(/'/g,"\\'")  }')" title="Edit entry">✏ Edit</button>
+        <button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry">🗑 Delete</button>
+      </td>
     </tr>`).join('');
 }
 
@@ -447,34 +450,82 @@ function clearAwardForm() {
   document.getElementById('a-ref').value = '';
   document.getElementById('a-remarks').value = '';
   document.getElementById('a-edit-id').value = '';
-  document.getElementById('a-submit-btn').textContent = 'Award Units';
+  const btn = document.getElementById('a-submit-btn');
+  btn.textContent = 'Award Units';
+  btn.className = 'btn';
+  document.getElementById('a-contrib').disabled = false;
   const msg = document.getElementById('a-msg');
   msg.className = 'msg'; msg.textContent = '';
+  // scroll back to form
+  document.querySelector('.card h2')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// --- Pre-fill form for editing -----------------------------------------------
+function editLedger(id, contributorId, task, units, reviewer, ref, remarks) {
+  document.getElementById('a-edit-id').value = id;
+  // Lock contributor selector to the one this entry belongs to
+  document.getElementById('a-contrib').value = contributorId;
+  document.getElementById('a-contrib').disabled = true;
+  document.getElementById('a-task').value = task;
+  document.getElementById('a-units').value = units;
+  document.getElementById('a-reviewer').value = reviewer;
+  document.getElementById('a-ref').value = ref;
+  document.getElementById('a-remarks').value = remarks;
+  const btn = document.getElementById('a-submit-btn');
+  btn.textContent = 'Update Entry';
+  btn.className = 'btn btn-update';
+  // switch to Ledger tab so user sees context
+  showPanel('ledger');
+  // scroll to the award form
+  setTimeout(() => document.querySelector('.grid2')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  document.getElementById('a-msg').className = 'msg';
+  document.getElementById('a-msg').textContent = '';
 }
 
 async function awardUnits() {
   const msg = document.getElementById('a-msg');
   msg.className = 'msg';
-  const contributor_id = parseInt(document.getElementById('a-contrib').value);
+  const editId = document.getElementById('a-edit-id').value;
   const task_description = document.getElementById('a-task').value.trim();
   const units_awarded = parseFloat(document.getElementById('a-units').value);
   const approving_reviewer = document.getElementById('a-reviewer').value.trim();
   const task_reference = document.getElementById('a-ref').value.trim() || null;
   const remarks = document.getElementById('a-remarks').value.trim() || null;
-  if (!contributor_id || !task_description || !units_awarded || !approving_reviewer) {
-    msg.className='msg error'; msg.textContent='Contributor, task, units and reviewer are required.'; return;
+
+  if (editId) {
+    // ── UPDATE mode ──────────────────────────────────────────────────────────
+    if (!task_description || !units_awarded || !approving_reviewer) {
+      msg.className='msg error'; msg.textContent='Task, units and reviewer are required.'; return;
+    }
+    try {
+      const res = await fetch(`/api/ledger/${editId}`, {
+        method:'PUT', headers,
+        body: JSON.stringify({task_description, units_awarded, approving_reviewer, task_reference, remarks})
+      });
+      const d = await res.json();
+      if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to update entry.'; return; }
+      msg.className='msg success'; msg.textContent='Entry updated successfully.';
+      clearAwardForm();
+      loadStats(); loadLedger(); loadContributors();
+    } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
+  } else {
+    // ── CREATE mode ──────────────────────────────────────────────────────────
+    const contributor_id = parseInt(document.getElementById('a-contrib').value);
+    if (!contributor_id || !task_description || !units_awarded || !approving_reviewer) {
+      msg.className='msg error'; msg.textContent='Contributor, task, units and reviewer are required.'; return;
+    }
+    try {
+      const res = await fetch('/api/ledger', { method:'POST', headers, body: JSON.stringify({contributor_id, task_description, units_awarded, approving_reviewer, task_reference, remarks}) });
+      const d = await res.json();
+      if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to award units.'; return; }
+      msg.className='msg success'; msg.textContent=`Awarded ${units_awarded} units successfully.`;
+      document.getElementById('a-task').value = '';
+      document.getElementById('a-units').value = '';
+      document.getElementById('a-ref').value = '';
+      document.getElementById('a-remarks').value = '';
+      loadStats(); loadLedger(); loadContributors();
+    } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
   }
-  try {
-    const res = await fetch('/api/ledger', { method:'POST', headers, body: JSON.stringify({contributor_id, task_description, units_awarded, approving_reviewer, task_reference, remarks}) });
-    const d = await res.json();
-    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to award units.'; return; }
-    msg.className='msg success'; msg.textContent=`Awarded ${units_awarded} units successfully.`;
-    document.getElementById('a-task').value = '';
-    document.getElementById('a-units').value = '';
-    document.getElementById('a-ref').value = '';
-    document.getElementById('a-remarks').value = '';
-    loadStats(); loadLedger(); loadContributors();
-  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
 }
 
 function logout() { localStorage.removeItem('axxspace_admin_token'); window.location.href = '/login'; }

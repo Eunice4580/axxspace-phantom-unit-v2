@@ -608,3 +608,109 @@ def delete_ledger_entry_with_notify(db: Session, entry_id: int) -> bool:
             ),
         )
     return ok
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Investor management
+# ─────────────────────────────────────────────────────────────────────────────
+
+SHARE_PRICE_KES: float = 50.0
+
+
+def _investor_to_out(investor: models.Investor) -> schemas.InvestorOut:
+    return schemas.InvestorOut(
+        id=investor.id,
+        name=investor.name,
+        email=investor.email,
+        phone=investor.phone,
+        shares=investor.shares,
+        share_price_kes=SHARE_PRICE_KES,
+        total_value_kes=investor.shares * SHARE_PRICE_KES,
+        created_at=investor.created_at,
+    )
+
+
+def create_investor(db: Session, data: schemas.InvestorCreate) -> models.Investor:
+    """Create a new investor account (admin only)."""
+    existing = db.execute(
+        select(models.Investor).where(models.Investor.email == data.email.strip().lower())
+    ).scalar_one_or_none()
+    if existing is not None:
+        raise BusinessRuleError("An investor with that email already exists.")
+    investor = models.Investor(
+        name=data.name.strip(),
+        email=data.email.strip().lower(),
+        phone=data.phone.strip() if data.phone else None,
+        shares=data.shares,
+        password_hash=hash_password(data.password),
+    )
+    db.add(investor)
+    db.commit()
+    db.refresh(investor)
+    return investor
+
+
+def list_investors(db: Session) -> list[schemas.InvestorOut]:
+    investors = db.execute(
+        select(models.Investor).order_by(models.Investor.shares.desc(), models.Investor.name)
+    ).scalars().all()
+    return [_investor_to_out(i) for i in investors]
+
+
+def delete_investor(db: Session, investor_id: int) -> bool:
+    investor = db.get(models.Investor, investor_id)
+    if investor is None:
+        return False
+    db.delete(investor)
+    db.commit()
+    return True
+
+
+def authenticate_investor(
+    db: Session, email: str, password: str
+) -> models.Investor | None:
+    """Verify investor credentials. Returns None on any failure."""
+    investor = db.execute(
+        select(models.Investor).where(models.Investor.email == email.strip().lower())
+    ).scalar_one_or_none()
+    if investor is None:
+        return None
+    if not verify_member_password(password, investor.password_hash):
+        return None
+    return investor
+
+
+def is_member_email(db: Session, email: str) -> bool:
+    """Return True if this email belongs to a contributor (member), not an investor."""
+    return get_contributor_by_email(db, email.strip().lower()) is not None
+
+
+def is_investor_email(db: Session, email: str) -> bool:
+    """Return True if this email belongs to an investor."""
+    return db.execute(
+        select(models.Investor).where(models.Investor.email == email.strip().lower())
+    ).scalar_one_or_none() is not None
+
+
+def get_investor_profile(db: Session, investor_id: int) -> schemas.InvestorProfileOut | None:
+    investor = db.get(models.Investor, investor_id)
+    if investor is None:
+        return None
+    all_investors = list_investors(db)
+    sorted_investors = sorted(all_investors, key=lambda i: i.shares, reverse=True)
+    rank = next((i + 1 for i, inv in enumerate(sorted_investors) if inv.id == investor_id), 1)
+    total_shares = sum(i.shares for i in all_investors)
+    portfolio_pct = round((investor.shares / total_shares * 100) if total_shares else 0.0, 2)
+    return schemas.InvestorProfileOut(
+        id=investor.id,
+        name=investor.name,
+        email=investor.email,
+        phone=investor.phone,
+        shares=investor.shares,
+        share_price_kes=SHARE_PRICE_KES,
+        total_value_kes=investor.shares * SHARE_PRICE_KES,
+        created_at=investor.created_at,
+        rank=rank,
+        total_investors=len(all_investors),
+        portfolio_pct=portfolio_pct,
+    )

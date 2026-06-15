@@ -1,7 +1,7 @@
 """ORM models for contributors and the contribution ledger (spec section 7)."""
 from __future__ import annotations
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -108,3 +108,20 @@ class Notification(Base):
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ref_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # e.g. room_id
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+
+
+# ── Investors ─────────────────────────────────────────────────────────────────
+
+SHARE_PRICE_KES: float = 50.0  # 1 share = KES 50
+
+
+class Investor(Base):
+    """An investor account created by the admin."""
+    __tablename__ = "investors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(200), nullable=False, unique=True, index=True)
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    shares: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)

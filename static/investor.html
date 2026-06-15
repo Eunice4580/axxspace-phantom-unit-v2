@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AXXSPACE — Investor Portal</title>
+<meta name="description" content="Your AXXSPACE investor portfolio dashboard."/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060a12;--surface:#0c1220;--surface2:#111b2e;--surface3:#162033;
+  --border:#1a2540;--accent:#0ea5e9;--accent2:#0284c7;--accent-glow:rgba(14,165,233,0.22);
+  --gold:#f59e0b;--green:#10b981;--purple:#7c3aed;
+  --text:#e8f0fe;--muted:#6b82a8;--error:#ef4444;
+}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;top:-20%;left:50%;transform:translateX(-50%);width:800px;height:600px;
+  background:radial-gradient(ellipse,rgba(14,165,233,0.08) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* Nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;
+  border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(6,10,18,0.95);
+  backdrop-filter:blur(12px);z-index:10}
+.logo{font-family:'Space Mono',monospace;font-size:0.95rem;letter-spacing:0.15em;color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.investor-chip{display:flex;align-items:center;gap:0.5rem;background:rgba(14,165,233,0.1);
+  border:1px solid rgba(14,165,233,0.3);border-radius:20px;padding:0.3rem 0.9rem;font-size:0.8rem;color:var(--accent)}
+.btn-sm{padding:0.4rem 0.9rem;background:transparent;border:1px solid var(--border);border-radius:6px;
+  color:var(--muted);font-family:inherit;font-size:0.8rem;cursor:pointer;transition:all 0.2s}
+.btn-sm:hover{border-color:var(--accent);color:var(--text)}
+
+/* Layout */
+main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
+
+/* Welcome banner */
+.welcome{margin-bottom:2rem;padding:1.5rem 2rem;
+  background:linear-gradient(135deg,rgba(14,165,233,0.12),rgba(124,58,237,0.08));
+  border:1px solid rgba(14,165,233,0.25);border-radius:16px}
+.welcome h1{font-size:1.6rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
+.welcome h1 span{color:var(--accent)}
+.welcome p{color:var(--muted);font-size:0.9rem}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.4rem;
+  position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
+.stat-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple));opacity:0;transition:opacity 0.2s}
+.stat-card:hover::before{opacity:1}
+.stat-icon{font-size:1.5rem;margin-bottom:0.6rem}
+.stat-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.35rem}
+.stat-val{font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;line-height:1.2}
+.stat-val.blue{color:var(--accent)} .stat-val.gold{color:var(--gold)} .stat-val.green{color:var(--green)} .stat-val.purple{color:var(--purple)}
+.stat-sub{font-size:0.75rem;color:var(--muted);margin-top:0.3rem}
+
+/* Grid layouts */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:2rem}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem}
+.card-title{font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:0.5rem}
+.card-title .icon{font-size:1rem}
+
+/* Chart */
+.chart-wrap{position:relative;height:220px}
+
+/* ROI table */
+.roi-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:0.5rem}
+.roi-table th{text-align:left;padding:0.5rem 0.75rem;font-size:0.7rem;text-transform:uppercase;
+  letter-spacing:0.06em;color:var(--muted);border-bottom:1px solid var(--border)}
+.roi-table td{padding:0.7rem 0.75rem;border-bottom:1px solid var(--border)}
+.roi-table tr:last-child td{border-bottom:none}
+.roi-table .val{font-family:'Space Mono',monospace;color:var(--green);font-weight:600}
+
+/* Rank badge */
+.rank-badge{display:inline-flex;align-items:center;gap:0.4rem;background:rgba(245,158,11,0.12);
+  border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:0.4rem 0.8rem;
+  font-size:0.8rem;color:var(--gold);font-weight:600;margin-top:0.5rem}
+
+/* Perks */
+.perks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.perk-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem;
+  text-align:center;transition:border-color 0.2s,transform 0.2s}
+.perk-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.perk-icon{font-size:2rem;margin-bottom:0.6rem}
+.perk-title{font-size:0.85rem;font-weight:600;margin-bottom:0.3rem}
+.perk-desc{font-size:0.75rem;color:var(--muted);line-height:1.5}
+
+/* Activity */
+.activity-list{display:flex;flex-direction:column;gap:0.5rem}
+.activity-item{display:flex;align-items:flex-start;gap:0.85rem;padding:0.75rem;
+  background:var(--surface2);border-radius:10px;border:1px solid var(--border)}
+.activity-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:0.35rem;flex-shrink:0}
+.activity-text{font-size:0.84rem;line-height:1.4}
+.activity-time{font-size:0.72rem;color:var(--muted);margin-top:0.15rem}
+
+/* Loading overlay */
+.loading{text-align:center;padding:4rem;color:var(--muted)}
+.spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Progress bar */
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:0.5rem}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--purple));transition:width 0.8s ease}
+
+/* Share price pulse */
+.price-live{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--green)}
+.price-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse2 2s infinite}
+@keyframes pulse2{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+
+/* Section title */
+.section-title{font-size:1rem;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">AXXSPACE</div>
+  <div class="nav-right">
+    <div class="investor-chip">📈 <span id="nav-name">Investor</span></div>
+    <div class="price-live">
+      <div class="price-dot"></div>
+      KES 50/share
+    </div>
+    <button class="btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<main>
+  <div id="loading-state" class="loading">
+    <div class="spinner"></div>
+    <div>Loading your portfolio…</div>
+  </div>
+
+  <div id="dashboard" style="display:none">
+    <!-- Welcome -->
+    <div class="welcome">
+      <h1>Good day, <span id="inv-name">—</span> 👋</h1>
+      <p>Here's a full view of your AXXSPACE investment portfolio. All values are in Kenyan Shillings.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Your Shares</div>
+        <div class="stat-val blue" id="s-shares">—</div>
+        <div class="stat-sub">@ KES 50 per share</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Portfolio Value</div>
+        <div class="stat-val gold" id="s-value">—</div>
+        <div class="stat-sub" id="s-value-sub">Total invested</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-label">Investor Rank</div>
+        <div class="stat-val purple" id="s-rank">—</div>
+        <div class="stat-sub" id="s-rank-sub">among investors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-label">Portfolio Share</div>
+        <div class="stat-val green" id="s-pct">—</div>
+        <div class="stat-sub">of total investor pool</div>
+        <div class="progress-bar"><div class="progress-fill" id="s-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">Member Since</div>
+        <div class="stat-val" id="s-since" style="font-size:1.1rem">—</div>
+        <div class="stat-sub" id="s-tenure">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📞</div>
+        <div class="stat-label">Contact</div>
+        <div class="stat-val" id="s-email" style="font-size:0.85rem;word-break:break-all">—</div>
+        <div class="stat-sub" id="s-phone">—</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title"><span class="icon">📈</span> Portfolio Growth Projection</div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🍩</span> Pool Position</div>
+        <div class="chart-wrap"><canvas id="poolChart"></canvas></div>
+        <div style="text-align:center;margin-top:0.75rem">
+          <div id="pool-label" style="font-size:0.82rem;color:var(--muted)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROI Projection -->
+    <div class="section-title">📊 ROI Projections</div>
+    <div class="card" style="margin-bottom:2rem">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
+        Illustrative projections at assumed annual growth rates. Not financial advice.
+      </div>
+      <table class="roi-table">
+        <thead>
+          <tr>
+            <th>Horizon</th>
+            <th>10% p.a.</th>
+            <th>15% p.a.</th>
+            <th>25% p.a.</th>
+            <th>Shares remain</th>
+          </tr>
+        </thead>
+        <tbody id="roi-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Perks -->
+    <div class="section-title">🎁 Investor Benefits</div>
+    <div class="perks-grid">
+      <div class="perk-card">
+        <div class="perk-icon">🔐</div>
+        <div class="perk-title">Equity Stake</div>
+        <div class="perk-desc">Own a verifiable slice of the AXXSPACE phantom unit pool</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon">📬</div>
+        <div class="perk-title">Priority Updates</div>
+        <div class="perk-desc">Receive quarterly performance reports and platform updates</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon">🗳️</div>
+        <div class="perk-title">Governance Input</div>
+        <div class="perk-desc">Participate in major platform decisions proportional to shares held</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon">💸</div>
+        <div class="perk-title">Returns</div>
+        <div class="perk-desc">Share in platform revenue distributions as AXXSPACE grows</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon">🛡️</div>
+        <div class="perk-title">Secure & Transparent</div>
+        <div class="perk-desc">All transactions recorded and auditable in real-time</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon">📞</div>
+        <div class="perk-title">Dedicated Support</div>
+        <div class="perk-desc">Direct line to the AXXSPACE team for investor inquiries</div>
+      </div>
+    </div>
+
+    <!-- Activity feed -->
+    <div class="section-title">📋 Account Activity</div>
+    <div class="card" style="margin-bottom:2rem">
+      <div class="activity-list" id="activity-list"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const INV_TOKEN = 'axxspace_investor_token';
+const INV_NAME  = 'axxspace_investor_name';
+const token = localStorage.getItem(INV_TOKEN);
+if (!token) window.location.href = '/login';
+
+const hdrs = { 'Content-Type':'application/json', Authorization:'Bearer '+token };
+
+function logout() {
+  ['axxspace_investor_token','axxspace_investor_name','axxspace_investor_id'].forEach(k=>localStorage.removeItem(k));
+  window.location.href = '/login';
+}
+
+function fmt(n) { return 'KES '+n.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtShares(n) { return n.toLocaleString(); }
+
+function tenure(dateStr) {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(ms/86400000);
+  if (days < 30) return `${days} day${days!==1?'s':''} ago`;
+  const mo = Math.floor(days/30);
+  if (mo < 12) return `${mo} month${mo!==1?'s':''} ago`;
+  const yr = Math.floor(mo/12);
+  return `${yr} year${yr!==1?'s':''} ago`;
+}
+
+function buildGrowthChart(shares, createdAt) {
+  const ctx = document.getElementById('growthChart').getContext('2d');
+  const start = new Date(createdAt);
+  const base = shares * 50;
+  const rate = 0.15; // 15% p.a.
+  const labels = [], vals = [];
+  for (let i = 0; i <= 5; i++) {
+    const d = new Date(start);
+    d.setFullYear(d.getFullYear() + i);
+    labels.push(i === 0 ? 'Today' : `Year ${i}`);
+    vals.push(parseFloat((base * Math.pow(1+rate, i)).toFixed(2)));
+  }
+  new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Portfolio Value (KES)',
+        data:vals,
+        borderColor:'#0ea5e9',
+        backgroundColor:'rgba(14,165,233,0.08)',
+        fill:true,
+        tension:0.4,
+        pointBackgroundColor:'#0ea5e9',
+        pointRadius:4,
+        pointHoverRadius:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)}}},
+      scales:{
+        x:{grid:{color:'rgba(26,37,64,0.8)'},ticks:{color:'#6b82a8',font:{family:'Space Grotesk',size:11}}},
+        y:{grid:{color:'rgba(26,37,64,0.8)'},ticks:{color:'#6b82a8',font:{family:'Space Grotesk',size:11},callback:v=>'KES '+v.toLocaleString()}}
+      }
+    }
+  });
+}
+
+function buildPoolChart(myShares, pct) {
+  const ctx = document.getElementById('poolChart').getContext('2d');
+  const rest = 100 - pct;
+  document.getElementById('pool-label').textContent = `You hold ${pct.toFixed(2)}% of the investor pool`;
+  new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Your shares','Other investors'],
+      datasets:[{
+        data:[pct, rest <= 0 ? 0.01 : rest],
+        backgroundColor:['#0ea5e9','rgba(26,37,64,0.8)'],
+        borderColor:['#0ea5e9','#1a2540'],
+        borderWidth:2,
+        hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{position:'bottom',labels:{color:'#6b82a8',font:{family:'Space Grotesk',size:11},boxWidth:12}},
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw.toFixed(2)}%`}}}
+    }
+  });
+}
+
+function buildROI(shares) {
+  const base = shares * 50;
+  const tbody = document.getElementById('roi-body');
+  const rows = [
+    {label:'1 Year',  years:1},
+    {label:'3 Years', years:3},
+    {label:'5 Years', years:5},
+    {label:'10 Years',years:10},
+  ];
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td style="font-weight:500">${r.label}</td>
+      <td class="val">${fmt(base*Math.pow(1.10,r.years))}</td>
+      <td class="val">${fmt(base*Math.pow(1.15,r.years))}</td>
+      <td class="val">${fmt(base*Math.pow(1.25,r.years))}</td>
+      <td style="color:var(--accent);font-family:'Space Mono',monospace">${fmtShares(shares)}</td>
+    </tr>`).join('');
+}
+
+function buildActivity(profile) {
+  const list = document.getElementById('activity-list');
+  const items = [
+    { icon:'🎉', text:`Account created with <strong>${fmtShares(profile.shares)} shares</strong> · ${fmt(profile.total_value_kes)} invested`, time: new Date(profile.created_at).toLocaleString() },
+    { icon:'📈', text:`Share price confirmed at <strong>KES 50</strong> per share`, time: new Date(profile.created_at).toLocaleString() },
+    { icon:'🔐', text:`Investor portal access granted`, time: new Date(profile.created_at).toLocaleString() },
+  ];
+  list.innerHTML = items.map(i=>`
+    <div class="activity-item">
+      <div style="font-size:1.1rem;flex-shrink:0">${i.icon}</div>
+      <div>
+        <div class="activity-text">${i.text}</div>
+        <div class="activity-time">${i.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function load() {
+  try {
+    const res = await fetch('/api/investors/me', { headers: hdrs });
+    if (res.status === 401 || res.status === 403) { logout(); return; }
+    if (!res.ok) throw new Error('Failed');
+    const p = await res.json();
+
+    // Update nav
+    document.getElementById('nav-name').textContent = p.name;
+    document.getElementById('inv-name').textContent = p.name;
+
+    // Stats
+    document.getElementById('s-shares').textContent = fmtShares(p.shares);
+    document.getElementById('s-value').textContent  = fmt(p.total_value_kes);
+    document.getElementById('s-value-sub').textContent = `${fmtShares(p.shares)} shares × KES 50`;
+    document.getElementById('s-rank').textContent   = `#${p.rank}`;
+    document.getElementById('s-rank-sub').textContent = `of ${p.total_investors} investor${p.total_investors!==1?'s':''}`;
+    document.getElementById('s-pct').textContent    = p.portfolio_pct.toFixed(2)+'%';
+    document.getElementById('s-bar').style.width    = Math.min(p.portfolio_pct,100)+'%';
+    const since = new Date(p.created_at);
+    document.getElementById('s-since').textContent  = since.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    document.getElementById('s-tenure').textContent = tenure(p.created_at);
+    document.getElementById('s-email').textContent  = p.email;
+    document.getElementById('s-phone').textContent  = p.phone || 'No phone on file';
+
+    // Charts
+    buildGrowthChart(p.shares, p.created_at);
+    buildPoolChart(p.shares, p.portfolio_pct);
+    buildROI(p.shares);
+    buildActivity(p);
+
+    document.getElementById('loading-state').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML='<div style="color:#ef4444;padding:4rem;text-align:center">Failed to load portfolio. <button onclick="load()" style="color:#0ea5e9;background:none;border:none;cursor:pointer;text-decoration:underline">Retry</button></div>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

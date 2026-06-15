@@ -10,7 +10,11 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from app import crud, schemas
-from app.auth import create_admin_token, create_member_token, require_admin, require_member, verify_password, _signer, _ADMIN_SUBJECT
+from app.auth import (
+    create_admin_token, create_member_token, create_investor_token,
+    require_admin, require_member, require_investor,
+    verify_password, _signer, _ADMIN_SUBJECT
+)
 from app.config import (
     ELIGIBILITY_CATEGORIES,
     EUR_PER_UNIT,
@@ -207,6 +211,12 @@ def member_login(
     payload: schemas.MemberLoginRequest,
     db: Session = Depends(get_db),
 ) -> schemas.MemberTokenResponse:
+    # Cross-tab guard: if this email belongs to an investor, block with helpful message
+    if crud.is_investor_email(db, payload.email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account is an investor account. Please use the Investor tab to log in.",
+        )
     contributor = crud.authenticate_member(db, payload.email, payload.password)
     if contributor is None:
         raise HTTPException(
@@ -226,6 +236,72 @@ def member_me(
     profile = crud.get_member_profile(db, contributor_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="Contributor not found.")
+    return profile
+
+
+# --- Investor auth & management -----------------------------------------------
+@app.post("/api/investors", response_model=schemas.InvestorOut, status_code=201)
+def create_investor(
+    payload: schemas.InvestorCreate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.InvestorOut:
+    try:
+        investor = crud.create_investor(db, payload)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return crud._investor_to_out(investor)
+
+
+@app.get("/api/investors", response_model=list[schemas.InvestorOut])
+def list_investors(
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> list[schemas.InvestorOut]:
+    return crud.list_investors(db)
+
+
+@app.delete("/api/investors/{investor_id}", status_code=204)
+def delete_investor(
+    investor_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> None:
+    if not crud.delete_investor(db, investor_id):
+        raise HTTPException(status_code=404, detail="Investor not found.")
+
+
+@app.post("/api/investors/login", response_model=schemas.InvestorTokenResponse)
+def investor_login(
+    payload: schemas.InvestorLoginRequest,
+    db: Session = Depends(get_db),
+) -> schemas.InvestorTokenResponse:
+    # Cross-tab guard: if this email belongs to a member, block with helpful message
+    if crud.is_member_email(db, payload.email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account is a member account. Please use the Member tab to log in.",
+        )
+    investor = crud.authenticate_investor(db, payload.email, payload.password)
+    if investor is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password.",
+        )
+    token = create_investor_token(investor.id)
+    return schemas.InvestorTokenResponse(
+        token=token, investor_id=investor.id, name=investor.name
+    )
+
+
+@app.get("/api/investors/me", response_model=schemas.InvestorProfileOut)
+def investor_me(
+    db: Session = Depends(get_db),
+    investor_id: int = Depends(require_investor),
+) -> schemas.InvestorProfileOut:
+    profile = crud.get_investor_profile(db, investor_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Investor not found.")
     return profile
 
 # --- Static frontend ---------------------------------------------------------
@@ -252,6 +328,10 @@ def chat_page() -> FileResponse:
 @app.get("/member")
 def member_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "member.html")
+
+@app.get("/investor")
+def investor_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "investor.html")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

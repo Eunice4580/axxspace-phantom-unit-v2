@@ -11,6 +11,7 @@
     --bg: #0a0a0f; --surface: #111118; --surface2: #16161f;
     --border: #1e1e2e; --accent: #7c3aed; --accent-glow: rgba(124,58,237,0.2);
     --text: #e8e8f0; --muted: #6b6b80; --success: #10b981; --error: #ef4444; --gold: #f59e0b;
+    --investor: #0ea5e9; --investor-glow: rgba(14,165,233,0.2);
   }
   body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
   nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
@@ -217,10 +218,38 @@
     </div>
   </div>
 
+  <!-- Add Investor card (full width) -->
+  <div style="margin-bottom:2rem">
+    <div class="card" style="border-color:rgba(14,165,233,0.3);background:linear-gradient(135deg,var(--surface),rgba(14,165,233,0.04))">
+      <h2 style="color:var(--investor)">📈 Add Investor</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
+        <div class="form-group" style="margin-bottom:0"><label>Full Name</label><input type="text" id="inv-name" placeholder="John Investor" /></div>
+        <div class="form-group" style="margin-bottom:0"><label>Email</label><input type="email" id="inv-email" placeholder="investor@email.com" /></div>
+        <div class="form-group" style="margin-bottom:0"><label>Phone (optional)</label><input type="text" id="inv-phone" placeholder="+254 7XX XXX XXX" /></div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Number of Shares</label>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" onclick="stepInvShares(-1)" style="color:var(--investor)">−</button>
+            <input type="number" id="inv-shares" placeholder="100" step="1" min="1" />
+            <button class="stepper-btn" type="button" onclick="stepInvShares(1)" style="color:var(--investor)">+</button>
+          </div>
+          <div class="hint">1 share = KES 50</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0"><label>Login Password</label><input type="password" id="inv-pass" placeholder="••••••••" /></div>
+        <div class="form-group" style="margin-bottom:0"><label>Confirm Password</label><input type="password" id="inv-pass2" placeholder="••••••••" /></div>
+      </div>
+      <div style="margin-top:1rem">
+        <button class="btn" style="background:linear-gradient(135deg,var(--investor),#0284c7);box-shadow:0 4px 20px rgba(14,165,233,0.3)" onclick="addInvestor()">Add Investor</button>
+      </div>
+      <div class="msg" id="inv-msg"></div>
+    </div>
+  </div>
+
   <!-- Tables -->
-  <div class="tabs">
-    <button class="tab active" onclick="showPanel('contributors')">Contributors</button>
-    <button class="tab" onclick="showPanel('ledger')">Ledger</button>
+  <div class="tabs" id="main-tabs">
+    <button class="tab active" id="tab-contributors" onclick="showPanel('contributors')">Contributors</button>
+    <button class="tab" id="tab-investors" onclick="showPanel('investors')" style="border-color:var(--investor);color:var(--investor)">📈 Investors</button>
+    <button class="tab" id="tab-ledger" onclick="showPanel('ledger')">Ledger</button>
   </div>
 
   <div class="panel active" id="panel-contributors">
@@ -228,6 +257,20 @@
       <table>
         <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Category</th><th>Units</th><th>Value (EUR)</th><th>Since</th><th>Actions</th></tr></thead>
         <tbody id="contrib-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Investors Panel -->
+  <div class="panel" id="panel-investors">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div style="font-size:0.85rem;color:var(--muted)">All investor accounts · 1 share = <span style="color:var(--investor);font-weight:700">KES 50</span></div>
+      <div id="inv-summary" style="font-size:0.8rem;color:var(--muted)"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Shares</th><th>Value (KES)</th><th>Since</th><th>Actions</th></tr></thead>
+        <tbody id="investors-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -262,9 +305,13 @@ function handleAuthError(res) {
 }
 
 function showPanel(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (name==='contributors'&&i===0)||(name==='ledger'&&i===1)));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-'+name).classList.add('active');
+  const panels = ['contributors','investors','ledger'];
+  const tabs   = [document.getElementById('tab-contributors'), document.getElementById('tab-investors'), document.getElementById('tab-ledger')];
+  panels.forEach((p,i) => {
+    document.getElementById('panel-'+p).classList.toggle('active', p === name);
+    tabs[i].classList.toggle('active', p === name);
+  });
+  if (name === 'investors') loadInvestors();
 }
 
 async function loadConfig() {
@@ -529,6 +576,90 @@ async function awardUnits() {
 }
 
 function logout() { localStorage.removeItem('axxspace_admin_token'); window.location.href = '/login'; }
+
+// ── Investor management ───────────────────────────────────────────────────────
+function stepInvShares(delta) {
+  const el = document.getElementById('inv-shares');
+  const current = parseInt(el.value) || 0;
+  const next = current + delta;
+  el.value = next < 1 ? 1 : next;
+}
+
+async function addInvestor() {
+  const msg   = document.getElementById('inv-msg');
+  msg.className = 'msg';
+  const name   = document.getElementById('inv-name').value.trim();
+  const email  = document.getElementById('inv-email').value.trim();
+  const phone  = document.getElementById('inv-phone').value.trim() || null;
+  const shares = parseFloat(document.getElementById('inv-shares').value);
+  const pass   = document.getElementById('inv-pass').value;
+  const pass2  = document.getElementById('inv-pass2').value;
+
+  if (!name || !email)         { msg.className='msg error'; msg.textContent='Name and email are required.'; return; }
+  if (!shares || shares < 1)   { msg.className='msg error'; msg.textContent='Shares must be at least 1.'; return; }
+  if (!pass)                   { msg.className='msg error'; msg.textContent='Password is required.'; return; }
+  if (pass.length < 6)         { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  if (pass !== pass2)          { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+
+  try {
+    const res = await fetch('/api/investors', {
+      method: 'POST', headers,
+      body: JSON.stringify({ name, email, phone, shares, password: pass })
+    });
+    const d = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to add investor.'; return; }
+    const kes = (d.shares * 50).toLocaleString();
+    msg.className='msg success';
+    msg.textContent=`Investor ${d.name} added — ${d.shares} shares · KES ${kes}`;
+    ['inv-name','inv-email','inv-phone','inv-shares','inv-pass','inv-pass2'].forEach(id => document.getElementById(id).value='');
+    loadInvestors();
+  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
+}
+
+async function loadInvestors() {
+  try {
+    const res = await fetch('/api/investors', { headers });
+    if (handleAuthError(res)) return;
+    const data = await res.json();
+    const tbody = document.getElementById('investors-body');
+    if (!tbody) return;
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">No investors yet. Add one above.</td></tr>';
+      document.getElementById('inv-summary').textContent = '';
+      return;
+    }
+    const totalShares = data.reduce((s,i) => s+i.shares, 0);
+    const totalKES    = totalShares * 50;
+    document.getElementById('inv-summary').textContent =
+      `${data.length} investor${data.length!==1?'s':''} · ${totalShares.toLocaleString()} total shares · KES ${totalKES.toLocaleString()}`;
+    tbody.innerHTML = data.map((inv,i) => `
+      <tr id="inv-row-${inv.id}">
+        <td style="color:var(--muted);font-family:'Space Mono',monospace">${i+1}</td>
+        <td style="font-weight:500">${inv.name}</td>
+        <td style="color:var(--muted)">${inv.email}</td>
+        <td style="color:var(--muted)">${inv.phone||'—'}</td>
+        <td style="font-family:'Space Mono',monospace;color:var(--investor)">${inv.shares.toLocaleString()}</td>
+        <td style="font-family:'Space Mono',monospace;color:var(--gold)">KES ${(inv.shares*50).toLocaleString()}</td>
+        <td style="color:var(--muted)">${new Date(inv.created_at).toLocaleDateString()}</td>
+        <td><button class="btn-delete" onclick="deleteInvestor(${inv.id},'${inv.name.replace(/'/g,"\\'")}')">🗑 Delete</button></td>
+      </tr>`).join('');
+  } catch { /* silently fail on tab load */ }
+}
+
+async function deleteInvestor(id, name) {
+  if (!confirm(`Delete investor "${name}"? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/api/investors/${id}`, { method:'DELETE', headers });
+    if (handleAuthError(res)) return;
+    if (res.status === 204) {
+      document.getElementById(`inv-row-${id}`)?.remove();
+      loadInvestors();
+    } else {
+      const d = await res.json();
+      alert(d.detail || 'Failed to delete investor.');
+    }
+  } catch { alert('Connection error.'); }
+}
 
 loadConfig(); loadStats(); loadContributors(); loadLedger();
 </script>

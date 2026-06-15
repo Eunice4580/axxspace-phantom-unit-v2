@@ -25,6 +25,7 @@ from app.config import settings
 _signer = TimestampSigner(settings.secret_key)
 _ADMIN_SUBJECT = "axxspace-admin"
 _MEMBER_PREFIX = "member:"
+_INVESTOR_PREFIX = "investor:"
 
 # auto_error=False so we can return a clean 401 instead of FastAPI's default.
 _bearer = HTTPBearer(auto_error=False)
@@ -60,6 +61,12 @@ def create_admin_token() -> str:
 def create_member_token(contributor_id: int) -> str:
     """Issue a fresh signed token for a specific member."""
     subject = f"{_MEMBER_PREFIX}{contributor_id}"
+    return _signer.sign(subject.encode()).decode()
+
+
+def create_investor_token(investor_id: int) -> str:
+    """Issue a fresh signed token for a specific investor."""
+    subject = f"{_INVESTOR_PREFIX}{investor_id}"
     return _signer.sign(subject.encode()).decode()
 
 
@@ -130,3 +137,41 @@ def require_member(
             detail="Admin token cannot be used for member endpoints.",
         )
     return int(payload[len(_MEMBER_PREFIX):])
+
+
+def require_investor(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> int:
+    """FastAPI dependency that returns the investor_id from a valid investor token."""
+    if credentials is None or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Investor authentication required.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        payload = _signer.unsign(
+            credentials.credentials, max_age=settings.token_max_age_seconds
+        ).decode()
+    except SignatureExpired as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired, please log in again.",
+        ) from exc
+    except BadSignature as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token.",
+        ) from exc
+
+    if payload == _ADMIN_SUBJECT or payload.startswith(_MEMBER_PREFIX):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please use the Investor tab to log in.",
+        )
+    if not payload.startswith(_INVESTOR_PREFIX):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid investor token.",
+        )
+    return int(payload[len(_INVESTOR_PREFIX):])

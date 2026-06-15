@@ -164,3 +164,58 @@ class NotificationOut(BaseModel):
     is_read: bool
     ref_id: int | None
     created_at: datetime
+
+
+# --- Investor ----------------------------------------------------------------
+
+class InvestorCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200)
+    phone: str | None = Field(default=None, max_length=30)
+    shares: float = Field(..., gt=0, description="Number of shares purchased")
+    password: str = Field(..., min_length=6)
+
+
+class InvestorOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    email: str
+    phone: str | None
+    shares: float
+    share_price_kes: float = 50.0
+    total_value_kes: float
+    created_at: datetime
+
+
+class InvestorLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class InvestorTokenResponse(BaseModel):
+    token: str
+    token_type: str = "bearer"
+    investor_id: int
+    name: str
+
+
+class InvestorSharePoint(BaseModel):
+    date: str
+    value_kes: float
+    shares: float
+
+
+class InvestorProfileOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: str | None
+    shares: float
+    share_price_kes: float
+    total_value_kes: float
+    created_at: datetime
+    # computed fields
+    rank: int            # rank among investors by shares
+    total_investors: int
+    portfolio_pct: float  # what % of total investor shares this investor holds

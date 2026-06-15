@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AXXSPACE — Sign In</title>
-<meta name="description" content="Sign in to your AXXSPACE contributor account or access the admin panel." />
+<meta name="description" content="Sign in to your AXXSPACE contributor, investor or admin account." />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,6 +20,8 @@
     --muted: #6b6b90;
     --success: #10b981;
     --error: #ef4444;
+    --investor: #0ea5e9;
+    --investor-glow: rgba(14,165,233,0.25);
   }
 
   body {
@@ -33,7 +35,6 @@
     overflow: hidden;
   }
 
-  /* Animated background glow */
   body::before {
     content: '';
     position: fixed;
@@ -53,7 +54,7 @@
 
   .wrap {
     width: 100%;
-    max-width: 440px;
+    max-width: 460px;
     padding: 2.5rem 2rem;
     position: relative;
     z-index: 1;
@@ -96,10 +97,10 @@
   }
   .tab {
     flex: 1;
-    padding: 0.6rem;
+    padding: 0.6rem 0.3rem;
     text-align: center;
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: 0.82rem;
     font-weight: 500;
     background: transparent;
     color: var(--muted);
@@ -108,11 +109,8 @@
     border-radius: 7px;
     transition: all 0.25s;
   }
-  .tab.active {
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 2px 12px var(--accent-glow);
-  }
+  .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 12px var(--accent-glow); }
+  .tab.active.inv { background: var(--investor); box-shadow: 0 2px 12px var(--investor-glow); }
 
   /* Form */
   .panel { display: none; }
@@ -128,7 +126,7 @@
     letter-spacing: 0.07em;
     text-transform: uppercase;
   }
-  input, select {
+  input {
     width: 100%;
     padding: 0.8rem 1rem;
     background: var(--surface);
@@ -140,10 +138,8 @@
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  input:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  #panel-investor input:focus { border-color: var(--investor); box-shadow: 0 0 0 3px var(--investor-glow); }
   input::placeholder { color: var(--muted); }
 
   .btn {
@@ -165,6 +161,11 @@
   .btn:hover { opacity: 0.9; box-shadow: 0 6px 28px rgba(124,58,237,0.45); }
   .btn:active { transform: scale(0.985); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn.inv-btn {
+    background: linear-gradient(135deg, var(--investor), #0284c7);
+    box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+  }
+  .btn.inv-btn:hover { box-shadow: 0 6px 28px rgba(14,165,233,0.45); }
 
   .msg {
     padding: 0.75rem 1rem;
@@ -177,16 +178,32 @@
   .msg.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: var(--error);   display: block; }
   .msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--success); display: block; }
 
-  .admin-note {
+  .note {
     margin-top: 1.25rem;
     padding: 0.75rem 1rem;
-    background: rgba(124,58,237,0.07);
-    border: 1px solid rgba(124,58,237,0.18);
     border-radius: 8px;
     font-size: 0.8rem;
     color: var(--muted);
     text-align: center;
     line-height: 1.5;
+  }
+  .note.member-note   { background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.18); }
+  .note.investor-note { background: rgba(14,165,233,0.07);  border: 1px solid rgba(14,165,233,0.18); }
+
+  .investor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(14,165,233,0.12);
+    border: 1px solid rgba(14,165,233,0.3);
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--investor);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.25rem;
+    text-transform: uppercase;
   }
 </style>
 </head>
@@ -197,11 +214,12 @@
     <div class="logo-dot"></div>
   </div>
   <h1>Welcome back</h1>
-  <p class="sub">Sign in to your contributor account or access the admin panel.</p>
+  <p class="sub">Sign in to your contributor, investor, or admin account.</p>
 
   <div class="tabs">
-    <button class="tab active" id="tab-member" onclick="switchTab('member')">Member</button>
-    <button class="tab" id="tab-admin" onclick="switchTab('admin')">Admin</button>
+    <button class="tab active" id="tab-member"   onclick="switchTab('member')">Member</button>
+    <button class="tab inv"    id="tab-investor" onclick="switchTab('investor')">Investor</button>
+    <button class="tab"        id="tab-admin"    onclick="switchTab('admin')">Admin</button>
   </div>
 
   <!-- Member Login -->
@@ -214,10 +232,28 @@
       <label for="m-password">Password</label>
       <input type="password" id="m-password" placeholder="••••••••" autocomplete="current-password" />
     </div>
-    <button class="btn" id="m-btn" onclick="memberLogin()">Sign in</button>
+    <button class="btn" id="m-btn" onclick="memberLogin()">Sign in as Member</button>
     <div class="msg" id="m-msg"></div>
-    <div class="admin-note">
+    <div class="note member-note">
       Don't have an account? Contact your admin — accounts are created by the AXXSPACE team.
+    </div>
+  </div>
+
+  <!-- Investor Login -->
+  <div class="panel" id="panel-investor">
+    <div class="investor-badge">📈 Investor Portal</div>
+    <div class="form-group">
+      <label for="i-email">Investor Email</label>
+      <input type="email" id="i-email" placeholder="investor@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label for="i-password">Password</label>
+      <input type="password" id="i-password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn inv-btn" id="i-btn" onclick="investorLogin()">Access Investor Dashboard</button>
+    <div class="msg" id="i-msg"></div>
+    <div class="note investor-note">
+      Investor accounts are set up by AXXSPACE admin. Contact us if you need access.
     </div>
   </div>
 
@@ -233,21 +269,26 @@
 </div>
 
 <script>
-// Storage keys (must match auth.js)
 const TOKEN_KEY = 'axxspace_member_token';
 const NAME_KEY  = 'axxspace_member_name';
 const ID_KEY    = 'axxspace_member_id';
+const INV_TOKEN = 'axxspace_investor_token';
+const INV_NAME  = 'axxspace_investor_name';
+const INV_ID    = 'axxspace_investor_id';
 
-// If already logged in, skip to home
-if (localStorage.getItem(TOKEN_KEY)) {
-  window.location.href = '/home';
-}
+// Already logged in? Redirect
+if (localStorage.getItem(TOKEN_KEY)) window.location.href = '/home';
+if (localStorage.getItem(INV_TOKEN)) window.location.href = '/investor';
+if (localStorage.getItem('axxspace_admin_token')) window.location.href = '/admin';
 
 function switchTab(tab) {
-  document.getElementById('tab-member').classList.toggle('active', tab === 'member');
-  document.getElementById('tab-admin').classList.toggle('active', tab === 'admin');
-  document.getElementById('panel-member').classList.toggle('active', tab === 'member');
-  document.getElementById('panel-admin').classList.toggle('active', tab === 'admin');
+  ['member','investor','admin'].forEach(t => {
+    const tabEl = document.getElementById('tab-'+t);
+    const panEl = document.getElementById('panel-'+t);
+    const isActive = (t === tab);
+    tabEl.classList.toggle('active', isActive);
+    panEl.classList.toggle('active', isActive);
+  });
 }
 
 async function memberLogin() {
@@ -257,45 +298,47 @@ async function memberLogin() {
   const btn      = document.getElementById('m-btn');
   msg.className  = 'msg';
 
-  if (!email || !password) {
-    msg.className = 'msg error';
-    msg.textContent = 'Please fill in both fields.';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Signing in…';
-
+  if (!email || !password) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
   try {
     const res  = await fetch('/api/members/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
-
-    if (!res.ok) {
-      msg.className   = 'msg error';
-      msg.textContent = data.detail || 'Login failed. Please check your credentials.';
-      return;
-    }
-
-    // Save session using consistent keys
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem(NAME_KEY,  data.name);
     localStorage.setItem(ID_KEY,    String(data.contributor_id));
-
-    msg.className   = 'msg success';
-    msg.textContent = `Welcome back, ${data.name}! Redirecting…`;
+    msg.className='msg success'; msg.textContent=`Welcome back, ${data.name}! Redirecting…`;
     setTimeout(() => window.location.href = '/home', 800);
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
+  finally { btn.disabled=false; btn.textContent='Sign in as Member'; }
+}
 
-  } catch {
-    msg.className   = 'msg error';
-    msg.textContent = 'Connection error. Please try again.';
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Sign in';
-  }
+async function investorLogin() {
+  const email    = document.getElementById('i-email').value.trim();
+  const password = document.getElementById('i-password').value;
+  const msg      = document.getElementById('i-msg');
+  const btn      = document.getElementById('i-btn');
+  msg.className  = 'msg';
+
+  if (!email || !password) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res  = await fetch('/api/investors/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
+    localStorage.setItem(INV_TOKEN, data.token);
+    localStorage.setItem(INV_NAME,  data.name);
+    localStorage.setItem(INV_ID,    String(data.investor_id));
+    msg.className='msg success'; msg.textContent=`Welcome, ${data.name}! Loading your portfolio…`;
+    setTimeout(() => window.location.href = '/investor', 800);
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
+  finally { btn.disabled=false; btn.textContent='Access Investor Dashboard'; }
 }
 
 async function adminLogin() {
@@ -304,46 +347,26 @@ async function adminLogin() {
   const btn      = document.getElementById('a-btn');
   msg.className  = 'msg';
 
-  if (!password) {
-    msg.className   = 'msg error';
-    msg.textContent = 'Enter the admin password.';
-    return;
-  }
-
-  btn.disabled    = true;
-  btn.textContent = 'Verifying…';
-
+  if (!password) { msg.className='msg error'; msg.textContent='Enter the admin password.'; return; }
+  btn.disabled=true; btn.textContent='Verifying…';
   try {
     const res  = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ password }),
     });
     const data = await res.json();
-
-    if (!res.ok) {
-      msg.className   = 'msg error';
-      msg.textContent = data.detail || 'Incorrect password.';
-      return;
-    }
-
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Incorrect password.'; return; }
     localStorage.setItem('axxspace_admin_token', data.token);
     window.location.href = '/admin';
-
-  } catch {
-    msg.className   = 'msg error';
-    msg.textContent = 'Connection error. Please try again.';
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Access Admin Panel';
-  }
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
+  finally { btn.disabled=false; btn.textContent='Access Admin Panel'; }
 }
 
-// Allow Enter key on inputs
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  const activePanel = document.querySelector('.panel.active').id;
-  if (activePanel === 'panel-member') memberLogin();
+  const active = document.querySelector('.panel.active').id;
+  if (active === 'panel-member')   memberLogin();
+  else if (active === 'panel-investor') investorLogin();
   else adminLogin();
 });
 </script>

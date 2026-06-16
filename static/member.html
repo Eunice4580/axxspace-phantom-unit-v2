@@ -6,6 +6,7 @@
 <title>AXXSPACE — My Account</title>
 <meta name="description" content="Your AXXSPACE contributor account — view your units, EUR value, rank, and full ledger history." />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,6 +25,16 @@
     --gold:        #f59e0b;
     --info:        #38bdf8;
     --error:       #ef4444;
+  }
+
+  :root.light {
+    --bg:          #f5f5fc;
+    --surface:     #ffffff;
+    --surface2:    #ededf8;
+    --border:      #dcdcf0;
+    --text:        #111128;
+    --muted:       #6b6b90;
+    --accent-glow: rgba(124,58,237,0.1);
   }
 
   html { scroll-behavior: smooth; }
@@ -73,6 +84,17 @@
     text-decoration: none; display: inline-block;
   }
   .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Theme toggle ───────────────────────────────────────────── */
+  .theme-toggle {
+    background: transparent; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.45rem 0.65rem; cursor: pointer; color: var(--muted);
+    transition: border-color 0.2s, color 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+  .theme-toggle svg { width: 16px; height: 16px; }
+  .notif-btn svg, .section-hd svg { width: 16px; height: 16px; }
 
   /* ── Layout ───────────────────────────────────────── */
   .page { max-width: 1100px; margin: 0 auto; padding: 0 2rem 4rem; position: relative; z-index: 1; }
@@ -280,9 +302,12 @@
   <div class="logo">AXXSPACE</div>
   <div class="nav-right">
     <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
-      🔔<span class="notif-badge" id="notif-badge">0</span>
+      <i data-lucide="bell"></i><span class="notif-badge" id="notif-badge">0</span>
     </button>
-    <a href="/chat" class="btn-ghost" style="display:inline-flex;align-items:center;gap:0.4rem">💬 Chat</a>
+    <a href="/chat" class="btn-ghost" style="display:inline-flex;align-items:center;gap:0.4rem"><i data-lucide="message-circle" style="width:15px;height:15px"></i> Chat</a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <i data-lucide="moon" id="theme-icon"></i>
+    </button>
     <span class="nav-user" id="nav-name">Loading…</span>
     <a href="/home" class="btn-ghost" id="home-link">← Home</a>
     <button class="btn-ghost" onclick="logout()" id="signout-btn">Sign out</button>
@@ -331,7 +356,7 @@
 
   <!-- Growth chart -->
   <section style="margin-bottom:3rem">
-    <div class="section-hd"><h2>📈 My Unit Growth</h2></div>
+    <div class="section-hd"><h2><i data-lucide="trending-up" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.35rem"></i>My Unit Growth</h2></div>
     <div class="chart-block">
       <div class="chart-header">
         <div>
@@ -341,14 +366,14 @@
       </div>
       <canvas id="memberChart"></canvas>
       <div class="chart-empty" id="chart-empty" style="display:none">
-        <span>📊</span>No unit awards yet. Your chart will appear once the admin records your first award.
+        <span><i data-lucide="bar-chart-3" style="width:32px;height:32px;color:var(--muted)"></i></span>No unit awards yet. Your chart will appear once the admin records your first award.
       </div>
     </div>
   </section>
 
   <!-- Ledger history -->
   <section>
-    <div class="section-hd"><h2>📋 Ledger History</h2></div>
+    <div class="section-hd"><h2><i data-lucide="clipboard-list" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.35rem"></i>Ledger History</h2></div>
     <div class="table-wrap">
       <div class="loading-state" id="ledger-loading">
         <div class="spinner"></div>
@@ -366,7 +391,7 @@
         <tbody id="ledger-body"></tbody>
       </table>
       <div class="empty-state" id="ledger-empty" style="display:none">
-        <span>📭</span>No ledger entries yet. Units appear here once the admin records your first award.
+        <span><i data-lucide="inbox" style="width:32px;height:32px;color:var(--muted)"></i></span>No ledger entries yet. Units appear here once the admin records your first award.
       </div>
     </div>
   </section>
@@ -532,7 +557,7 @@ load();
 <div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
 <div class="notif-drawer" id="notif-drawer">
   <div class="drawer-header">
-    <h3>🔔 Notifications</h3>
+    <h3><i data-lucide="bell" style="width:15px;height:15px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>Notifications</h3>
     <div class="drawer-actions">
       <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
       <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
@@ -631,6 +656,24 @@ _loadNotifications();
 _connectSSE();
 // Fallback poll every 30s if SSE is slow
 setInterval(_loadNotifications, 30000);
+
+// ── Theme toggle ─────────────────────────────────────────────────
+(function () {
+  const saved = localStorage.getItem('axxspace_theme');
+  if (saved === 'light') document.documentElement.classList.add('light');
+  _applyThemeIcon();
+})();
+function _applyThemeIcon() {
+  const isLight = document.documentElement.classList.contains('light');
+  const el = document.getElementById('theme-icon');
+  if (el) { el.setAttribute('data-lucide', isLight ? 'sun' : 'moon'); lucide.createIcons(); }
+}
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
+  _applyThemeIcon();
+}
+lucide.createIcons();
 </script>
 </body>
 </html>

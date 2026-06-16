@@ -24,6 +24,34 @@
   .theme-toggle:hover { border-color:var(--accent); color:var(--text); }
   .theme-toggle svg { width:16px; height:16px; }
   .notif-btn svg { width:16px; height:16px; }
+  /* ── Icon treatments ─────────────────────────────────────── */
+  .notif-btn { background: linear-gradient(135deg,rgba(124,58,237,0.1),rgba(79,70,229,0.05)); }
+  .section-title i, .card h2 i {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px;
+    background: linear-gradient(135deg,rgba(124,58,237,0.15),rgba(79,70,229,0.08));
+    border: 1px solid rgba(124,58,237,0.22);
+    border-radius: 6px;
+    color: var(--accent);
+    vertical-align: middle;
+    margin-right: 0.4rem;
+    flex-shrink: 0;
+  }
+  .section-title i svg, .card h2 i svg { width:13px; height:13px; }
+  /* btn-delete icon alignment */
+  .btn-delete i { vertical-align: middle; margin-right: 0.2rem; }
+  /* Chat FAB icon */
+  .chat-fab svg { width:22px; height:22px; stroke-width:2; color:#fff; }
+  /* Drawer header icon */
+  .drawer-header h3 i {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg,rgba(124,58,237,0.18),rgba(79,70,229,0.1));
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 6px; color: var(--accent);
+    vertical-align: middle; margin-right: 0.4rem;
+  }
+  .drawer-header h3 i svg { width:12px; height:12px; }
   body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
   nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
   .logo { font-family: 'Space Mono', monospace; font-size: 1rem; letter-spacing: 0.15em; color: var(--accent); }

@@ -333,13 +333,23 @@
     }
 
     .card-icon {
-      margin-bottom: 1rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(79,70,229,0.08));
+      border: 1px solid rgba(124,58,237,0.25);
       display: flex;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
+      margin-bottom: 1.25rem;
       color: var(--accent);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .card-icon svg { width: 28px; height: 28px; stroke-width: 1.75; }
+    .about-card:hover .card-icon {
+      transform: scale(1.06);
+      box-shadow: 0 4px 20px rgba(124,58,237,0.25);
+    }
+    .card-icon svg { width: 22px; height: 22px; stroke-width: 1.75; }
 
     /* ── Theme toggle ─────────────────────────────────────────────── */
     .theme-toggle {
@@ -356,6 +366,24 @@
     }
     .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
     .theme-toggle svg { width: 16px; height: 16px; }
+
+    /* ── Icon treatments ───────────────────────────────────────── */
+    .notif-btn {
+      background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(79,70,229,0.05));
+    }
+    .notif-btn svg { width: 16px; height: 16px; stroke-width: 2; }
+    /* Drawer header bell icon */
+    .drawer-header h3 i {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(79,70,229,0.1));
+      border: 1px solid rgba(124,58,237,0.25);
+      border-radius: 6px;
+      color: var(--accent);
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+    .drawer-header h3 i svg { width: 12px; height: 12px; }
 
     .card-title {
       font-size: 1rem;

@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AXXSPACE — Admin</title>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -195,10 +194,10 @@
   <div class="logo">AXXSPACE <span class="admin-tag">Admin</span></div>
   <div style="display:flex;align-items:center;gap:0.75rem">
     <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
-      <i data-lucide="bell"></i><span class="notif-badge" id="notif-badge">0</span>
+      🔔<span class="notif-badge" id="notif-badge">0</span>
     </button>
     <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-      <i data-lucide="moon" id="theme-icon"></i>
+      <span id="theme-icon">🌙</span>
     </button>
     <button class="btn-sm" onclick="logout()">Sign out</button>
   </div>
@@ -263,7 +262,7 @@
   <!-- Add Investor card (full width) -->
   <div style="margin-bottom:2rem">
     <div class="card" style="border-color:rgba(14,165,233,0.3);background:linear-gradient(135deg,var(--surface),rgba(14,165,233,0.04))">
-      <h2 style="color:var(--investor)"><i data-lucide="trending-up" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>Add Investor</h2>
+      <h2 style="color:var(--investor)">📈 Add Investor</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
         <div class="form-group" style="margin-bottom:0"><label>Full Name</label><input type="text" id="inv-name" placeholder="John Investor" /></div>
         <div class="form-group" style="margin-bottom:0"><label>Email</label><input type="email" id="inv-email" placeholder="investor@email.com" /></div>
@@ -290,7 +289,7 @@
   <!-- Tables -->
   <div class="tabs" id="main-tabs">
     <button class="tab active" id="tab-contributors" onclick="showPanel('contributors')">Contributors</button>
-    <button class="tab" id="tab-investors" onclick="showPanel('investors')" style="border-color:var(--investor);color:var(--investor)"><i data-lucide="trending-up" style="width:13px;height:13px;display:inline;vertical-align:middle;margin-right:0.3rem"></i>Investors</button>
+    <button class="tab" id="tab-investors" onclick="showPanel('investors')" style="border-color:var(--investor);color:var(--investor)">📈 Investors</button>
     <button class="tab" id="tab-ledger" onclick="showPanel('ledger')">Ledger</button>
   </div>
 
@@ -392,7 +391,7 @@ async function loadContributors() {
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${c.total_value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</td>
       <td><button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g,\"\\'\")}')"
-           title="Delete contributor"><i data-lucide="trash-2" style="width:13px;height:13px;display:inline;vertical-align:middle"></i> Delete</button></td>
+           title="Delete contributor">🗑 Delete</button></td>
     </tr>`).join('');
 }
 
@@ -411,8 +410,8 @@ async function loadLedger() {
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${e.approving_reviewer}</td>
       <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
-        <button class="btn-delete" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);color:var(--accent)" onclick="editLedger(${e.id},${e.contributor_id},'${e.task_description.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',${e.units_awarded},'${e.approving_reviewer.replace(/'/g,"\\'")  }','${(e.task_reference||'').replace(/'/g,"\\'")  }','${(e.remarks||'').replace(/'/g,"\\'")  }')" title="Edit entry"><i data-lucide="pencil" style="width:12px;height:12px;display:inline;vertical-align:middle"></i> Edit</button>
-        <button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry"><i data-lucide="trash-2" style="width:12px;height:12px;display:inline;vertical-align:middle"></i> Delete</button>
+        <button class="btn-delete" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);color:var(--accent)" onclick="editLedger(${e.id},${e.contributor_id},'${e.task_description.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',${e.units_awarded},'${e.approving_reviewer.replace(/'/g,"\\'")  }','${(e.task_reference||'').replace(/'/g,"\\'")  }','${(e.remarks||'').replace(/'/g,"\\'")  }')" title="Edit entry">✏ Edit</button>
+        <button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry">🗑 Delete</button>
       </td>
     </tr>`).join('');
 }
@@ -715,21 +714,20 @@ loadConfig(); loadStats(); loadContributors(); loadLedger();
 function _applyThemeIcon() {
   const isLight = document.documentElement.classList.contains('light');
   const el = document.getElementById('theme-icon');
-  if (el) { el.setAttribute('data-lucide', isLight ? 'sun' : 'moon'); lucide.createIcons(); }
+  if (el) el.textContent = isLight ? '☀️' : '🌙';
 }
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
   _applyThemeIcon();
 }
-lucide.createIcons();
 </script>
 
 <!-- Notification drawer -->
 <div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
 <div class="notif-drawer" id="notif-drawer">
   <div class="drawer-header">
-    <h3><i data-lucide="bell" style="width:15px;height:15px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>Notifications</h3>
+    <h3>🔔 Notifications</h3>
     <div class="drawer-actions">
       <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
       <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
@@ -744,7 +742,7 @@ lucide.createIcons();
     <!-- Room list view -->
     <div id="view-rooms">
       <div class="chat-panel-header">
-        <h4><i data-lucide="message-circle" style="width:15px;height:15px;display:inline;vertical-align:middle;margin-right:0.3rem"></i>Chats</h4>
+        <h4>💬 Chats</h4>
         <button class="btn-new-room" onclick="openNewRoomModal()">+ New Chat</button>
       </div>
       <div class="room-list" id="room-list"><div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">Loading rooms…</div></div>
@@ -763,14 +761,14 @@ lucide.createIcons();
     </div>
   </div>
   <button class="chat-fab" onclick="toggleChat()" title="Chat">
-    <i data-lucide="message-circle" style="width:22px;height:22px"></i><span class="chat-fab-badge" id="chat-fab-badge">0</span>
+    💬<span class="chat-fab-badge" id="chat-fab-badge">0</span>
   </button>
 </div>
 
 <!-- New room modal -->
 <div class="modal-overlay" id="new-room-modal">
   <div class="modal-box">
-    <h3><i data-lucide="message-square" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>New Chat Room</h3>
+    <h3>🗨️ New Chat Room</h3>
     <label class="modal-label">Room name</label>
     <input class="modal-input" id="new-room-name" placeholder="e.g. Sprint 3 sync" />
     <label class="modal-label">Invite members</label>

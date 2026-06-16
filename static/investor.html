@@ -6,7 +6,6 @@
 <title>AXXSPACE — Investor Portal</title>
 <meta name="description" content="Your AXXSPACE investor portfolio dashboard."/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -60,23 +59,14 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple));opacity:0;transition:opacity 0.2s}
 .stat-card:hover::before{opacity:1}
 .stat-icon{
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 44px; height: 44px; border-radius: 12px;
   background: linear-gradient(135deg, var(--accent-glow), rgba(14,165,233,0.06));
   border: 1px solid rgba(14,165,233,0.22);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 0.75rem; font-size: 1.5rem;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.stat-card:hover .stat-icon{
-  transform: scale(1.08);
-  box-shadow: 0 4px 18px var(--accent-glow);
-}
-.stat-icon svg{width:20px;height:20px;stroke-width:1.75}
+.stat-card:hover .stat-icon{ transform: scale(1.08); box-shadow: 0 4px 18px var(--accent-glow); }
 .stat-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.35rem}
 .stat-val{font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;line-height:1.2}
 .stat-val.blue{color:var(--accent)} .stat-val.gold{color:var(--gold)} .stat-val.green{color:var(--green)} .stat-val.purple{color:var(--purple)}
@@ -116,23 +106,14 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
   text-align:center;transition:border-color 0.2s,transform 0.2s}
 .perk-card:hover{border-color:var(--accent);transform:translateY(-2px)}
 .perk-icon{
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  width: 52px; height: 52px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent-glow), rgba(14,165,233,0.06));
   border: 1px solid rgba(14,165,233,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.85rem;
-  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 0.85rem; font-size: 1.5rem;
   transition: transform 0.25s, box-shadow 0.25s;
 }
-.perk-card:hover .perk-icon{
-  transform: scale(1.1) rotate(-4deg);
-  box-shadow: 0 6px 24px var(--accent-glow);
-}
-.perk-icon svg{width:22px;height:22px;stroke-width:1.75}
+.perk-card:hover .perk-icon{ transform: scale(1.1) rotate(-4deg); box-shadow: 0 6px 24px var(--accent-glow); }
 .perk-title{font-size:0.85rem;font-weight:600;margin-bottom:0.3rem}
 .perk-desc{font-size:0.75rem;color:var(--muted);line-height:1.5}
 
@@ -191,13 +172,13 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
 <nav>
   <div class="logo">AXXSPACE</div>
   <div class="nav-right">
-    <div class="investor-chip"><i data-lucide="trending-up" style="width:14px;height:14px"></i> <span id="nav-name">Investor</span></div>
+    <div class="investor-chip">📈 <span id="nav-name">Investor</span></div>
     <div class="price-live">
       <div class="price-dot"></div>
       KES 50/share
     </div>
     <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-      <i data-lucide="moon" id="theme-icon"></i>
+      <span id="theme-icon">🌙</span>
     </button>
     <button class="btn-sm" onclick="logout()">Sign out</button>
   </div>
@@ -219,38 +200,38 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
     <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="bar-chart-3"></i></div>
+        <div class="stat-icon">📊</div>
         <div class="stat-label">Your Shares</div>
         <div class="stat-val blue" id="s-shares">—</div>
         <div class="stat-sub">@ KES 50 per share</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="wallet"></i></div>
+        <div class="stat-icon">💰</div>
         <div class="stat-label">Portfolio Value</div>
         <div class="stat-val gold" id="s-value">—</div>
         <div class="stat-sub" id="s-value-sub">Total invested</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="trophy"></i></div>
+        <div class="stat-icon">🏆</div>
         <div class="stat-label">Investor Rank</div>
         <div class="stat-val purple" id="s-rank">—</div>
         <div class="stat-sub" id="s-rank-sub">among investors</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="target"></i></div>
+        <div class="stat-icon">🎯</div>
         <div class="stat-label">Portfolio Share</div>
         <div class="stat-val green" id="s-pct">—</div>
         <div class="stat-sub">of total investor pool</div>
         <div class="progress-bar"><div class="progress-fill" id="s-bar" style="width:0%"></div></div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="calendar"></i></div>
+        <div class="stat-icon">📅</div>
         <div class="stat-label">Member Since</div>
         <div class="stat-val" id="s-since" style="font-size:1.1rem">—</div>
         <div class="stat-sub" id="s-tenure">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="phone"></i></div>
+        <div class="stat-icon">📞</div>
         <div class="stat-label">Contact</div>
         <div class="stat-val" id="s-email" style="font-size:0.85rem;word-break:break-all">—</div>
         <div class="stat-sub" id="s-phone">—</div>
@@ -260,11 +241,11 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
     <!-- Charts row -->
     <div class="grid2">
       <div class="card">
-        <div class="card-title"><span class="icon"><i data-lucide="trending-up"></i></span> Portfolio Growth Projection</div>
+        <div class="card-title"><span class="icon">📈</span> Portfolio Growth Projection</div>
         <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title"><span class="icon"><i data-lucide="pie-chart"></i></span> Pool Position</div>
+        <div class="card-title"><span class="icon">🍩</span> Pool Position</div>
         <div class="chart-wrap"><canvas id="poolChart"></canvas></div>
         <div style="text-align:center;margin-top:0.75rem">
           <div id="pool-label" style="font-size:0.82rem;color:var(--muted)"></div>
@@ -273,7 +254,7 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
     </div>
 
     <!-- ROI Projection -->
-    <div class="section-title"><i data-lucide="bar-chart-2" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>ROI Projections</div>
+    <div class="section-title">📊 ROI Projections</div>
     <div class="card" style="margin-bottom:2rem">
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
         Illustrative projections at assumed annual growth rates. Not financial advice.
@@ -293,42 +274,42 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
     </div>
 
     <!-- Perks -->
-    <div class="section-title"><i data-lucide="gift" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>Investor Benefits</div>
+    <div class="section-title">🎁 Investor Benefits</div>
     <div class="perks-grid">
       <div class="perk-card">
-        <div class="perk-icon"><i data-lucide="lock"></i></div>
+        <div class="perk-icon">🔐</div>
         <div class="perk-title">Equity Stake</div>
         <div class="perk-desc">Own a verifiable slice of the AXXSPACE phantom unit pool</div>
       </div>
       <div class="perk-card">
-        <div class="perk-icon"><i data-lucide="mail"></i></div>
+        <div class="perk-icon">📬</div>
         <div class="perk-title">Priority Updates</div>
         <div class="perk-desc">Receive quarterly performance reports and platform updates</div>
       </div>
       <div class="perk-card">
-        <div class="perk-icon"><i data-lucide="check-square"></i></div>
+        <div class="perk-icon">🗳️</div>
         <div class="perk-title">Governance Input</div>
         <div class="perk-desc">Participate in major platform decisions proportional to shares held</div>
       </div>
       <div class="perk-card">
-        <div class="perk-icon"><i data-lucide="banknote"></i></div>
+        <div class="perk-icon">💸</div>
         <div class="perk-title">Returns</div>
         <div class="perk-desc">Share in platform revenue distributions as AXXSPACE grows</div>
       </div>
       <div class="perk-card">
-        <div class="perk-icon"><i data-lucide="shield"></i></div>
+        <div class="perk-icon">🛡️</div>
         <div class="perk-title">Secure & Transparent</div>
         <div class="perk-desc">All transactions recorded and auditable in real-time</div>
       </div>
       <div class="perk-card">
-        <div class="perk-icon"><i data-lucide="phone"></i></div>
+        <div class="perk-icon">📞</div>
         <div class="perk-title">Dedicated Support</div>
         <div class="perk-desc">Direct line to the AXXSPACE team for investor inquiries</div>
       </div>
     </div>
 
     <!-- Activity feed -->
-    <div class="section-title"><i data-lucide="clipboard-list" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>Account Activity</div>
+    <div class="section-title">📋 Account Activity</div>
     <div class="card" style="margin-bottom:2rem">
       <div class="activity-list" id="activity-list"></div>
     </div>
@@ -509,14 +490,13 @@ load();
 function _applyThemeIcon() {
   const isLight = document.documentElement.classList.contains('light');
   const el = document.getElementById('theme-icon');
-  if (el) { el.setAttribute('data-lucide', isLight ? 'sun' : 'moon'); lucide.createIcons(); }
+  if (el) el.textContent = isLight ? '☀️' : '🌙';
 }
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
   _applyThemeIcon();
 }
-lucide.createIcons();
 </script>
 </body>
 </html>

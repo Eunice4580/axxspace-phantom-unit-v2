@@ -8,7 +8,6 @@
   <meta name="description"
     content="AXXSPACE Phantom Unit Compensation System — understand your contribution units and track the team's growth." />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
@@ -342,14 +341,13 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 1.25rem;
-      color: var(--accent);
+      font-size: 1.5rem;
       transition: transform 0.2s, box-shadow 0.2s;
     }
     .about-card:hover .card-icon {
       transform: scale(1.06);
       box-shadow: 0 4px 20px rgba(124,58,237,0.25);
     }
-    .card-icon svg { width: 22px; height: 22px; stroke-width: 1.75; }
 
     /* ── Theme toggle ─────────────────────────────────────────────── */
     .theme-toggle {
@@ -765,10 +763,10 @@
     <div class="logo">AXXSPACE</div>
     <div class="nav-right">
       <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
-        <i data-lucide="bell"></i><span class="notif-badge" id="notif-badge">0</span>
+        🔔<span class="notif-badge" id="notif-badge">0</span>
       </button>
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-        <i data-lucide="moon" id="theme-icon"></i>
+        <span id="theme-icon">🌙</span>
       </button>
       <span class="nav-user" id="nav-name">Loading…</span>
       <a href="/member" class="btn-accent" id="my-account-btn">My Account →</a>
@@ -822,38 +820,38 @@
 
       <div class="about-grid">
         <div class="about-card">
-          <span class="card-icon"><i data-lucide="landmark"></i></span>
+          <span class="card-icon">🏦</span>
           <div class="card-title">Fixed Unit Pool</div>
           <p class="card-body">There are exactly <strong>1,000 Contribution Units</strong> in existence. Every unit
             awarded to a contributor comes from this fixed pool, ensuring scarcity and fairness.</p>
         </div>
         <div class="about-card">
-          <span class="card-icon"><i data-lucide="euro"></i></span>
+          <span class="card-icon">💶</span>
           <div class="card-title">Real Monetary Value</div>
           <p class="card-body">Each unit carries a reference value of <strong>€10 (0.1 unit = €1)</strong>. The full
             pool has a reference value of €10,000. This value is the basis for any future buy-back by AXXSPACE.</p>
         </div>
         <div class="about-card">
-          <span class="card-icon"><i data-lucide="bar-chart-3"></i></span>
+          <span class="card-icon">📊</span>
           <div class="card-title">Fractional Awards</div>
           <p class="card-body">Units are awarded in <strong>increments of 0.1</strong>, from minor tasks (0.1–0.2 units)
             to strategic contributions (0.9–1.0 units). Every award is logged with a task description, date, and
             reviewer.</p>
         </div>
         <div class="about-card">
-          <span class="card-icon"><i data-lucide="lock"></i></span>
+          <span class="card-icon">🔒</span>
           <div class="card-title">Not Equity</div>
           <p class="card-body">Phantom Units are a <strong>recognition & reward mechanism only</strong>. They do not
             represent shares, equity, voting rights, or legal ownership in AXXSPACE (spec §9).</p>
         </div>
         <div class="about-card">
-          <span class="card-icon"><i data-lucide="clipboard-list"></i></span>
+          <span class="card-icon">📋</span>
           <div class="card-title">Full Transparency</div>
           <p class="card-body">Every award is recorded on the contribution ledger with the <strong>task, reviewer, date
               and units</strong>. You can view your full history and track your growth over time.</p>
         </div>
         <div class="about-card">
-          <span class="card-icon"><i data-lucide="shield-check"></i></span>
+          <span class="card-icon">🚀</span>
           <div class="card-title">Admin-Managed</div>
           <p class="card-body">All accounts and unit awards are <strong>managed by AXXSPACE admins</strong> — ensuring
             every award is properly reviewed, documented and reflects real contribution value.</p>
@@ -879,7 +877,7 @@
         <div id="chart-container">
           <canvas id="growthChart"></canvas>
           <div class="chart-empty" id="chart-empty" style="display:none">
-            <span><i data-lucide="trending-up" style="width:40px;height:40px;color:var(--muted)"></i></span>
+            <span>📈</span>
             No unit awards recorded yet. The chart will appear once the first units are awarded.
           </div>
         </div>
@@ -1096,7 +1094,7 @@
   <div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
   <div class="notif-drawer" id="notif-drawer">
     <div class="drawer-header">
-      <h3><i data-lucide="bell" style="width:15px;height:15px;display:inline;vertical-align:middle;margin-right:0.4rem"></i>Notifications</h3>
+      <h3>🔔 Notifications</h3>
       <div class="drawer-actions">
         <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
         <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
@@ -1195,7 +1193,7 @@
     function _applyThemeIcon() {
       const isLight = document.documentElement.classList.contains('light');
       const el = document.getElementById('theme-icon');
-      if (el) { el.setAttribute('data-lucide', isLight ? 'sun' : 'moon'); lucide.createIcons(); }
+      if (el) el.textContent = isLight ? '☀️' : '🌙';
     }
 
     function toggleTheme() {
@@ -1203,9 +1201,6 @@
       localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
       _applyThemeIcon();
     }
-
-    // Init Lucide icons
-    lucide.createIcons();
   </script>
 
 </body>

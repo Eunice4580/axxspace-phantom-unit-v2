@@ -6,23 +6,23 @@
 <title>AXXSPACE — Phantom Unit Compensation System</title>
 <meta name="description" content="AXXSPACE Phantom Units — a transparent, rule-based framework for recognising every contributor's work with a real financial reference value." />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #04040b; --surface: #0b0b17; --surface2: #101020;
-    --border: #191930; --accent: #7c3aed; --accent2: #4f46e5;
-    --accent-glow: rgba(124,58,237,0.2); --text: #eaeaf5;
-    --muted: #6b6b90; --success: #10b981; --gold: #f59e0b;
+    --bg: #050505; --surface: #0d0d0d; --surface2: #141414;
+    --border: #C9A84C; --accent: #C9A84C; --accent2: #a07c1e;
+    --accent-glow: rgba(201,168,76,0.18); --text: #f0e8d8;
+    --muted: #7a6845; --success: #10b981; --gold: #C9A84C;
   }
 
   html { scroll-behavior: smooth; }
   body {
     background:
-      radial-gradient(ellipse 120% 60% at 80% -10%, rgba(79,46,150,0.18), transparent),
-      radial-gradient(ellipse 100% 50% at -10% 100%, rgba(49,46,129,0.14), transparent),
+      radial-gradient(ellipse 110% 55% at 85% -5%, rgba(201,168,76,0.06), transparent),
+      radial-gradient(ellipse 90% 45% at -5% 105%, rgba(160,124,30,0.05), transparent),
       var(--bg);
     color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Raleway', sans-serif;
     min-height: 100vh; overflow-x: hidden;
   }
 
@@ -30,26 +30,26 @@
   body::before {
     content: ''; position: fixed; top: -20%; right: -10%;
     width: 750px; height: 750px;
-    background: radial-gradient(ellipse, rgba(124,58,237,0.13) 0%, transparent 65%);
+    background: radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 65%);
     pointer-events: none; z-index: 0;
   }
   /* Ambient glow — bottom left */
   body::after {
     content: ''; position: fixed; bottom: -18%; left: -8%;
     width: 650px; height: 650px;
-    background: radial-gradient(ellipse, rgba(79,70,229,0.09) 0%, transparent 65%);
+    background: radial-gradient(ellipse, rgba(160,124,30,0.05) 0%, transparent 65%);
     pointer-events: none; z-index: 0;
   }
 
   /* ── Corner logo stamps ── */
   .corner-logo {
     position: fixed;
-    width: 72px; height: 72px;
+    width: 68px; height: 68px;
     background: url('/static/logo.png') no-repeat center center;
     background-size: contain;
-    opacity: 0.07;
+    opacity: 0.09;
     pointer-events: none; z-index: 0;
-    filter: saturate(0) brightness(2);
+    filter: sepia(1) saturate(1.8) brightness(0.85);
     transition: opacity 0.3s;
   }
   .corner-logo.tl { top: 1.25rem;    left: 1.25rem; }
@@ -60,7 +60,7 @@
   /* Subtle dot-grid overlay */
   .bg-grid {
     position: fixed; inset: 0;
-    background-image: radial-gradient(rgba(124,58,237,0.13) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(201,168,76,0.11) 1px, transparent 1px);
     background-size: 34px 34px;
     pointer-events: none; z-index: 0;
     mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
@@ -74,7 +74,7 @@
     position: sticky; top: 0; background: rgba(7,7,14,0.88);
     backdrop-filter: blur(12px); z-index: 100;
   }
-  .logo { font-family: 'Space Mono', monospace; font-size: 1rem; letter-spacing: 0.18em; color: var(--accent); font-weight: 700; }
+  .logo { font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.24em; color: var(--accent); font-weight: 700; text-transform: uppercase; }
   .nav-right { display: flex; align-items: center; gap: 0.75rem; }
   .btn-ghost { padding: 0.45rem 1rem; background: transparent; border: 1px solid var(--border); border-radius: 7px; color: var(--muted); font-family: inherit; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
   .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
@@ -94,10 +94,11 @@
     background: rgba(124,58,237,0.06);
   }
   .hero h1 {
-    font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 700;
-    line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 1.2rem;
+    font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 700;
+    font-family: 'Cinzel', serif;
+    line-height: 1.18; letter-spacing: 0.02em; margin-bottom: 1.2rem;
   }
-  .grad { background: linear-gradient(135deg, #a855f7, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad { background: linear-gradient(135deg, #e8c96d, #C9A84C, #9a7218); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .hero-sub { font-size: 1.1rem; color: var(--muted); max-width: 560px; margin: 0 auto 2.5rem; line-height: 1.7; }
   .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
   .btn-lg { padding: 0.9rem 2.4rem; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; text-decoration: none; font-family: inherit; transition: all 0.2s; display: inline-block; }
@@ -155,8 +156,8 @@
 
   /* ── CTA banner ── */
   .cta-banner {
-    background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(79,70,229,0.08));
-    border: 1px solid rgba(124,58,237,0.25); border-radius: 16px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.07), rgba(160,124,30,0.04));
+    border: 1px solid rgba(201,168,76,0.3); border-radius: 16px;
     padding: 3.5rem 2rem; text-align: center; margin-bottom: 2rem;
   }
   .cta-banner h2 { font-size: 1.7rem; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: -0.02em; }

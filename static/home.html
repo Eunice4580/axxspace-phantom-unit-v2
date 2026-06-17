@@ -59,7 +59,6 @@
       overflow-x: hidden;
     }
 
-    /* Ambient background glow */
     body::before {
       content: '';
       position: fixed;
@@ -67,7 +66,17 @@
       right: -10%;
       width: 800px;
       height: 800px;
-      background: radial-gradient(ellipse, rgba(124, 58, 237, 0.08) 0%, transparent 65%);
+      background: radial-gradient(ellipse, rgba(124, 58, 237, 0.10) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Ambient glow — bottom left */
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -18%; left: -8%;
+      width: 680px; height: 680px;
+      background: radial-gradient(ellipse, rgba(79,70,229,0.08) 0%, transparent 65%);
       pointer-events: none;
       z-index: 0;
     }
@@ -75,26 +84,37 @@
     /* Background Logo Watermark */
     .bg-logo-watermark {
       position: fixed;
-      bottom: -8%;
-      right: -5%;
-      width: 45vw;
-      height: 45vw;
-      max-width: 550px;
-      max-height: 550px;
-      min-width: 280px;
-      min-height: 280px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 62vw;
+      height: 62vw;
+      max-width: 620px;
+      max-height: 620px;
+      min-width: 300px;
+      min-height: 300px;
       background: url('/static/logo.png') no-repeat center center;
       background-size: contain;
-      opacity: 0.022; /* Very subtle and premium watermark in dark mode */
+      opacity: 0.06;
       pointer-events: none;
       z-index: 0;
       filter: saturate(0.85);
       transition: opacity 0.3s, filter 0.3s;
     }
 
+    /* Dot-grid overlay */
+    .bg-grid {
+      position: fixed; inset: 0;
+      background-image: radial-gradient(rgba(124,58,237,0.10) 1px, transparent 1px);
+      background-size: 34px 34px;
+      pointer-events: none; z-index: 0;
+      mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+    }
+
     :root.light .bg-logo-watermark {
-      opacity: 0.045; /* Clean visibility in light mode */
-      filter: saturate(0.7) brightness(1.05);
+      opacity: 0.12; /* Clean, visible watermark in light mode */
+      filter: saturate(0.75) brightness(1.02);
     }
 
     /* ── Navigation ───────────────────────────────────────────────── */
@@ -785,6 +805,7 @@
 
 <body>
   <div class="bg-logo-watermark"></div>
+  <div class="bg-grid"></div>
 
   <!-- Navigation -->
   <nav>

@@ -64,7 +64,7 @@ def test_award_flow_and_pool_accounting():
 
     c = client.post(
         "/api/contributors",
-        json={"name": "Alice", "email": "alice@example.com", "category": "Core Team Member"},
+        json={"name": "Alice", "email": "alice@gmail.com", "category": "Core Team Member"},
         headers=headers,
     )
     assert c.status_code == 201, c.text
@@ -99,7 +99,7 @@ def test_award_flow_and_pool_accounting():
 def test_rejects_non_tenth_increment():
     headers = _auth_headers()
     cid = client.post(
-        "/api/contributors", json={"name": "Bob", "category": "Intern"}, headers=headers
+        "/api/contributors", json={"name": "Bob", "email": "bob@gmail.com", "category": "Intern"}, headers=headers
     ).json()["id"]
     res = client.post(
         "/api/ledger",
@@ -118,7 +118,7 @@ def test_rejects_non_tenth_increment():
 def test_rejects_award_exceeding_pool():
     headers = _auth_headers()
     cid = client.post(
-        "/api/contributors", json={"name": "Carol", "category": "Volunteer"}, headers=headers
+        "/api/contributors", json={"name": "Carol", "email": "carol@gmail.com", "category": "Volunteer"}, headers=headers
     ).json()["id"]
     res = client.post(
         "/api/ledger",
@@ -146,7 +146,7 @@ def test_growth_series_is_cumulative():
     headers = _auth_headers()
     cid = client.post(
         "/api/contributors",
-        json={"name": "Eve", "category": "Project Contributor"},
+        json={"name": "Eve", "email": "eve@gmail.com", "category": "Project Contributor"},
         headers=headers,
     ).json()["id"]
     for amount in (0.2, 0.3):

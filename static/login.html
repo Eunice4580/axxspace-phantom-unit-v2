@@ -63,21 +63,6 @@
     50%       { opacity: 1;   transform: translateX(-50%) scale(1.08); }
   }
 
-  /* Background logo watermark */
-  .bg-logo-watermark {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 65vw; height: 65vw;
-    max-width: 650px; max-height: 650px;
-    min-width: 300px; min-height: 300px;
-    background: url('/static/logo.png') no-repeat center center;
-    background-size: contain;
-    opacity: 0.05;
-    pointer-events: none; z-index: 0;
-    filter: saturate(0.75);
-  }
-
   /* Subtle dot-grid overlay */
   .bg-grid {
     position: fixed; inset: 0;
@@ -244,7 +229,6 @@
 </style>
 </head>
 <body>
-<div class="bg-logo-watermark"></div>
 <div class="bg-grid"></div>
 <div class="wrap">
   <div class="brand">

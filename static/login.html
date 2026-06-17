@@ -9,15 +9,15 @@
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #050505;
-    --surface: #0d0d0d;
-    --surface2: #141414;
-    --border: #C9A84C;
-    --accent: #C9A84C;
-    --accent2: #a07c1e;
-    --accent-glow: rgba(201,168,76,0.22);
-    --text: #f0e8d8;
-    --muted: #7a6845;
+    --bg: #07070e;
+    --surface: #0f0f1a;
+    --surface2: #15152a;
+    --border: #1e1e36;
+    --accent: #7c3aed;
+    --accent2: #4f46e5;
+    --accent-glow: rgba(124,58,237,0.25);
+    --text: #eaeaf5;
+    --muted: #6b6b90;
     --success: #10b981;
     --error: #ef4444;
     --investor: #0ea5e9;
@@ -43,7 +43,7 @@
     transform: translateX(-50%);
     width: 750px;
     height: 750px;
-    background: radial-gradient(ellipse, rgba(124,58,237,0.14) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
     pointer-events: none;
     animation: pulse 6s ease-in-out infinite;
     z-index: 0;
@@ -66,7 +66,7 @@
   /* Subtle dot-grid overlay */
   .bg-grid {
     position: fixed; inset: 0;
-    background-image: radial-gradient(rgba(201,168,76,0.10) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(124,58,237,0.11) 1px, transparent 1px);
     background-size: 34px 34px;
     pointer-events: none; z-index: 0;
     mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 25%, transparent 100%);
@@ -131,7 +131,7 @@
     border-radius: 7px;
     transition: all 0.25s;
   }
-  .tab.active { background: var(--accent); color: #050505; box-shadow: 0 2px 12px var(--accent-glow); }
+  .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 12px var(--accent-glow); }
   .tab.active.inv { background: var(--investor); box-shadow: 0 2px 12px var(--investor-glow); }
 
   /* Form */
@@ -170,16 +170,15 @@
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border: none;
     border-radius: 9px;
-    color: #050505;
-    font-family: 'Cinzel', serif;
-    font-size: 0.9rem;
+    color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s, transform 0.12s, box-shadow 0.2s;
     margin-top: 0.5rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.3);
   }
   .btn:hover { opacity: 0.9; box-shadow: 0 6px 28px rgba(124,58,237,0.45); }
   .btn:active { transform: scale(0.985); }

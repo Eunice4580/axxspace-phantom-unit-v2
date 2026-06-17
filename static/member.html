@@ -11,31 +11,31 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:          #050505;
-    --surface:     #0d0d0d;
-    --surface2:    #141414;
-    --border:      #C9A84C;
-    --accent:      #C9A84C;
-    --accent2:     #a07c1e;
-    --accent-glow: rgba(201,168,76,0.18);
-    --text:        #f0e8d8;
-    --muted:       #7a6845;
+    --bg:          #07070e;
+    --surface:     #0f0f1a;
+    --surface2:    #141428;
+    --border:      #1e1e36;
+    --accent:      #7c3aed;
+    --accent2:     #4f46e5;
+    --accent-glow: rgba(124,58,237,0.18);
+    --text:        #eaeaf5;
+    --muted:       #6b6b90;
     --success:     #10b981;
-    --gold:        #C9A84C;
+    --gold:        #f59e0b;
     --info:        #38bdf8;
     --error:       #ef4444;
-    --nav-bg:      rgba(5,5,5,0.92);
+    --nav-bg:      rgba(7,7,14,0.88);
   }
 
   :root.light {
-    --bg:          #f5f0e8;
+    --bg:          #f5f5fc;
     --surface:     #ffffff;
-    --surface2:    #f0e8d8;
-    --border:      #C9A84C;
-    --text:        #1a1208;
-    --muted:       #7a6845;
-    --accent-glow: rgba(201,168,76,0.15);
-    --nav-bg:      rgba(245,240,232,0.92);
+    --surface2:    #ededf8;
+    --border:      #dcdcf0;
+    --text:        #111128;
+    --muted:       #6b6b90;
+    --accent-glow: rgba(124,58,237,0.1);
+    --nav-bg:      rgba(245,245,252,0.88);
   }
 
   html { scroll-behavior: smooth; }
@@ -51,7 +51,7 @@
     position: fixed;
     top: -20%; left: -10%;
     width: 750px; height: 750px;
-    background: radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 65%);
+    background: radial-gradient(ellipse, rgba(124,58,237,0.09) 0%, transparent 65%);
     pointer-events: none; z-index: 0;
   }
   /* Ambient glow — bottom right */
@@ -60,7 +60,7 @@
     position: fixed;
     bottom: -18%; right: -8%;
     width: 650px; height: 650px;
-    background: radial-gradient(ellipse, rgba(160,124,30,0.05) 0%, transparent 65%);
+    background: radial-gradient(ellipse, rgba(79,70,229,0.07) 0%, transparent 65%);
     pointer-events: none; z-index: 0;
   }
 
@@ -88,7 +88,7 @@
   /* Subtle dot-grid overlay */
   .bg-grid {
     position: fixed; inset: 0;
-    background-image: radial-gradient(rgba(201,168,76,0.09) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(124,58,237,0.10) 1px, transparent 1px);
     background-size: 34px 34px;
     pointer-events: none; z-index: 0;
     mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);

@@ -10,17 +10,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#050505;--surface:#0c0c0c;--surface2:#111;--surface3:#161616;
-  --border:#C9A84C;--accent:#0ea5e9;--accent2:#0284c7;--accent-glow:rgba(14,165,233,0.22);
-  --gold:#C9A84C;--green:#10b981;--purple:#7c3aed;
-  --text:#f0e8d8;--muted:#7a6845;--error:#ef4444;
-  --nav-bg:rgba(5,5,5,0.96);
+  --bg:#060a12;--surface:#0c1220;--surface2:#111b2e;--surface3:#162033;
+  --border:#1a2540;--accent:#0ea5e9;--accent2:#0284c7;--accent-glow:rgba(14,165,233,0.22);
+  --gold:#f59e0b;--green:#10b981;--purple:#7c3aed;
+  --text:#e8f0fe;--muted:#6b82a8;--error:#ef4444;
+  --nav-bg:rgba(6,10,18,0.95);
 }
 :root.light{
-  --bg:#f5f0e8;--surface:#ffffff;--surface2:#f0e8d8;--surface3:#e8dcc8;
-  --border:#C9A84C;--text:#1a1208;--muted:#7a6845;
+  --bg:#f0f6ff;--surface:#ffffff;--surface2:#e8f0fc;--surface3:#dce8f8;
+  --border:#c5d8f0;--text:#0c1a30;--muted:#4a6285;
   --accent-glow:rgba(14,165,233,0.12);
-  --nav-bg:rgba(245,240,232,0.96);
+  --nav-bg:rgba(240,246,255,0.95);
 }
 /* ── Theme toggle ───────────────────────────────────────── */
 .theme-toggle{background:transparent;border:1px solid var(--border);border-radius:6px;padding:0.38rem 0.6rem;cursor:pointer;color:var(--muted);transition:border-color 0.2s,color 0.2s;display:flex;align-items:center;justify-content:center;}
@@ -65,7 +65,7 @@ body::after{content:'';position:fixed;bottom:-18%;right:-8%;width:640px;height:6
 nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;
   border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--nav-bg);
   backdrop-filter:blur(12px);z-index:10}
-.logo{font-family:'Cinzel',serif;font-size:0.9rem;letter-spacing:0.24em;color:var(--gold);font-weight:700;text-transform:uppercase}
+.logo{font-family:'Cinzel',serif;font-size:0.9rem;letter-spacing:0.24em;color:var(--accent);font-weight:700;text-transform:uppercase}
 .nav-right{display:flex;align-items:center;gap:1rem}
 .investor-chip{display:flex;align-items:center;gap:0.5rem;background:rgba(14,165,233,0.1);
   border:1px solid rgba(14,165,233,0.3);border-radius:20px;padding:0.3rem 0.9rem;font-size:0.8rem;color:var(--accent)}

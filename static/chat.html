@@ -8,16 +8,16 @@
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #050505; --surface: #0d0d0d; --surface2: #141414;
-    --border: #C9A84C; --accent: #C9A84C; --accent2: #a07c1e;
-    --accent-glow: rgba(201,168,76,0.18); --text: #f0e8d8;
-    --muted: #7a6845; --success: #10b981; --error: #ef4444;
+    --bg: #07070e; --surface: #0f0f1a; --surface2: #141428;
+    --border: #1e1e36; --accent: #7c3aed; --accent2: #4f46e5;
+    --accent-glow: rgba(124,58,237,0.18); --text: #eaeaf5;
+    --muted: #6b6b90; --success: #10b981; --error: #ef4444;
   }
   html, body { height: 100%; overflow: hidden; }
   body { background: var(--bg); color: var(--text); font-family: 'Raleway', sans-serif; display: flex; flex-direction: column; }
 
   /* Nav */
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.5rem; border-bottom: 1px solid var(--border); background: rgba(5,5,5,0.96); backdrop-filter: blur(12px); flex-shrink: 0; z-index: 10; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.5rem; border-bottom: 1px solid var(--border); background: rgba(7,7,14,0.95); backdrop-filter: blur(12px); flex-shrink: 0; z-index: 10; }
   .logo { font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.24em; color: var(--accent); font-weight: 700; text-transform: uppercase; }
   .nav-right { display: flex; align-items: center; gap: 0.75rem; }
   .btn-ghost { padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); border-radius: 7px; color: var(--muted); font-family: inherit; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s; }
@@ -37,7 +37,7 @@
   .room-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
   .room-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.85rem; border-radius: 10px; cursor: pointer; transition: background 0.15s; margin-bottom: 0.2rem; }
   .room-item:hover { background: var(--surface2); }
-  .room-item.active { background: rgba(201,168,76,0.10); border: 1px solid rgba(201,168,76,0.3); }
+  .room-item.active { background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25); }
   .room-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
   .room-info { flex: 1; min-width: 0; }
   .room-name { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -62,7 +62,7 @@
   .msg-row.other { align-items: flex-start; }
   .msg-sender-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 600; }
   .msg-bubble { max-width: 65%; padding: 0.75rem 1rem; border-radius: 14px; font-size: 0.9rem; line-height: 1.5; word-break: break-word; }
-  .msg-bubble.me { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #050505; border-bottom-right-radius: 4px; }
+  .msg-bubble.me { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-bottom-right-radius: 4px; }
   .msg-bubble.other { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
   .msg-time { font-size: 0.68rem; color: var(--muted); margin-top: 0.25rem; }
   .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 0.5rem; font-size: 0.9rem; }
@@ -92,7 +92,7 @@
   .invitee-item input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
   .modal-footer { display: flex; gap: 0.6rem; justify-content: flex-end; }
   .btn-cancel { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: inherit; font-size: 0.875rem; padding: 0.6rem 1.1rem; cursor: pointer; }
-  .btn-ok { background: var(--accent); border: none; border-radius: 8px; color: #050505; font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.6rem 1.4rem; cursor: pointer; }
+  .btn-ok { background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.875rem; font-weight: 600; padding: 0.6rem 1.4rem; cursor: pointer; }
   .btn-ok:hover { opacity: 0.88; }
 
   /* Scrollbar */

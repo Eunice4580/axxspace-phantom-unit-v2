@@ -438,7 +438,7 @@ async function loadContributors() {
       <td style="font-family:'Space Mono',monospace;color:var(--accent)">${c.total_units.toFixed(2)}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${c.total_value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</td>
-      <td><button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g,\"\\'\")}')"
+      <td><button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g,"\\'")}')"
            title="Delete contributor">🗑 Delete</button></td>
     </tr>`).join('');
 }

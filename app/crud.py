@@ -120,6 +120,24 @@ def delete_contributor(db: Session, contributor_id: int) -> bool:
     db.commit()
     return True
 
+def update_contributor(
+    db: Session,
+    contributor_id: int,
+    name: str,
+    email: str,
+    category: str,
+) -> models.Contributor | None:
+    """Update a contributor's name, email and category."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return None
+    contributor.name = name.strip()
+    contributor.email = email.strip().lower()
+    contributor.category = category.strip()
+    db.commit()
+    db.refresh(contributor)
+    return contributor
+
 # --- Ledger / awards ---------------------------------------------------------
 def award_units(db: Session, data: schemas.LedgerEntryCreate) -> models.LedgerEntry:
     units = validate_units(data.units_awarded)

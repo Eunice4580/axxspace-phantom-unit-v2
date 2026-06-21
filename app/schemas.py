@@ -27,6 +27,11 @@ class ContributorCreate(BaseModel):
             raise ValueError("Email must be a valid Gmail address (e.g. user@gmail.com).")
         return v
 
+class ContributorUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200)
+    category: str = Field(..., min_length=1, max_length=100)
+
 class ContributorOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

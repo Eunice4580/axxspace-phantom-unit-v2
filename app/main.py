@@ -99,6 +99,33 @@ def delete_contributor(
     if not crud.delete_contributor(db, contributor_id):
         raise HTTPException(status_code=404, detail="Contributor not found.")
 
+@app.put("/api/contributors/{contributor_id}", response_model=schemas.ContributorOut)
+def update_contributor(
+    contributor_id: int,
+    payload: schemas.ContributorUpdate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.ContributorOut:
+    if payload.category not in ELIGIBILITY_CATEGORIES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Category must be one of: {', '.join(ELIGIBILITY_CATEGORIES)}",
+        )
+    contributor = crud.update_contributor(db, contributor_id, payload.name, payload.email, payload.category)
+    if contributor is None:
+        raise HTTPException(status_code=404, detail="Contributor not found.")
+    total = crud.contributor_total_units(db, contributor.id)
+    return schemas.ContributorOut(
+        id=contributor.id,
+        name=contributor.name,
+        email=contributor.email,
+        category=contributor.category,
+        created_at=contributor.created_at,
+        is_approved=contributor.is_approved,
+        total_units=total,
+        total_value_eur=total * EUR_PER_UNIT,
+    )
+
 # --- Pending approvals -------------------------------------------------------
 @app.get("/api/contributors/pending", response_model=list[schemas.ContributorOut])
 def list_pending(

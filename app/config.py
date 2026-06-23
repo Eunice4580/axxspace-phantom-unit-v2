@@ -8,6 +8,7 @@ the validation logic and the dashboard.
 
 from __future__ import annotations
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # --- Contribution Unit Pool (spec section 2) ---------------------------------
@@ -57,6 +58,12 @@ class Settings(BaseSettings):
     # Database URL. Defaults to a local SQLite file; point this at the business
     # Postgres/MySQL database to integrate with the main website.
     database_url: str = "sqlite:///./axxspace.db"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def strip_database_url(cls, v: str) -> str:
+        """Strip accidental whitespace/newlines that Render's UI can add on paste."""
+        return str(v).strip()
 
     # Admin authentication.
     admin_password: str = "axxspace-admin"

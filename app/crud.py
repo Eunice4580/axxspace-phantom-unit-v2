@@ -277,6 +277,27 @@ def authenticate_member(db: Session, email: str, password: str) -> models.Contri
         return None
     return contributor
 
+
+def reset_contributor_password(db: Session, contributor_id: int, new_password: str) -> bool:
+    """Admin: forcibly set a new password for a contributor. Returns True on success."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return False
+    contributor.password_hash = hash_password(new_password)
+    db.commit()
+    return True
+
+
+def reset_investor_password(db: Session, investor_id: int, new_password: str) -> bool:
+    """Admin: forcibly set a new password for an investor. Returns True on success."""
+    investor = db.get(models.Investor, investor_id)
+    if investor is None:
+        return False
+    investor.password_hash = hash_password(new_password)
+    db.commit()
+    return True
+
+
 def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfileOut | None:
     contributor = get_contributor(db, contributor_id)
     if contributor is None:

@@ -266,6 +266,33 @@ def member_me(
     return profile
 
 
+@app.post("/api/contributors/{contributor_id}/reset-password", status_code=200)
+def admin_reset_contributor_password(
+    contributor_id: int,
+    payload: schemas.ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> dict:
+    """Admin only: forcibly reset a contributor's password."""
+    ok = crud.reset_contributor_password(db, contributor_id, payload.new_password)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Contributor not found.")
+    return {"ok": True, "message": "Password reset successfully."}
+
+
+@app.post("/api/investors/{investor_id}/reset-password", status_code=200)
+def admin_reset_investor_password(
+    investor_id: int,
+    payload: schemas.ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> dict:
+    """Admin only: forcibly reset an investor's password."""
+    ok = crud.reset_investor_password(db, investor_id, payload.new_password)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Investor not found.")
+    return {"ok": True, "message": "Investor password reset successfully."}
+
 # --- Investor auth & management -----------------------------------------------
 @app.post("/api/investors", response_model=schemas.InvestorOut, status_code=201)
 def create_investor(

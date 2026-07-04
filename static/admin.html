@@ -236,6 +236,9 @@
   /* ── Edit contributor button ── */
   .btn-edit { padding: 0.3rem 0.65rem; background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.35); border-radius: 5px; color: var(--accent); font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
   .btn-edit:hover { background: rgba(124,58,237,0.25); border-color: var(--accent); }
+  /* ── Reset password button ── */
+  .btn-reset-pw { padding: 0.3rem 0.65rem; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.35); border-radius: 5px; color: var(--gold); font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-reset-pw:hover { background: rgba(245,158,11,0.2); border-color: var(--gold); }
   .action-cell { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
   /* ── Mobile responsiveness ── */
   @media (max-width: 600px) {
@@ -468,6 +471,7 @@ async function loadContributors() {
       <td style="color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</td>
       <td><div class="action-cell">
         <button class="btn-edit" onclick="openEditContributorModal(${c.id},'${c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${(c.email||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${c.category}')" title="Edit contributor">✏ Edit</button>
+        <button class="btn-reset-pw" onclick="openResetPwModal(${c.id},'${c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','contributor')" title="Reset password">🔑 Reset PW</button>
         <button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" title="Delete contributor">🗑 Delete</button>
       </div></td>
     </tr>`).join('');
@@ -761,7 +765,10 @@ async function loadInvestors() {
         <td style="font-family:'Space Mono',monospace;color:var(--investor)">${inv.shares.toLocaleString()}</td>
         <td style="font-family:'Space Mono',monospace;color:var(--gold)">KES ${(inv.shares*50).toLocaleString()}</td>
         <td style="color:var(--muted)">${new Date(inv.created_at).toLocaleDateString()}</td>
-        <td><button class="btn-delete" onclick="deleteInvestor(${inv.id},'${inv.name.replace(/'/g,"\\'")}')">🗑 Delete</button></td>
+        <td><div class="action-cell">
+          <button class="btn-reset-pw" onclick="openResetPwModal(${inv.id},'${inv.name.replace(/'/g,"\\'")  }','investor')" title="Reset investor password">🔑 Reset PW</button>
+          <button class="btn-delete" onclick="deleteInvestor(${inv.id},'${inv.name.replace(/'/g,"\\'")  }')">🗑 Delete</button>
+        </div></td>
       </tr>`).join('');
   } catch { /* silently fail on tab load */ }
 }
@@ -779,6 +786,57 @@ async function deleteInvestor(id, name) {
       alert(d.detail || 'Failed to delete investor.');
     }
   } catch { alert('Connection error.'); }
+}
+
+// ── Admin Reset Password ─────────────────────────────────────────────────────
+let _resetPwId   = null;
+let _resetPwType = null; // 'contributor' | 'investor'
+
+function openResetPwModal(id, name, type) {
+  _resetPwId   = id;
+  _resetPwType = type;
+  document.getElementById('rpw-name').textContent = name;
+  document.getElementById('rpw-type-label').textContent = type === 'investor' ? '📈 Investor' : '👤 Contributor';
+  document.getElementById('rpw-new').value = '';
+  document.getElementById('rpw-confirm').value = '';
+  const msg = document.getElementById('rpw-msg');
+  msg.className = 'msg';
+  document.getElementById('reset-pw-modal').classList.add('open');
+  setTimeout(() => document.getElementById('rpw-new').focus(), 80);
+}
+
+function closeResetPwModal() {
+  document.getElementById('reset-pw-modal').classList.remove('open');
+}
+
+async function submitAdminResetPw() {
+  const newPwd  = document.getElementById('rpw-new').value;
+  const confirm = document.getElementById('rpw-confirm').value;
+  const msg     = document.getElementById('rpw-msg');
+  const btn     = document.getElementById('rpw-btn');
+  msg.className = 'msg';
+
+  if (!newPwd || !confirm) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
+  if (newPwd.length < 6)   { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  if (newPwd !== confirm)  { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Resetting…';
+  try {
+    const endpoint = _resetPwType === 'investor'
+      ? `/api/investors/${_resetPwId}/reset-password`
+      : `/api/contributors/${_resetPwId}/reset-password`;
+    const res  = await fetch(endpoint, {
+      method: 'POST', headers,
+      body: JSON.stringify({ new_password: newPwd }),
+    });
+    if (handleAuthError(res)) return;
+    const d = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Reset failed.'; return; }
+    msg.className = 'msg success';
+    msg.textContent = '✓ Password reset successfully.';
+    setTimeout(closeResetPwModal, 1500);
+  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
+  finally { btn.disabled=false; btn.textContent='Set New Password'; }
 }
 
 loadConfig(); loadStats(); loadContributors(); loadLedger();
@@ -843,7 +901,28 @@ function toggleTheme() {
   </button>
 </div>
 
+<!-- Reset Password modal (admin) -->
+<div class="modal-overlay" id="reset-pw-modal" onclick="if(event.target===this)closeResetPwModal()">
+  <div class="modal-box">
+    <h3>🔑 Reset Password</h3>
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
+      <span id="rpw-type-label" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:0.15rem 0.5rem;color:var(--gold);font-size:0.72rem;font-weight:600"></span>
+      &nbsp;<strong id="rpw-name" style="color:var(--text)"></strong>
+    </div>
+    <label class="modal-label">New Password</label>
+    <input class="modal-input" type="password" id="rpw-new" placeholder="Min. 6 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAdminResetPw()" />
+    <label class="modal-label">Confirm New Password</label>
+    <input class="modal-input" type="password" id="rpw-confirm" placeholder="Repeat new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAdminResetPw()" />
+    <div id="rpw-msg" class="msg"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeResetPwModal()">Cancel</button>
+      <button class="btn-modal-ok" id="rpw-btn" onclick="submitAdminResetPw()" style="background:linear-gradient(135deg,var(--gold),#d97706);color:#0a0a0f">Set New Password</button>
+    </div>
+  </div>
+</div>
+
 <!-- Edit Contributor modal -->
+
 <div class="modal-overlay" id="edit-contrib-modal">
   <div class="modal-box">
     <h3>✏️ Edit Contributor</h3>

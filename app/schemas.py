@@ -108,6 +108,10 @@ class MemberLoginRequest(BaseModel):
     email: str
     password: str
 
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6)
+
 class MemberTokenResponse(BaseModel):
     token: str
     token_type: str = "bearer"

@@ -195,11 +195,15 @@ def update_ledger_entry(
     entry = db.get(crud.models.LedgerEntry, entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Ledger entry not found.")
-    entry.task_description = payload.task_description
-    entry.units_awarded = payload.units_awarded
-    entry.approving_reviewer = payload.approving_reviewer
-    entry.task_reference = payload.task_reference
-    entry.remarks = payload.remarks
+    try:
+        units = crud.validate_units(payload.units_awarded)
+    except BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    entry.task_description = payload.task_description.strip()
+    entry.units_awarded = units
+    entry.approving_reviewer = payload.approving_reviewer.strip()
+    entry.task_reference = payload.task_reference.strip() if payload.task_reference else None
+    entry.remarks = payload.remarks.strip() if payload.remarks else None
     db.commit()
     db.refresh(entry)
     return crud._entry_to_out(entry)

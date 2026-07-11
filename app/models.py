@@ -110,6 +110,26 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
 
 
+# ── Task Submissions ──────────────────────────────────────────────────────────
+
+class TaskSubmission(Base):
+    """A task submitted by a member for admin review and unit award."""
+    __tablename__ = "task_submissions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    contributor_id: Mapped[int] = mapped_column(
+        ForeignKey("contributors.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    task_title: Mapped[str] = mapped_column(String(300), nullable=False)
+    task_description: Mapped[str] = mapped_column(Text, nullable=False)
+    # status: "pending" | "awarded"
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    # Filled in by admin after award
+    units_awarded: Mapped[float | None] = mapped_column(Float, nullable=True)
+    awarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+    contributor: Mapped[Contributor] = relationship()
+
+
 # ── Investors ─────────────────────────────────────────────────────────────────
 
 SHARE_PRICE_KES: float = 50.0  # 1 share = KES 50

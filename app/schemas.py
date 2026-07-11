@@ -228,3 +228,30 @@ class InvestorProfileOut(BaseModel):
     rank: int            # rank among investors by shares
     total_investors: int
     portfolio_pct: float  # what % of total investor shares this investor holds
+
+
+# --- Task Submissions --------------------------------------------------------
+
+class TaskSubmissionCreate(BaseModel):
+    task_title: str = Field(..., min_length=1, max_length=300)
+    task_description: str = Field(..., min_length=1)
+
+
+class TaskSubmissionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    contributor_id: int
+    contributor_name: str
+    task_title: str
+    task_description: str
+    status: str
+    units_awarded: float | None
+    awarded_at: datetime | None
+    submitted_at: datetime
+
+
+class AwardSubmissionRequest(BaseModel):
+    units_awarded: float = Field(..., gt=0)
+    approving_reviewer: str = Field(..., min_length=1, max_length=200)
+    task_reference: str | None = Field(default=None, max_length=100)
+    remarks: str | None = None

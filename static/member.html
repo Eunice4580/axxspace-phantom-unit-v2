@@ -450,6 +450,60 @@
     </div>
   </section>
 
+  <!-- ── Submit Weekly Task ─────────────────────────────────────────── -->
+  <section style="margin-bottom:3rem" id="submit-task-section">
+    <div class="section-hd"><h2>📝 Submit Weekly Task</h2></div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;">
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">Task Title <span style="color:var(--error)">*</span></label>
+        <input id="sub-title" type="text" maxlength="300"
+          placeholder="e.g. Frontend redesign of the dashboard"
+          oninput="checkSubmitReady()"
+          style="width:100%;padding:0.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.2s;" />
+      </div>
+
+      <div style="margin-bottom:1.5rem">
+        <label style="display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">Task Description <span style="color:var(--error)">*</span></label>
+        <textarea id="sub-desc" rows="4" maxlength="3000"
+          placeholder="Describe what you did, what was achieved, and any relevant details…"
+          oninput="checkSubmitReady()"
+          style="width:100%;padding:0.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;outline:none;resize:vertical;min-height:100px;transition:border-color 0.2s;"></textarea>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <button id="submit-task-btn" onclick="submitTask()" disabled
+          style="padding:0.75rem 2rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;opacity:0.45;transition:opacity 0.2s,transform 0.15s;">
+          ✉️ Submit Task
+        </button>
+        <span id="sub-msg" style="font-size:0.82rem;display:none"></span>
+      </div>
+    </div>
+
+    <!-- My Submissions history -->
+    <div style="margin-top:2rem">
+      <div style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;font-weight:600">My Submissions</div>
+      <div class="table-wrap" id="my-subs-wrap">
+        <div class="loading-state" id="subs-loading">
+          <div class="spinner"></div>Loading submissions…
+        </div>
+        <table id="subs-table" style="display:none">
+          <thead><tr>
+            <th>Submitted</th>
+            <th>Task Title</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Units</th>
+          </tr></thead>
+          <tbody id="subs-body"></tbody>
+        </table>
+        <div class="empty-state" id="subs-empty" style="display:none">
+          <span>📋</span>No submissions yet. Use the form above to log your first completed task.
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Ledger history -->
   <section>
     <div class="section-hd"><h2>📋 Ledger History</h2></div>
@@ -630,7 +684,96 @@ async function load() {
 }
 
 load();
-</script>
+
+// ── Task Submission ────────────────────────────────────────────────────────
+
+function checkSubmitReady() {
+  const title = document.getElementById('sub-title').value.trim();
+  const desc  = document.getElementById('sub-desc').value.trim();
+  const btn   = document.getElementById('submit-task-btn');
+  const ready = title.length > 0 && desc.length > 0;
+  btn.disabled = !ready;
+  btn.style.opacity = ready ? '1' : '0.45';
+  btn.style.cursor  = ready ? 'pointer' : 'not-allowed';
+}
+
+function _showSubMsg(text, isError) {
+  const el = document.getElementById('sub-msg');
+  el.textContent = text;
+  el.style.display = 'inline';
+  el.style.color = isError ? 'var(--error)' : 'var(--success)';
+  if (!isError) setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+async function submitTask() {
+  const title = document.getElementById('sub-title').value.trim();
+  const desc  = document.getElementById('sub-desc').value.trim();
+  if (!title || !desc) return;
+
+  const btn = document.getElementById('submit-task-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Submitting…';
+
+  try {
+    const res = await fetch('/api/members/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ task_title: title, task_description: desc }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Submission failed.');
+    }
+    document.getElementById('sub-title').value = '';
+    document.getElementById('sub-desc').value  = '';
+    checkSubmitReady();
+    _showSubMsg('✅ Task submitted! Admin will review and award units.', false);
+    loadSubmissions();
+  } catch (e) {
+    _showSubMsg('❌ ' + e.message, true);
+    btn.disabled = false;
+  }
+  btn.textContent = '✉️ Submit Task';
+}
+
+async function loadSubmissions() {
+  document.getElementById('subs-loading').style.display = 'block';
+  document.getElementById('subs-table').style.display   = 'none';
+  document.getElementById('subs-empty').style.display   = 'none';
+  try {
+    const res = await fetch('/api/members/submissions', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!res.ok) throw new Error();
+    const subs = await res.json();
+    document.getElementById('subs-loading').style.display = 'none';
+    if (subs.length === 0) {
+      document.getElementById('subs-empty').style.display = 'block';
+    } else {
+      document.getElementById('subs-table').style.display = 'table';
+      document.getElementById('subs-body').innerHTML = subs.map(s => {
+        const isPending = s.status === 'pending';
+        const statusHtml = isPending
+          ? `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(245,158,11,0.12);color:var(--gold);border:1px solid rgba(245,158,11,0.3);">⏳ Pending</span>`
+          : `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.3);">✅ Awarded</span>`;
+        const unitsHtml = s.units_awarded != null
+          ? `<span style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">${parseFloat(s.units_awarded).toFixed(2)}</span>`
+          : `<span style="color:var(--muted)">—</span>`;
+        return `<tr>
+          <td style="color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace;font-size:0.78rem">${new Date(s.submitted_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
+          <td style="font-weight:600;max-width:160px">${s.task_title}</td>
+          <td style="color:var(--muted);max-width:260px;font-size:0.83rem">${s.task_description}</td>
+          <td>${statusHtml}</td>
+          <td>${unitsHtml}</td>
+        </tr>`;
+      }).join('');
+    }
+  } catch {
+    document.getElementById('subs-loading').innerHTML = '<div style="color:var(--error);padding:1.5rem">Failed to load submissions.</div>';
+  }
+}
+
+loadSubmissions();</script>
 
 <!-- Notification drawer overlay -->
 <div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>

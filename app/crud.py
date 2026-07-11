@@ -753,3 +753,106 @@ def get_investor_profile(db: Session, investor_id: int) -> schemas.InvestorProfi
         total_investors=len(all_investors),
         portfolio_pct=portfolio_pct,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Task Submissions
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _submission_to_out(sub: models.TaskSubmission) -> schemas.TaskSubmissionOut:
+    return schemas.TaskSubmissionOut(
+        id=sub.id,
+        contributor_id=sub.contributor_id,
+        contributor_name=sub.contributor.name,
+        task_title=sub.task_title,
+        task_description=sub.task_description,
+        status=sub.status,
+        units_awarded=sub.units_awarded,
+        awarded_at=sub.awarded_at,
+        submitted_at=sub.submitted_at,
+    )
+
+
+def create_task_submission(
+    db: Session,
+    contributor_id: int,
+    data: schemas.TaskSubmissionCreate,
+) -> models.TaskSubmission:
+    """Member submits a completed task for admin review."""
+    sub = models.TaskSubmission(
+        contributor_id=contributor_id,
+        task_title=data.task_title.strip(),
+        task_description=data.task_description.strip(),
+        status="pending",
+    )
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+    # Notify admin about the new submission
+    contributor = get_contributor(db, contributor_id)
+    contributor_name = contributor.name if contributor else "A member"
+    create_notification(
+        db,
+        contributor_id=None,  # admin notification
+        kind="task_submitted",
+        title=f"New task submission from {contributor_name}",
+        body=f"{contributor_name} submitted: \"{data.task_title[:100]}\"",
+        ref_id=sub.id,
+    )
+    return sub
+
+
+def list_pending_submissions(db: Session) -> list[schemas.TaskSubmissionOut]:
+    """Admin: all submissions with status='pending', newest first."""
+    subs = db.execute(
+        select(models.TaskSubmission)
+        .where(models.TaskSubmission.status == "pending")
+        .order_by(models.TaskSubmission.submitted_at.desc())
+    ).scalars().all()
+    return [_submission_to_out(s) for s in subs]
+
+
+def list_member_submissions(
+    db: Session, contributor_id: int
+) -> list[schemas.TaskSubmissionOut]:
+    """Member: all their own submissions, newest first."""
+    subs = db.execute(
+        select(models.TaskSubmission)
+        .where(models.TaskSubmission.contributor_id == contributor_id)
+        .order_by(models.TaskSubmission.submitted_at.desc())
+    ).scalars().all()
+    return [_submission_to_out(s) for s in subs]
+
+
+def award_submission(
+    db: Session,
+    submission_id: int,
+    award_data: schemas.AwardSubmissionRequest,
+) -> models.LedgerEntry:
+    """Admin awards units for a pending submission, creating a ledger entry."""
+    from datetime import timezone
+    sub = db.get(models.TaskSubmission, submission_id)
+    if sub is None:
+        raise BusinessRuleError("Submission not found.")
+    if sub.status != "pending":
+        raise BusinessRuleError("Submission has already been processed.")
+
+    # Build a LedgerEntryCreate from the submission + award data
+    ledger_data = schemas.LedgerEntryCreate(
+        contributor_id=sub.contributor_id,
+        task_description=f"[{sub.task_title}] {sub.task_description}",
+        units_awarded=award_data.units_awarded,
+        approving_reviewer=award_data.approving_reviewer,
+        task_reference=award_data.task_reference,
+        remarks=award_data.remarks,
+    )
+    # Create ledger entry (with notification to member)
+    entry = award_units_with_notify(db, ledger_data)
+
+    # Mark submission as awarded
+    sub.status = "awarded"
+    sub.units_awarded = award_data.units_awarded
+    sub.awarded_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return entry

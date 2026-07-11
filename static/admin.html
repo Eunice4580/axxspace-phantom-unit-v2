@@ -1,1250 +1,2640 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AXXSPACE — Admin</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0a0a0f; --surface: #111118; --surface2: #16161f;
-    --border: #1e1e2e; --accent: #7c3aed; --accent-glow: rgba(124,58,237,0.2);
-    --text: #e8e8f0; --muted: #6b6b80; --success: #10b981; --error: #ef4444; --gold: #f59e0b;
-    --investor: #0ea5e9; --investor-glow: rgba(14,165,233,0.2);
-  }
-  :root.light {
-    --bg: #f5f5fc; --surface: #ffffff; --surface2: #ededf8;
-    --border: #dcdcf0; --text: #111128; --muted: #6b6b90;
-    --accent-glow: rgba(124,58,237,0.1); --investor-glow: rgba(14,165,233,0.1);
-  }
-  /* ── Theme toggle ───────────────────────────────────────── */
-  .theme-toggle { background:transparent; border:1px solid var(--border); border-radius:8px; padding:0.4rem 0.6rem; cursor:pointer; color:var(--muted); transition:border-color 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; }
-  .theme-toggle:hover { border-color:var(--accent); color:var(--text); }
-  .theme-toggle svg { width:16px; height:16px; }
-  .notif-btn svg { width:16px; height:16px; }
-  /* ── Icon treatments ─────────────────────────────────────── */
-  .notif-btn { background: linear-gradient(135deg,rgba(124,58,237,0.1),rgba(79,70,229,0.05)); }
-  .section-title i, .card h2 i {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px;
-    background: linear-gradient(135deg,rgba(124,58,237,0.15),rgba(79,70,229,0.08));
-    border: 1px solid rgba(124,58,237,0.22);
-    border-radius: 6px;
-    color: var(--accent);
-    vertical-align: middle;
-    margin-right: 0.4rem;
-    flex-shrink: 0;
-  }
-  .section-title i svg, .card h2 i svg { width:13px; height:13px; }
-  /* btn-delete icon alignment */
-  .btn-delete i { vertical-align: middle; margin-right: 0.2rem; }
-  /* Chat FAB icon */
-  .chat-fab svg { width:22px; height:22px; stroke-width:2; color:#fff; }
-  /* Drawer header icon */
-  .drawer-header h3 i {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px;
-    background: linear-gradient(135deg,rgba(124,58,237,0.18),rgba(79,70,229,0.1));
-    border: 1px solid rgba(124,58,237,0.25);
-    border-radius: 6px; color: var(--accent);
-    vertical-align: middle; margin-right: 0.4rem;
-  }
-  .drawer-header h3 i svg { width:12px; height:12px; }
-  /* Background Logo Watermark */
-  .bg-logo-watermark {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 62vw;
-    height: 62vw;
-    max-width: 620px;
-    max-height: 620px;
-    min-width: 300px;
-    min-height: 300px;
-    background: url('/static/logo.png') no-repeat center center;
-    background-size: contain;
-    opacity: 0.055;
-    pointer-events: none;
-    z-index: 0;
-    filter: saturate(0.85);
-    transition: opacity 0.3s, filter 0.3s;
-  }
-  :root.light .bg-logo-watermark {
-    opacity: 0.11;
-    filter: saturate(0.75) brightness(1.02);
-  }
-  /* Ambient orbs */
-  body::before {
-    content: ''; position: fixed; top: -18%; right: -8%;
-    width: 700px; height: 700px;
-    background: radial-gradient(ellipse, rgba(124,58,237,0.10) 0%, transparent 65%);
-    pointer-events: none; z-index: 0;
-  }
-  body::after {
-    content: ''; position: fixed; bottom: -18%; left: -8%;
-    width: 620px; height: 620px;
-    background: radial-gradient(ellipse, rgba(79,70,229,0.08) 0%, transparent 65%);
-    pointer-events: none; z-index: 0;
-  }
-  /* Dot-grid overlay */
-  .bg-grid {
-    position: fixed; inset: 0;
-    background-image: radial-gradient(rgba(124,58,237,0.09) 1px, transparent 1px);
-    background-size: 34px 34px;
-    pointer-events: none; z-index: 0;
-    mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
-    -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
-  }
-  body { background: var(--bg); color: var(--text); font-family: 'Raleway', sans-serif; min-height: 100vh; overflow-x: hidden; }
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; flex-wrap: wrap; gap: 0.5rem; }
-  .logo { font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.24em; color: var(--accent); font-weight: 700; text-transform: uppercase; }
-  .admin-tag { font-size: 0.7rem; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; }
-  .btn-sm { padding: 0.4rem 0.9rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
-  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
-  main { max-width: 1200px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
-  .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.4rem; }
-  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.5rem; font-weight: 700; }
-  .stat-val.accent { color: var(--accent); } .stat-val.gold { color: var(--gold); } .stat-val.green { color: var(--success); }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
-  @media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
-  .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
-  .form-group { margin-bottom: 1rem; }
-  label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); margin-bottom: 0.35rem; letter-spacing: 0.05em; text-transform: uppercase; }
-  input, select, textarea { width: 100%; padding: 0.65rem 0.9rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
-  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  select option { background: var(--surface2); }
-  textarea { resize: vertical; min-height: 70px; }
-  .btn { width: 100%; padding: 0.75rem; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 0.25rem; }
-  .btn:hover { opacity: 0.88; } .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-row { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
-  .btn-row .btn { flex: 1; margin-top: 0; }
-  .btn-clear { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-  .btn-clear:hover { border-color: var(--error); color: var(--error); opacity: 1; }
-  .btn-update { background: var(--gold); color: #0a0a0f; }
-  .btn-update:hover { opacity: 0.85; }
-  .msg { padding: 0.65rem 0.9rem; border-radius: 8px; font-size: 0.825rem; margin-top: 0.75rem; display: none; }
-  .msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--error); display: block; }
-  .msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--success); display: block; }
-  .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th { text-align: left; padding: 0.6rem 0.9rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
-  td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-  tr:last-child td { border-bottom: none; }
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; overflow-x: auto; }
-  .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 500; background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,58,237,0.3); }
-  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 0.5rem; }
-  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s; }
-  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-  .tab { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: inherit; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
-  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .panel { display: none; } .panel.active { display: block; }
-  .empty { padding: 2.5rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
-  .btn-delete { padding: 0.3rem 0.65rem; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 5px; color: var(--error); font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-  .btn-delete:hover { background: rgba(239,68,68,0.25); border-color: var(--error); }
-  .btn-undo { padding: 0.4rem 1rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; color: var(--gold); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
-  .btn-undo:hover { background: rgba(245,158,11,0.2); }
-  .table-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 0.6rem; min-height: 2rem; }
-  .hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
-  input.invalid { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
-  .stepper { display: flex; align-items: center; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface2); transition: border-color 0.2s, box-shadow 0.2s; }
-  .stepper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  .stepper-btn { flex-shrink: 0; width: 2.4rem; background: transparent; border: none; color: var(--accent); font-size: 1.25rem; font-weight: 700; cursor: pointer; line-height: 1; padding: 0; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; height: 2.5rem; }
-  .stepper-btn:hover { background: var(--accent-glow); color: var(--text); }
-  .stepper-btn:active { background: rgba(124,58,237,0.35); }
-  .stepper input[type="number"] { flex: 1; border: none; border-radius: 0; box-shadow: none; text-align: center; background: transparent; padding: 0.65rem 0.25rem; -moz-appearance: textfield; }
-  .stepper input[type="number"]::-webkit-outer-spin-button,
-  .stepper input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .stepper input[type="number"]:focus { outline: none; box-shadow: none; border-color: transparent; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AXXSPACE — Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
-  /* ── Notification bell ── */
-  .notif-btn { position:relative; background:transparent; border:1px solid var(--border); border-radius:8px; padding:0.4rem 0.6rem; cursor:pointer; font-size:1.05rem; color:var(--muted); transition:border-color 0.2s,color 0.2s; }
-  .notif-btn:hover { border-color:var(--accent); color:var(--text); }
-  .notif-badge { position:absolute; top:-6px; right:-6px; background:#ef4444; color:#fff; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; display:none; align-items:center; justify-content:center; font-family:'Space Mono',monospace; }
-  .notif-badge.show { display:flex; }
-  /* ── Notification drawer ── */
-  .notif-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; display:none; opacity:0; transition:opacity 0.2s; }
-  .notif-overlay.open { display:block; opacity:1; }
-  .notif-drawer { position:fixed; top:0; right:-380px; width:360px; max-width:96vw; height:100vh; background:var(--surface); border-left:1px solid var(--border); z-index:201; display:flex; flex-direction:column; transition:right 0.28s cubic-bezier(.4,0,.2,1); box-shadow:-8px 0 40px rgba(0,0,0,0.5); }
-  .notif-drawer.open { right:0; }
-  .drawer-header { display:flex; align-items:center; justify-content:space-between; padding:1.2rem 1.2rem 0.9rem; border-bottom:1px solid var(--border); }
-  .drawer-header h3 { font-size:0.95rem; font-weight:700; }
-  .drawer-actions { display:flex; gap:0.5rem; }
-  .drawer-close,.mark-all-btn { background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-family:inherit; font-size:0.75rem; padding:0.3rem 0.65rem; cursor:pointer; transition:all 0.2s; }
-  .drawer-close:hover { border-color:#ef4444; color:#ef4444; } .mark-all-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .notif-list { flex:1; overflow-y:auto; padding:0.75rem; }
-  .notif-item { padding:0.85rem 1rem; border-radius:10px; margin-bottom:0.5rem; border:1px solid var(--border); background:var(--surface2); cursor:pointer; transition:border-color 0.2s; }
-  .notif-item:hover { border-color:var(--accent); }
-  .notif-item.unread { border-color:rgba(124,58,237,0.4); background:rgba(124,58,237,0.06); }
-  .notif-kind { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:0.3rem; }
-  .notif-kind.chat_invite { color:var(--accent); } .notif-kind.units_awarded { color:var(--success); }
-  .notif-title { font-size:0.875rem; font-weight:600; margin-bottom:0.2rem; }
-  .notif-body  { font-size:0.8rem; color:var(--muted); line-height:1.4; }
-  .notif-time  { font-size:0.68rem; color:var(--muted); margin-top:0.4rem; }
-  .notif-empty { padding:3rem; text-align:center; color:var(--muted); font-size:0.875rem; }
-  /* ── Chat widget ── */
-  .chat-widget { position:fixed; bottom:1.5rem; right:1.5rem; z-index:190; display:flex; flex-direction:column; align-items:flex-end; gap:0; }
-  .chat-fab { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#4f46e5); border:none; cursor:pointer; font-size:1.35rem; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(124,58,237,0.5); transition:transform 0.2s,box-shadow 0.2s; position:relative; }
-  .chat-fab:hover { transform:scale(1.08); box-shadow:0 6px 32px rgba(124,58,237,0.65); }
-  .chat-fab-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; display:none; align-items:center; justify-content:center; }
-  .chat-fab-badge.show { display:flex; }
-  .chat-panel { width:340px; max-width:94vw; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:0 8px 48px rgba(0,0,0,0.6); margin-bottom:0.75rem; display:none; flex-direction:column; max-height:78vh; overflow:hidden; animation:slideUp 0.22s ease; }
-  .chat-panel.open { display:flex; }
-  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  .chat-panel-header { display:flex; align-items:center; justify-content:space-between; padding:0.9rem 1rem 0.75rem; border-bottom:1px solid var(--border); }
-  .chat-panel-header h4 { font-size:0.9rem; font-weight:700; }
-  .chat-back-btn { background:transparent; border:none; color:var(--muted); font-size:1rem; cursor:pointer; padding:0 0.4rem; }
-  .chat-back-btn:hover { color:var(--text); }
-  .btn-new-room { font-size:0.78rem; padding:0.35rem 0.75rem; background:var(--accent); border:none; border-radius:6px; color:#fff; font-family:inherit; cursor:pointer; transition:opacity 0.2s; }
-  .btn-new-room:hover { opacity:0.85; }
-  .room-list { flex:1; overflow-y:auto; }
-  .room-item { padding:0.8rem 1rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; display:flex; align-items:center; gap:0.6rem; }
-  .room-item:hover { background:var(--surface2); }
-  .room-name { font-size:0.875rem; font-weight:500; flex:1; }
-  .room-meta { font-size:0.7rem; color:var(--muted); }
-  .msg-thread { flex:1; overflow-y:auto; padding:0.75rem; display:flex; flex-direction:column; gap:0.5rem; }
-  .msg-bubble { max-width:82%; padding:0.55rem 0.85rem; border-radius:12px; font-size:0.85rem; line-height:1.45; }
-  .msg-bubble.me { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
-  .msg-bubble.other { align-self:flex-start; background:var(--surface2); border:1px solid var(--border); border-bottom-left-radius:4px; }
-  .msg-sender { font-size:0.68rem; color:var(--muted); margin-bottom:0.2rem; }
-  .msg-time   { font-size:0.65rem; margin-top:0.2rem; opacity:0.7; }
-  .msg-input-row { display:flex; gap:0.5rem; padding:0.75rem; border-top:1px solid var(--border); }
-  .msg-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.55rem 0.75rem; color:var(--text); font-family:inherit; font-size:0.875rem; outline:none; transition:border-color 0.2s; }
-  .msg-input:focus { border-color:var(--accent); }
-  .msg-send-btn { background:var(--accent); border:none; border-radius:8px; color:#fff; padding:0 0.85rem; cursor:pointer; font-size:1rem; transition:opacity 0.2s; }
-  .msg-send-btn:hover { opacity:0.85; }
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; display:none; align-items:center; justify-content:center; }
-  .modal-overlay.open { display:flex; }
-  .modal-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; width:360px; max-width:94vw; box-shadow:0 8px 40px rgba(0,0,0,0.7); animation:slideUp 0.2s ease; }
-  .modal-box h3 { font-size:1rem; font-weight:700; margin-bottom:1rem; }
-  .modal-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); margin-bottom:0.3rem; display:block; }
-  .modal-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.6rem 0.85rem; color:var(--text); font-family:inherit; font-size:0.9rem; margin-bottom:0.85rem; outline:none; transition:border-color 0.2s; }
-  .modal-input:focus { border-color:var(--accent); }
-  .invitee-list { max-height:180px; overflow-y:auto; margin-bottom:0.85rem; border:1px solid var(--border); border-radius:8px; }
-  .invitee-item { display:flex; align-items:center; gap:0.6rem; padding:0.6rem 0.85rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; }
-  .invitee-item:last-child { border-bottom:none; } .invitee-item:hover { background:var(--surface2); }
-  .invitee-item input[type=checkbox] { accent-color:var(--accent); width:15px; height:15px; }
-  .modal-footer { display:flex; gap:0.5rem; justify-content:flex-end; }
-  .btn-modal-cancel { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-family:inherit; font-size:0.875rem; padding:0.55rem 1rem; cursor:pointer; }
-  .btn-modal-ok { background:var(--accent); border:none; border-radius:8px; color:#fff; font-family:inherit; font-size:0.875rem; padding:0.55rem 1.2rem; cursor:pointer; }
-  .btn-modal-ok:hover { opacity:0.88; }
-  /* ── Edit contributor button ── */
-  .btn-edit { padding: 0.3rem 0.65rem; background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.35); border-radius: 5px; color: var(--accent); font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-  .btn-edit:hover { background: rgba(124,58,237,0.25); border-color: var(--accent); }
-  /* ── Reset password button ── */
-  .btn-reset-pw { padding: 0.3rem 0.65rem; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.35); border-radius: 5px; color: var(--gold); font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-  .btn-reset-pw:hover { background: rgba(245,158,11,0.2); border-color: var(--gold); }
-  .action-cell { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
-  /* ── Mobile responsiveness ── */
-  @media (max-width: 600px) {
-    nav { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
-    .logo { font-size: 0.8rem; }
-    .admin-tag { font-size: 0.62rem; padding: 0.15rem 0.4rem; }
-    nav > div:last-child { gap: 0.4rem; }
-    .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
-    main { padding: 1rem; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
-    .stat-val { font-size: 1.2rem; }
-    .grid2 { gap: 1rem; margin-bottom: 1.5rem; }
-    .card { padding: 1.1rem; }
-    .tabs { overflow-x: auto; padding-bottom: 0.25rem; flex-wrap: nowrap; }
-    .tab { white-space: nowrap; padding: 0.45rem 0.75rem; font-size: 0.8rem; }
-    table { font-size: 0.78rem; min-width: 520px; }
-    th, td { padding: 0.55rem 0.6rem; }
-    .modal-box { padding: 1.1rem; }
-    .chat-panel { width: calc(100vw - 2rem); max-width: 100%; }
-    .chat-widget { bottom: 1rem; right: 1rem; }
-    .notif-drawer { width: 100vw; max-width: 100vw; }
-  }
-  @media (max-width: 400px) {
-    .stats-grid { grid-template-columns: 1fr; }
-  }
-</style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #16161f;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --accent-glow: rgba(124, 58, 237, 0.2);
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --success: #10b981;
+      --error: #ef4444;
+      --gold: #f59e0b;
+      --investor: #0ea5e9;
+      --investor-glow: rgba(14, 165, 233, 0.2);
+    }
+
+    :root.light {
+      --bg: #f5f5fc;
+      --surface: #ffffff;
+      --surface2: #ededf8;
+      --border: #dcdcf0;
+      --text: #111128;
+      --muted: #6b6b90;
+      --accent-glow: rgba(124, 58, 237, 0.1);
+      --investor-glow: rgba(14, 165, 233, 0.1);
+    }
+
+    /* ── Theme toggle ───────────────────────────────────────── */
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      color: var(--muted);
+      transition: border-color 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .notif-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ── Icon treatments ─────────────────────────────────────── */
+    .notif-btn {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(79, 70, 229, 0.05));
+    }
+
+    .section-title i,
+    .card h2 i {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(79, 70, 229, 0.08));
+      border: 1px solid rgba(124, 58, 237, 0.22);
+      border-radius: 6px;
+      color: var(--accent);
+      vertical-align: middle;
+      margin-right: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .section-title i svg,
+    .card h2 i svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* btn-delete icon alignment */
+    .btn-delete i {
+      vertical-align: middle;
+      margin-right: 0.2rem;
+    }
+
+    /* Chat FAB icon */
+    .chat-fab svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2;
+      color: #fff;
+    }
+
+    /* Drawer header icon */
+    .drawer-header h3 i {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(79, 70, 229, 0.1));
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      border-radius: 6px;
+      color: var(--accent);
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+
+    .drawer-header h3 i svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Background Logo Watermark */
+    .bg-logo-watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 62vw;
+      height: 62vw;
+      max-width: 620px;
+      max-height: 620px;
+      min-width: 300px;
+      min-height: 300px;
+      background: url('/static/logo.png') no-repeat center center;
+      background-size: contain;
+      opacity: 0.055;
+      pointer-events: none;
+      z-index: 0;
+      filter: saturate(0.85);
+      transition: opacity 0.3s, filter 0.3s;
+    }
+
+    :root.light .bg-logo-watermark {
+      opacity: 0.11;
+      filter: saturate(0.75) brightness(1.02);
+    }
+
+    /* Ambient orbs */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -18%;
+      right: -8%;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(ellipse, rgba(124, 58, 237, 0.10) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -18%;
+      left: -8%;
+      width: 620px;
+      height: 620px;
+      background: radial-gradient(ellipse, rgba(79, 70, 229, 0.08) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Dot-grid overlay */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(124, 58, 237, 0.09) 1px, transparent 1px);
+      background-size: 34px 34px;
+      pointer-events: none;
+      z-index: 0;
+      mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Raleway', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .logo {
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.24em;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .admin-tag {
+      font-size: 0.7rem;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-left: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .btn-sm {
+      padding: 0.4rem 0.9rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-val {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .stat-val.accent {
+      color: var(--accent);
+    }
+
+    .stat-val.gold {
+      color: var(--gold);
+    }
+
+    .stat-val.green {
+      color: var(--success);
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    select option {
+      background: var(--surface2);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 0.25rem;
+    }
+
+    .btn:hover {
+      opacity: 0.88;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .btn-row .btn {
+      flex: 1;
+      margin-top: 0;
+    }
+
+    .btn-clear {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn-clear:hover {
+      border-color: var(--error);
+      color: var(--error);
+      opacity: 1;
+    }
+
+    .btn-update {
+      background: var(--gold);
+      color: #0a0a0f;
+    }
+
+    .btn-update:hover {
+      opacity: 0.85;
+    }
+
+    .msg {
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    .msg.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--error);
+      display: block;
+    }
+
+    .msg.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--success);
+      display: block;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.8rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.5s;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .empty {
+      padding: 2.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+
+    .btn-delete {
+      padding: 0.3rem 0.65rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 5px;
+      color: var(--error);
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-delete:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: var(--error);
+    }
+
+    .btn-undo {
+      padding: 0.4rem 1rem;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 6px;
+      color: var(--gold);
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-undo:hover {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 0.6rem;
+      min-height: 2rem;
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    input.invalid {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface2);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .stepper:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .stepper-btn {
+      flex-shrink: 0;
+      width: 2.4rem;
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 1.25rem;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transition: background 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 2.5rem;
+    }
+
+    .stepper-btn:hover {
+      background: var(--accent-glow);
+      color: var(--text);
+    }
+
+    .stepper-btn:active {
+      background: rgba(124, 58, 237, 0.35);
+    }
+
+    .stepper input[type="number"] {
+      flex: 1;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      text-align: center;
+      background: transparent;
+      padding: 0.65rem 0.25rem;
+      -moz-appearance: textfield;
+    }
+
+    .stepper input[type="number"]::-webkit-outer-spin-button,
+    .stepper input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .stepper input[type="number"]:focus {
+      outline: none;
+      box-shadow: none;
+      border-color: transparent;
+    }
+
+    /* ── Notification bell ── */
+    .notif-btn {
+      position: relative;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      font-size: 1.05rem;
+      color: var(--muted);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .notif-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.6rem;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .notif-badge.show {
+      display: flex;
+    }
+
+    /* ── Notification drawer ── */
+    .notif-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 200;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .notif-overlay.open {
+      display: block;
+      opacity: 1;
+    }
+
+    .notif-drawer {
+      position: fixed;
+      top: 0;
+      right: -380px;
+      width: 360px;
+      max-width: 96vw;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.28s cubic-bezier(.4, 0, .2, 1);
+      box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .notif-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 1.2rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .drawer-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .drawer-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .drawer-close,
+    .mark-all-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .drawer-close:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .mark-all-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .notif-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+    }
+
+    .notif-item {
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .notif-item:hover {
+      border-color: var(--accent);
+    }
+
+    .notif-item.unread {
+      border-color: rgba(124, 58, 237, 0.4);
+      background: rgba(124, 58, 237, 0.06);
+    }
+
+    .notif-kind {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .notif-kind.chat_invite {
+      color: var(--accent);
+    }
+
+    .notif-kind.units_awarded {
+      color: var(--success);
+    }
+
+    .notif-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .notif-body {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .notif-time {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    .notif-empty {
+      padding: 3rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+
+    /* ── Chat widget ── */
+    .chat-widget {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 190;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0;
+    }
+
+    .chat-fab {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border: none;
+      cursor: pointer;
+      font-size: 1.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 24px rgba(124, 58, 237, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .chat-fab:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 32px rgba(124, 58, 237, 0.65);
+    }
+
+    .chat-fab-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.6rem;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-fab-badge.show {
+      display: flex;
+    }
+
+    .chat-panel {
+      width: 340px;
+      max-width: 94vw;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6);
+      margin-bottom: 0.75rem;
+      display: none;
+      flex-direction: column;
+      max-height: 78vh;
+      overflow: hidden;
+      animation: slideUp 0.22s ease;
+    }
+
+    .chat-panel.open {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .chat-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chat-panel-header h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .chat-back-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 0.4rem;
+    }
+
+    .chat-back-btn:hover {
+      color: var(--text);
+    }
+
+    .btn-new-room {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.75rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-new-room:hover {
+      opacity: 0.85;
+    }
+
+    .room-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .room-item {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .room-item:hover {
+      background: var(--surface2);
+    }
+
+    .room-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .room-meta {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .msg-thread {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .msg-bubble {
+      max-width: 82%;
+      padding: 0.55rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+
+    .msg-bubble.me {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-bubble.other {
+      align-self: flex-start;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-sender {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .msg-time {
+      font-size: 0.65rem;
+      margin-top: 0.2rem;
+      opacity: 0.7;
+    }
+
+    .msg-input-row {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .msg-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .msg-input:focus {
+      border-color: var(--accent);
+    }
+
+    .msg-send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      padding: 0 0.85rem;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: opacity 0.2s;
+    }
+
+    .msg-send-btn:hover {
+      opacity: 0.85;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 360px;
+      max-width: 94vw;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+      animation: slideUp 0.2s ease;
+    }
+
+    .modal-box h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .modal-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      margin-bottom: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .modal-input:focus {
+      border-color: var(--accent);
+    }
+
+    .invitee-list {
+      max-height: 180px;
+      overflow-y: auto;
+      margin-bottom: 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .invitee-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .invitee-item:last-child {
+      border-bottom: none;
+    }
+
+    .invitee-item:hover {
+      background: var(--surface2);
+    }
+
+    .invitee-item input[type=checkbox] {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .btn-modal-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+    }
+
+    .btn-modal-ok {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.55rem 1.2rem;
+      cursor: pointer;
+    }
+
+    .btn-modal-ok:hover {
+      opacity: 0.88;
+    }
+
+    /* ── Edit contributor button ── */
+    .btn-edit {
+      padding: 0.3rem 0.65rem;
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid rgba(124, 58, 237, 0.35);
+      border-radius: 5px;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-edit:hover {
+      background: rgba(124, 58, 237, 0.25);
+      border-color: var(--accent);
+    }
+
+    /* ── Reset password button ── */
+    .btn-reset-pw {
+      padding: 0.3rem 0.65rem;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 5px;
+      color: var(--gold);
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-reset-pw:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--gold);
+    }
+
+    .action-cell {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* ── Mobile responsiveness ── */
+    @media (max-width: 600px) {
+      nav {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .logo {
+        font-size: 0.8rem;
+      }
+
+      .admin-tag {
+        font-size: 0.62rem;
+        padding: 0.15rem 0.4rem;
+      }
+
+      nav>div:last-child {
+        gap: 0.4rem;
+      }
+
+      .btn-sm {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+      }
+
+      main {
+        padding: 1rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat-val {
+        font-size: 1.2rem;
+      }
+
+      .grid2 {
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .card {
+        padding: 1.1rem;
+      }
+
+      .tabs {
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+        flex-wrap: nowrap;
+      }
+
+      .tab {
+        white-space: nowrap;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.8rem;
+      }
+
+      table {
+        font-size: 0.78rem;
+        min-width: 520px;
+      }
+
+      th,
+      td {
+        padding: 0.55rem 0.6rem;
+      }
+
+      .modal-box {
+        padding: 1.1rem;
+      }
+
+      .chat-panel {
+        width: calc(100vw - 2rem);
+        max-width: 100%;
+      }
+
+      .chat-widget {
+        bottom: 1rem;
+        right: 1rem;
+      }
+
+      .notif-drawer {
+        width: 100vw;
+        max-width: 100vw;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="bg-logo-watermark"></div>
-<div class="bg-grid"></div>
-<nav>
-  <div class="logo">AXXSPACE <span class="admin-tag">Admin</span></div>
-  <div style="display:flex;align-items:center;gap:0.75rem">
-    <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
-      🔔<span class="notif-badge" id="notif-badge">0</span>
-    </button>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-      <span id="theme-icon">🌙</span>
-    </button>
-    <button class="btn-sm" onclick="logout()">Sign out</button>
-  </div>
-</nav>
-<main>
-  <!-- Pool Stats -->
-  <div class="stats-grid" id="pool-stats">
-    <div class="stat-card"><div class="stat-label">Total Pool</div><div class="stat-val accent" id="s-total">—</div></div>
-    <div class="stat-card"><div class="stat-label">Allocated</div><div class="stat-val gold" id="s-alloc">—</div></div>
-    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-val green" id="s-remain">—</div></div>
-    <div class="stat-card"><div class="stat-label">Contributors</div><div class="stat-val" id="s-contribs">—</div></div>
-    <div class="stat-card"><div class="stat-label">Awards</div><div class="stat-val" id="s-awards">—</div></div>
-    <div class="stat-card">
-      <div class="stat-label">Pool Usage</div>
-      <div class="stat-val" id="s-pct">—</div>
-      <div class="progress-bar"><div class="progress-fill" id="s-bar" style="width:0%"></div></div>
+  <div class="bg-logo-watermark"></div>
+  <div class="bg-grid"></div>
+  <nav>
+    <div class="logo">AXXSPACE <span class="admin-tag">Admin</span></div>
+    <div style="display:flex;align-items:center;gap:0.75rem">
+      <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
+        🔔<span class="notif-badge" id="notif-badge">0</span>
+      </button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+      <button class="btn-sm" onclick="logout()">Sign out</button>
     </div>
-  </div>
-
-  <!-- Actions -->
-  <div class="grid2">
-    <div class="card">
-      <h2>Add Contributor</h2>
-      <div class="form-group"><label>Full Name</label><input type="text" id="c-name" placeholder="Jane Doe" /></div>
-      <div class="form-group">
-        <label>Gmail Address <span style="color:var(--error)">*</span></label>
-        <input type="email" id="c-email" placeholder="user@gmail.com" required />
-        <div class="hint">Must be a valid Gmail address (e.g. user@gmail.com)</div>
+  </nav>
+  <main>
+    <!-- Pool Stats -->
+    <div class="stats-grid" id="pool-stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Pool</div>
+        <div class="stat-val accent" id="s-total">—</div>
       </div>
-      <div class="form-group"><label>Category</label><select id="c-cat"><option value="">Loading…</option></select></div>
-      <div class="form-group"><label>Login Password</label><input type="password" id="c-pass" placeholder="••••••••" /></div>
-      <div class="form-group"><label>Confirm Password</label><input type="password" id="c-pass2" placeholder="••••••••" /></div>
-      <button class="btn" onclick="addContributor()">Add Contributor</button>
-      <div class="msg" id="c-msg"></div>
-    </div>
-
-    <div class="card">
-      <h2>Award Units</h2>
-      <div class="form-group"><label>Contributor</label><select id="a-contrib"><option value="">Select contributor…</option></select></div>
-      <div class="form-group"><label>Task Description</label><textarea id="a-task" placeholder="Describe the contribution…"></textarea></div>
-      <div class="form-group">
-        <label>Units Awarded</label>
-        <div class="stepper">
-          <button class="stepper-btn" type="button" onclick="stepUnits(-0.1)" title="Decrease by 0.1">−</button>
-          <input type="number" id="a-units" placeholder="0.0" step="0.1" min="0.1" />
-          <button class="stepper-btn" type="button" onclick="stepUnits(0.1)" title="Increase by 0.1">+</button>
+      <div class="stat-card">
+        <div class="stat-label">Allocated</div>
+        <div class="stat-val gold" id="s-alloc">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Remaining</div>
+        <div class="stat-val green" id="s-remain">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Contributors</div>
+        <div class="stat-val" id="s-contribs">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Awards</div>
+        <div class="stat-val" id="s-awards">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pool Usage</div>
+        <div class="stat-val" id="s-pct">—</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="s-bar" style="width:0%"></div>
         </div>
-        <div class="hint">Use ± buttons or type a value. Each step = 0.1 units.</div>
       </div>
-      <div class="form-group"><label>Approving Reviewer</label><input type="text" id="a-reviewer" placeholder="Reviewer name" /></div>
-      <div class="form-group"><label>Task Reference (optional)</label><input type="text" id="a-ref" placeholder="TASK-001" /></div>
-      <div class="form-group"><label>Remarks (optional)</label><textarea id="a-remarks" placeholder="Any additional notes…"></textarea></div>
-      <input type="hidden" id="a-edit-id" value="" />
-      <div class="btn-row">
-        <button class="btn btn-clear" onclick="clearAwardForm()">Clear</button>
-        <button class="btn" id="a-submit-btn" onclick="awardUnits()">Award Units</button>
-      </div>
-      <div class="msg" id="a-msg"></div>
     </div>
-  </div>
 
-  <!-- Add Investor card (full width) -->
-  <div style="margin-bottom:2rem">
-    <div class="card" style="border-color:rgba(14,165,233,0.3);background:linear-gradient(135deg,var(--surface),rgba(14,165,233,0.04))">
-      <h2 style="color:var(--investor)">📈 Add Investor</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
-        <div class="form-group" style="margin-bottom:0"><label>Full Name</label><input type="text" id="inv-name" placeholder="John Investor" /></div>
-        <div class="form-group" style="margin-bottom:0"><label>Email</label><input type="email" id="inv-email" placeholder="investor@email.com" /></div>
-        <div class="form-group" style="margin-bottom:0"><label>Phone (optional)</label><input type="text" id="inv-phone" placeholder="+254 7XX XXX XXX" /></div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Number of Shares</label>
+    <!-- Actions -->
+    <div class="grid2">
+      <div class="card">
+        <h2>Add Contributor</h2>
+        <div class="form-group"><label>Full Name</label><input type="text" id="c-name" placeholder="Jane Doe" /></div>
+        <div class="form-group">
+          <label>Gmail Address <span style="color:var(--error)">*</span></label>
+          <input type="email" id="c-email" placeholder="user@gmail.com" required />
+          <div class="hint">Must be a valid Gmail address (e.g. user@gmail.com)</div>
+        </div>
+        <div class="form-group"><label>Category</label><select id="c-cat">
+            <option value="">Loading…</option>
+          </select></div>
+        <div class="form-group"><label>Login Password</label><input type="password" id="c-pass"
+            placeholder="••••••••" /></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" id="c-pass2"
+            placeholder="••••••••" /></div>
+        <button class="btn" onclick="addContributor()">Add Contributor</button>
+        <div class="msg" id="c-msg"></div>
+      </div>
+
+      <div class="card">
+        <h2>Award Units</h2>
+        <div class="form-group"><label>Contributor</label><select id="a-contrib">
+            <option value="">Select contributor…</option>
+          </select></div>
+        <div class="form-group"><label>Task Description</label><textarea id="a-task"
+            placeholder="Describe the contribution…"></textarea></div>
+        <div class="form-group">
+          <label>Units Awarded</label>
           <div class="stepper">
-            <button class="stepper-btn" type="button" onclick="stepInvShares(-1)" style="color:var(--investor)">−</button>
-            <input type="number" id="inv-shares" placeholder="100" step="1" min="1" />
-            <button class="stepper-btn" type="button" onclick="stepInvShares(1)" style="color:var(--investor)">+</button>
+            <button class="stepper-btn" type="button" onclick="stepUnits(-0.1)" title="Decrease by 0.1">−</button>
+            <input type="number" id="a-units" placeholder="0.0" step="0.1" min="0.1" />
+            <button class="stepper-btn" type="button" onclick="stepUnits(0.1)" title="Increase by 0.1">+</button>
           </div>
-          <div class="hint">1 share = KES 50</div>
+          <div class="hint">Use ± buttons or type a value. Each step = 0.1 units.</div>
         </div>
-        <div class="form-group" style="margin-bottom:0"><label>Login Password</label><input type="password" id="inv-pass" placeholder="••••••••" /></div>
-        <div class="form-group" style="margin-bottom:0"><label>Confirm Password</label><input type="password" id="inv-pass2" placeholder="••••••••" /></div>
+        <div class="form-group"><label>Approving Reviewer</label><input type="text" id="a-reviewer"
+            placeholder="Reviewer name" /></div>
+        <div class="form-group"><label>Task Reference (optional)</label><input type="text" id="a-ref"
+            placeholder="TASK-001" /></div>
+        <div class="form-group"><label>Remarks (optional)</label><textarea id="a-remarks"
+            placeholder="Any additional notes…"></textarea></div>
+        <input type="hidden" id="a-edit-id" value="" />
+        <div class="btn-row">
+          <button class="btn btn-clear" onclick="clearAwardForm()">Clear</button>
+          <button class="btn" id="a-submit-btn" onclick="awardUnits()">Award Units</button>
+        </div>
+        <div class="msg" id="a-msg"></div>
       </div>
-      <div style="margin-top:1rem">
-        <button class="btn" style="background:linear-gradient(135deg,var(--investor),#0284c7);box-shadow:0 4px 20px rgba(14,165,233,0.3)" onclick="addInvestor()">Add Investor</button>
+    </div>
+
+    <!-- Add Investor card (full width) -->
+    <div style="margin-bottom:2rem">
+      <div class="card"
+        style="border-color:rgba(14,165,233,0.3);background:linear-gradient(135deg,var(--surface),rgba(14,165,233,0.04))">
+        <h2 style="color:var(--investor)">📈 Add Investor</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
+          <div class="form-group" style="margin-bottom:0"><label>Full Name</label><input type="text" id="inv-name"
+              placeholder="John Investor" /></div>
+          <div class="form-group" style="margin-bottom:0"><label>Email</label><input type="email" id="inv-email"
+              placeholder="investor@email.com" /></div>
+          <div class="form-group" style="margin-bottom:0"><label>Phone (optional)</label><input type="text"
+              id="inv-phone" placeholder="+254 7XX XXX XXX" /></div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Number of Shares</label>
+            <div class="stepper">
+              <button class="stepper-btn" type="button" onclick="stepInvShares(-1)"
+                style="color:var(--investor)">−</button>
+              <input type="number" id="inv-shares" placeholder="100" step="1" min="1" />
+              <button class="stepper-btn" type="button" onclick="stepInvShares(1)"
+                style="color:var(--investor)">+</button>
+            </div>
+            <div class="hint">1 share = KES 50</div>
+          </div>
+          <div class="form-group" style="margin-bottom:0"><label>Login Password</label><input type="password"
+              id="inv-pass" placeholder="••••••••" /></div>
+          <div class="form-group" style="margin-bottom:0"><label>Confirm Password</label><input type="password"
+              id="inv-pass2" placeholder="••••••••" /></div>
+        </div>
+        <div style="margin-top:1rem">
+          <button class="btn"
+            style="background:linear-gradient(135deg,var(--investor),#0284c7);box-shadow:0 4px 20px rgba(14,165,233,0.3)"
+            onclick="addInvestor()">Add Investor</button>
+        </div>
+        <div class="msg" id="inv-msg"></div>
       </div>
-      <div class="msg" id="inv-msg"></div>
+    </div>
+
+    <!-- Tables -->
+    <div class="tabs" id="main-tabs">
+      <button class="tab active" id="tab-contributors" onclick="showPanel('contributors')">Contributors</button>
+      <button class="tab" id="tab-investors" onclick="showPanel('investors')"
+        style="border-color:var(--investor);color:var(--investor)">📈 Investors</button>
+      <button class="tab" id="tab-ledger" onclick="showPanel('ledger')">Ledger</button>
+      <button class="tab" id="tab-submissions" onclick="showPanel('submissions')" style="border-color:rgba(16,185,129,0.5);color:var(--success)">
+        📝 Submissions <span id="sub-count-badge" style="display:none;background:var(--error);color:#fff;border-radius:50%;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;margin-left:0.3rem;font-family:'Space Mono',monospace">0</span>
+      </button>
+    </div>
+
+    <div class="panel active" id="panel-contributors">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Category</th>
+              <th>Units</th>
+              <th>Value (EUR)</th>
+              <th>Since</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="contrib-body">
+            <tr>
+              <td colspan="8" class="empty">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Investors Panel -->
+    <div class="panel" id="panel-investors">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div style="font-size:0.85rem;color:var(--muted)">All investor accounts · 1 share = <span
+            style="color:var(--investor);font-weight:700">KES 50</span></div>
+        <div id="inv-summary" style="font-size:0.8rem;color:var(--muted)"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Shares</th>
+              <th>Value (KES)</th>
+              <th>Since</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="investors-body">
+            <tr>
+              <td colspan="8" class="empty">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-ledger">
+      <div class="table-toolbar">
+        <button class="btn-undo" id="undo-btn" onclick="undoLastDelete()" style="display:none">↩ Undo Last
+          Delete</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Contributor</th>
+              <th>Task</th>
+              <th>Ref</th>
+              <th>Units</th>
+              <th>EUR</th>
+              <th>Reviewer</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body">
+            <tr>
+              <td colspan="8" class="empty">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pending Submissions Panel -->
+    <div class="panel" id="panel-submissions">
+      <div style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+        <div style="font-size:0.85rem;color:var(--muted)">Review submitted tasks — award units once approved</div>
+        <button onclick="loadSubmissions()" class="btn-sm" style="font-size:0.78rem">↻ Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Submitted</th>
+            <th>Member</th>
+            <th>Task Title</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr></thead>
+          <tbody id="subs-admin-body">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Award Submission Modal -->
+  <div class="modal-overlay" id="award-modal" onclick="closeAwardModal()">
+    <div class="modal-box" onclick="event.stopPropagation()" style="width:420px">
+      <h3 style="margin-bottom:1.25rem">🏆 Award Units for Submission</h3>
+      <input type="hidden" id="award-sub-id" value="" />
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1.25rem">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.3rem">Task</div>
+        <div id="award-task-title" style="font-weight:700;margin-bottom:0.35rem"></div>
+        <div id="award-task-desc" style="font-size:0.82rem;color:var(--muted);line-height:1.5"></div>
+        <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted)">By: <strong id="award-member-name"></strong></div>
+      </div>
+
+      <div class="form-group">
+        <label class="modal-label">Units to Award <span style="color:var(--error)">*</span></label>
+        <div class="stepper">
+          <button class="stepper-btn" type="button" onclick="stepAwardUnits(-0.1)">−</button>
+          <input type="number" id="award-units" placeholder="0.0" step="0.1" min="0.1" class="modal-input" style="margin-bottom:0;border:none;border-radius:0" />
+          <button class="stepper-btn" type="button" onclick="stepAwardUnits(0.1)">+</button>
+        </div>
+        <div class="hint">Increment by 0.1 · must be &gt; 0</div>
+      </div>
+
+      <div class="form-group">
+        <label class="modal-label">Approving Reviewer <span style="color:var(--error)">*</span></label>
+        <input type="text" id="award-reviewer" placeholder="Your name" class="modal-input" />
+      </div>
+
+      <div class="form-group">
+        <label class="modal-label">Task Reference (optional)</label>
+        <input type="text" id="award-ref" placeholder="TASK-001" class="modal-input" />
+      </div>
+
+      <div class="form-group">
+        <label class="modal-label">Remarks (optional)</label>
+        <textarea id="award-remarks" placeholder="Any notes…" rows="2" class="modal-input" style="resize:vertical"></textarea>
+      </div>
+
+      <div id="award-modal-msg" style="font-size:0.82rem;margin-bottom:0.75rem;display:none"></div>
+
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeAwardModal()">Cancel</button>
+        <button class="btn-modal-ok" id="award-confirm-btn" onclick="confirmAward()"
+          style="background:linear-gradient(135deg,var(--success),#059669)">✅ Award Units</button>
+      </div>
     </div>
   </div>
 
-  <!-- Tables -->
-  <div class="tabs" id="main-tabs">
-    <button class="tab active" id="tab-contributors" onclick="showPanel('contributors')">Contributors</button>
-    <button class="tab" id="tab-investors" onclick="showPanel('investors')" style="border-color:var(--investor);color:var(--investor)">📈 Investors</button>
-    <button class="tab" id="tab-ledger" onclick="showPanel('ledger')">Ledger</button>
-  </div>
+  <script>
+    const token = localStorage.getItem('axxspace_admin_token');
+    if (!token) window.location.href = '/login';
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
 
-  <div class="panel active" id="panel-contributors">
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Category</th><th>Units</th><th>Value (EUR)</th><th>Since</th><th>Actions</th></tr></thead>
-        <tbody id="contrib-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
+    // Auto-redirect to login on any 401 / 403
+    function handleAuthError(res) {
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('axxspace_admin_token');
+        alert('Your session has expired or is invalid. Please log in again.');
+        window.location.href = '/login';
+        return true;
+      }
+      return false;
+    }
 
-  <!-- Investors Panel -->
-  <div class="panel" id="panel-investors">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-      <div style="font-size:0.85rem;color:var(--muted)">All investor accounts · 1 share = <span style="color:var(--investor);font-weight:700">KES 50</span></div>
-      <div id="inv-summary" style="font-size:0.8rem;color:var(--muted)"></div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Shares</th><th>Value (KES)</th><th>Since</th><th>Actions</th></tr></thead>
-        <tbody id="investors-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
+    function showPanel(name) {
+      const panels = ['contributors', 'investors', 'ledger', 'submissions'];
+      const tabs = [
+        document.getElementById('tab-contributors'),
+        document.getElementById('tab-investors'),
+        document.getElementById('tab-ledger'),
+        document.getElementById('tab-submissions'),
+      ];
+      panels.forEach((p, i) => {
+        document.getElementById('panel-' + p).classList.toggle('active', p === name);
+        tabs[i].classList.toggle('active', p === name);
+      });
+      if (name === 'investors') loadInvestors();
+      if (name === 'submissions') loadSubmissions();
+    }
 
-  <div class="panel" id="panel-ledger">
-    <div class="table-toolbar">
-      <button class="btn-undo" id="undo-btn" onclick="undoLastDelete()" style="display:none">↩ Undo Last Delete</button>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref</th><th>Units</th><th>EUR</th><th>Reviewer</th><th>Actions</th></tr></thead>
-        <tbody id="ledger-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</main>
+    // ── Submissions (admin) ──────────────────────────────────────────────────
 
-<script>
-const token = localStorage.getItem('axxspace_admin_token');
-if (!token) window.location.href = '/login';
-const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer '+token };
+    async function loadSubmissions() {
+      const tbody = document.getElementById('subs-admin-body');
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
+      try {
+        const res = await fetch('/api/admin/submissions', { headers });
+        if (handleAuthError(res)) return;
+        const subs = await res.json();
 
-// Auto-redirect to login on any 401 / 403
-function handleAuthError(res) {
-  if (res.status === 401 || res.status === 403) {
-    localStorage.removeItem('axxspace_admin_token');
-    alert('Your session has expired or is invalid. Please log in again.');
-    window.location.href = '/login';
-    return true;
-  }
-  return false;
-}
+        // Update badge
+        const badge = document.getElementById('sub-count-badge');
+        if (subs.length > 0) {
+          badge.textContent = subs.length;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
 
-function showPanel(name) {
-  const panels = ['contributors','investors','ledger'];
-  const tabs   = [document.getElementById('tab-contributors'), document.getElementById('tab-investors'), document.getElementById('tab-ledger')];
-  panels.forEach((p,i) => {
-    document.getElementById('panel-'+p).classList.toggle('active', p === name);
-    tabs[i].classList.toggle('active', p === name);
-  });
-  if (name === 'investors') loadInvestors();
-}
+        if (subs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">No pending submissions. All caught up! ✅</td></tr>';
+          return;
+        }
+        tbody.innerHTML = subs.map(s => `
+          <tr id="sub-row-${s.id}">
+            <td style="color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace;font-size:0.78rem">
+              ${new Date(s.submitted_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})}
+            </td>
+            <td style="font-weight:600">${s.contributor_name}</td>
+            <td style="font-weight:500;max-width:180px">${s.task_title}</td>
+            <td style="color:var(--muted);font-size:0.82rem;max-width:280px;line-height:1.45">${s.task_description}</td>
+            <td>
+              <button class="btn-undo" onclick="openAwardModal(${s.id},'${escHtml(s.task_title)}','${escHtml(s.task_description)}','${escHtml(s.contributor_name)}')"
+                style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.4);color:var(--success);white-space:nowrap">
+                🏆 Award
+              </button>
+            </td>
+          </tr>`).join('');
+      } catch {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty" style="color:var(--error)">Failed to load submissions.</td></tr>';
+      }
+    }
 
-async function loadConfig() {
-  const res = await fetch('/api/config');
-  const d = await res.json();
-  const catSel = document.getElementById('c-cat');
-  catSel.innerHTML = d.categories.map(c => `<option value="${c}">${c}</option>`).join('');
-}
+    function escHtml(str) {
+      return str.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
 
-async function loadStats() {
-  const res = await fetch('/api/stats');
-  const d = await res.json();
-  document.getElementById('s-total').textContent = d.total_pool_units.toLocaleString();
-  document.getElementById('s-alloc').textContent = d.allocated_units.toLocaleString();
-  document.getElementById('s-remain').textContent = d.remaining_units.toLocaleString();
-  document.getElementById('s-contribs').textContent = d.contributor_count;
-  document.getElementById('s-awards').textContent = d.award_count;
-  document.getElementById('s-pct').textContent = d.allocated_pct.toFixed(1) + '%';
-  document.getElementById('s-bar').style.width = d.allocated_pct + '%';
-}
+    function openAwardModal(subId, title, desc, memberName) {
+      document.getElementById('award-sub-id').value  = subId;
+      document.getElementById('award-task-title').textContent = title;
+      document.getElementById('award-task-desc').textContent  = desc;
+      document.getElementById('award-member-name').textContent = memberName;
+      document.getElementById('award-units').value    = '';
+      document.getElementById('award-reviewer').value = '';
+      document.getElementById('award-ref').value      = '';
+      document.getElementById('award-remarks').value  = '';
+      const msg = document.getElementById('award-modal-msg');
+      msg.style.display = 'none';
+      document.getElementById('award-modal').classList.add('open');
+    }
 
-async function loadContributors() {
-  const res = await fetch('/api/contributors');
-  const data = await res.json();
-  const sel = document.getElementById('a-contrib');
-  sel.innerHTML = '<option value="">Select contributor…</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  const tbody = document.getElementById('contrib-body');
-  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No contributors yet.</td></tr>'; return; }
-  tbody.innerHTML = data.map((c,i) => `
+    function closeAwardModal() {
+      document.getElementById('award-modal').classList.remove('open');
+    }
+
+    function stepAwardUnits(delta) {
+      const inp = document.getElementById('award-units');
+      const cur = parseFloat(inp.value) || 0;
+      inp.value = Math.max(0.1, Math.round((cur + delta) * 10) / 10).toFixed(1);
+    }
+
+    async function confirmAward() {
+      const subId    = document.getElementById('award-sub-id').value;
+      const units    = parseFloat(document.getElementById('award-units').value);
+      const reviewer = document.getElementById('award-reviewer').value.trim();
+      const ref      = document.getElementById('award-ref').value.trim() || null;
+      const remarks  = document.getElementById('award-remarks').value.trim() || null;
+
+      const msgEl = document.getElementById('award-modal-msg');
+      msgEl.style.display = 'none';
+
+      if (!units || units <= 0) {
+        msgEl.textContent = '⚠️ Please enter a valid number of units.';
+        msgEl.style.color = 'var(--error)';
+        msgEl.style.display = 'block';
+        return;
+      }
+      if (!reviewer) {
+        msgEl.textContent = '⚠️ Approving reviewer is required.';
+        msgEl.style.color = 'var(--error)';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('award-confirm-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Awarding…';
+
+      try {
+        const res = await fetch(`/api/admin/submissions/${subId}/award`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ units_awarded: units, approving_reviewer: reviewer, task_reference: ref, remarks }),
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Award failed.');
+        }
+        closeAwardModal();
+        // Remove row from table
+        const row = document.getElementById(`sub-row-${subId}`);
+        if (row) row.remove();
+        // Refresh stats
+        loadStats();
+        loadContributors();
+        loadLedger();
+        loadSubmissions(); // refresh count badge
+      } catch (e) {
+        msgEl.textContent = '❌ ' + e.message;
+        msgEl.style.color = 'var(--error)';
+        msgEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✅ Award Units';
+      }
+    }
+
+
+    async function loadConfig() {
+      const res = await fetch('/api/config');
+      const d = await res.json();
+      const catSel = document.getElementById('c-cat');
+      catSel.innerHTML = d.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    async function loadStats() {
+      const res = await fetch('/api/stats');
+      const d = await res.json();
+      document.getElementById('s-total').textContent = d.total_pool_units.toLocaleString();
+      document.getElementById('s-alloc').textContent = d.allocated_units.toLocaleString();
+      document.getElementById('s-remain').textContent = d.remaining_units.toLocaleString();
+      document.getElementById('s-contribs').textContent = d.contributor_count;
+      document.getElementById('s-awards').textContent = d.award_count;
+      document.getElementById('s-pct').textContent = d.allocated_pct.toFixed(1) + '%';
+      document.getElementById('s-bar').style.width = d.allocated_pct + '%';
+    }
+
+    async function loadContributors() {
+      const res = await fetch('/api/contributors');
+      const data = await res.json();
+      const sel = document.getElementById('a-contrib');
+      sel.innerHTML = '<option value="">Select contributor…</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      const tbody = document.getElementById('contrib-body');
+      if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No contributors yet.</td></tr>'; return; }
+      tbody.innerHTML = data.map((c, i) => `
     <tr id="ctr-${c.id}">
-      <td style="color:var(--muted);font-family:'Space Mono',monospace">${i+1}</td>
+      <td style="color:var(--muted);font-family:'Space Mono',monospace">${i + 1}</td>
       <td style="font-weight:500">${c.name}</td>
-      <td style="color:var(--muted)">${c.email||'—'}</td>
+      <td style="color:var(--muted)">${c.email || '—'}</td>
       <td><span class="badge">${c.category}</span></td>
       <td style="font-family:'Space Mono',monospace;color:var(--accent)">${c.total_units.toFixed(2)}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${c.total_value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</td>
       <td><div class="action-cell">
-        <button class="btn-edit" onclick="openEditContributorModal(${c.id},'${c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${(c.email||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${c.category}')" title="Edit contributor">✏ Edit</button>
-        <button class="btn-reset-pw" onclick="openResetPwModal(${c.id},'${c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','contributor')" title="Reset password">🔑 Reset PW</button>
-        <button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" title="Delete contributor">🗑 Delete</button>
+        <button class="btn-edit" onclick="openEditContributorModal(${c.id},'${c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}','${(c.email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}','${c.category}')" title="Edit contributor">✏ Edit</button>
+        <button class="btn-reset-pw" onclick="openResetPwModal(${c.id},'${c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}','contributor')" title="Reset password">🔑 Reset PW</button>
+        <button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" title="Delete contributor">🗑 Delete</button>
       </div></td>
     </tr>`).join('');
-}
+    }
 
-async function loadLedger() {
-  const res = await fetch('/api/ledger');
-  const data = await res.json();
-  const tbody = document.getElementById('ledger-body');
-  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No ledger entries yet.</td></tr>'; return; }
-  tbody.innerHTML = data.map(e => `
+    async function loadLedger() {
+      const res = await fetch('/api/ledger');
+      const data = await res.json();
+      const tbody = document.getElementById('ledger-body');
+      if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No ledger entries yet.</td></tr>'; return; }
+      tbody.innerHTML = data.map(e => `
     <tr id="led-${e.id}">
       <td style="color:var(--muted);white-space:nowrap">${new Date(e.date_awarded).toLocaleDateString()}</td>
       <td style="font-weight:500">${e.contributor_name}</td>
       <td style="max-width:200px">${e.task_description}</td>
-      <td>${e.task_reference ? '<span class="badge">'+e.task_reference+'</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${e.task_reference ? '<span class="badge">' + e.task_reference + '</span>' : '<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--accent)">${e.units_awarded.toFixed(2)}</td>
       <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
       <td style="color:var(--muted)">${e.approving_reviewer}</td>
       <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
-        <button class="btn-delete" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);color:var(--accent)"
-          data-id="${e.id}"
-          data-contributor-id="${e.contributor_id}"
-          data-task="${encodeURIComponent(e.task_description)}"
-          data-units="${e.units_awarded}"
-          data-reviewer="${encodeURIComponent(e.approving_reviewer)}"
-          data-ref="${encodeURIComponent(e.task_reference||'')}"
-          data-remarks="${encodeURIComponent(e.remarks||'')}"
-          onclick="editLedgerFromBtn(this)" title="Edit entry">✏ Edit</button>
+        <button class="btn-delete" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);color:var(--accent)" onclick="editLedger(${e.id},${e.contributor_id},'${e.task_description.replace(/'/g, "\\'").replace(/"/g, '&quot;')}',${e.units_awarded},'${e.approving_reviewer.replace(/'/g, "\\'")}','${(e.task_reference || '').replace(/'/g, "\\'")}','${(e.remarks || '').replace(/'/g, "\\'")}')" title="Edit entry">✏ Edit</button>
         <button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry">🗑 Delete</button>
       </td>
     </tr>`).join('');
-}
-
-// --- Gmail validation --------------------------------------------------------
-function isValidGmail(v) {
-  return /^[a-zA-Z0-9._%+\-]+@gmail\.com$/i.test(v.trim());
-}
-
-async function addContributor() {
-  const msg = document.getElementById('c-msg');
-  msg.className = 'msg';
-  const emailEl = document.getElementById('c-email');
-  const name = document.getElementById('c-name').value.trim();
-  const email = emailEl.value.trim();
-  const category = document.getElementById('c-cat').value;
-  const password = document.getElementById('c-pass').value;
-  const password2 = document.getElementById('c-pass2').value;
-
-  emailEl.classList.remove('invalid');
-  if (!name || !category) { msg.className='msg error'; msg.textContent='Name and category are required.'; return; }
-  if (!email) { msg.className='msg error'; msg.textContent='Gmail address is required.'; emailEl.classList.add('invalid'); return; }
-  if (!isValidGmail(email)) { msg.className='msg error'; msg.textContent='Email must be a valid Gmail address (e.g. user@gmail.com).'; emailEl.classList.add('invalid'); return; }
-  if (password) {
-    if (password.length < 6) { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
-    if (password !== password2) { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
-  }
-
-  try {
-    const res = await fetch('/api/contributors', {
-      method:'POST', headers,
-      body: JSON.stringify({name, email: email.toLowerCase(), category, password: password || null})
-    });
-    const d = await res.json();
-    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to add contributor.'; return; }
-    msg.className='msg success'; msg.textContent=`Account created for ${d.name}. They can now log in.`;
-    document.getElementById('c-name').value = '';
-    emailEl.value = '';
-    document.getElementById('c-pass').value = '';
-    document.getElementById('c-pass2').value = '';
-    loadContributors(); loadStats();
-  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
-}
-
-// --- Delete contributor ------------------------------------------------------
-async function deleteContributor(id, name) {
-  if (!confirm(`Delete contributor "${name}" and ALL their ledger entries? This cannot be undone.`)) return;
-  try {
-    const res = await fetch(`/api/contributors/${id}`, { method:'DELETE', headers });
-    if (handleAuthError(res)) return;
-    if (res.status === 204) {
-      document.getElementById(`ctr-${id}`)?.remove();
-      loadStats(); loadLedger(); loadContributors();
-    } else {
-      const d = await res.json();
-      alert(d.detail || 'Failed to delete contributor.');
     }
-  } catch { alert('Connection error.'); }
-}
 
-// --- Delete & undo ledger entry ----------------------------------------------
-let _lastDeletedEntry = null;
-
-async function deleteLedgerEntry(id) {
-  if (!confirm('Delete this ledger entry? You can undo immediately after.')) return;
-  try {
-    const res0 = await fetch('/api/ledger');
-    const all = await res0.json();
-    _lastDeletedEntry = all.find(e => e.id === id) || null;
-
-    const res = await fetch(`/api/ledger/${id}`, { method:'DELETE', headers });
-    if (handleAuthError(res)) return;
-    if (res.status === 204) {
-      document.getElementById(`led-${id}`)?.remove();
-      document.getElementById('undo-btn').style.display = _lastDeletedEntry ? '' : 'none';
-      loadStats(); loadContributors();
-    } else {
-      const d = await res.json();
-      alert(d.detail || 'Failed to delete ledger entry.');
-      _lastDeletedEntry = null;
+    // --- Gmail validation --------------------------------------------------------
+    function isValidGmail(v) {
+      return /^[a-zA-Z0-9._%+\-]+@gmail\.com$/i.test(v.trim());
     }
-  } catch { alert('Connection error.'); }
-}
 
-async function undoLastDelete() {
-  if (!_lastDeletedEntry) return;
-  const e = _lastDeletedEntry;
-  try {
-    const res = await fetch('/api/ledger', {
-      method:'POST', headers,
-      body: JSON.stringify({
-        contributor_id: e.contributor_id,
-        task_description: e.task_description,
-        units_awarded: e.units_awarded,
-        approving_reviewer: e.approving_reviewer,
-        task_reference: e.task_reference || null,
-        remarks: e.remarks || null
-      })
-    });
-    if (res.ok) {
-      _lastDeletedEntry = null;
-      document.getElementById('undo-btn').style.display = 'none';
-      loadStats(); loadLedger(); loadContributors();
-    } else {
-      const d = await res.json();
-      alert(d.detail || 'Undo failed.');
+    async function addContributor() {
+      const msg = document.getElementById('c-msg');
+      msg.className = 'msg';
+      const emailEl = document.getElementById('c-email');
+      const name = document.getElementById('c-name').value.trim();
+      const email = emailEl.value.trim();
+      const category = document.getElementById('c-cat').value;
+      const password = document.getElementById('c-pass').value;
+      const password2 = document.getElementById('c-pass2').value;
+
+      emailEl.classList.remove('invalid');
+      if (!name || !category) { msg.className = 'msg error'; msg.textContent = 'Name and category are required.'; return; }
+      if (!email) { msg.className = 'msg error'; msg.textContent = 'Gmail address is required.'; emailEl.classList.add('invalid'); return; }
+      if (!isValidGmail(email)) { msg.className = 'msg error'; msg.textContent = 'Email must be a valid Gmail address (e.g. user@gmail.com).'; emailEl.classList.add('invalid'); return; }
+      if (password) {
+        if (password.length < 6) { msg.className = 'msg error'; msg.textContent = 'Password must be at least 6 characters.'; return; }
+        if (password !== password2) { msg.className = 'msg error'; msg.textContent = 'Passwords do not match.'; return; }
+      }
+
+      try {
+        const res = await fetch('/api/contributors', {
+          method: 'POST', headers,
+          body: JSON.stringify({ name, email: email.toLowerCase(), category, password: password || null })
+        });
+        const d = await res.json();
+        if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to add contributor.'; return; }
+        msg.className = 'msg success'; msg.textContent = `Account created for ${d.name}. They can now log in.`;
+        document.getElementById('c-name').value = '';
+        emailEl.value = '';
+        document.getElementById('c-pass').value = '';
+        document.getElementById('c-pass2').value = '';
+        loadContributors(); loadStats();
+      } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
     }
-  } catch { alert('Connection error.'); }
-}
 
-// --- Stepper for Units Awarded -----------------------------------------------
-function stepUnits(delta) {
-  const el = document.getElementById('a-units');
-  const current = parseFloat(el.value) || 0;
-  const next = Math.round((current + delta) * 10) / 10;
-  el.value = next < 0.1 ? 0.1 : next;
-}
-
-// --- Clear Award Units form --------------------------------------------------
-function clearAwardForm() {
-  document.getElementById('a-contrib').value = '';
-  document.getElementById('a-task').value = '';
-  document.getElementById('a-units').value = '';
-  document.getElementById('a-reviewer').value = '';
-  document.getElementById('a-ref').value = '';
-  document.getElementById('a-remarks').value = '';
-  document.getElementById('a-edit-id').value = '';
-  const btn = document.getElementById('a-submit-btn');
-  btn.textContent = 'Award Units';
-  btn.className = 'btn';
-  document.getElementById('a-contrib').disabled = false;
-  const msg = document.getElementById('a-msg');
-  msg.className = 'msg'; msg.textContent = '';
-  // scroll back to form
-  document.querySelector('.card h2')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-// --- Wrapper: reads data-* attrs (safe against special chars) ----------------
-function editLedgerFromBtn(btn) {
-  editLedger(
-    parseInt(btn.dataset.id),
-    parseInt(btn.dataset.contributorId),
-    decodeURIComponent(btn.dataset.task),
-    parseFloat(btn.dataset.units),
-    decodeURIComponent(btn.dataset.reviewer),
-    decodeURIComponent(btn.dataset.ref),
-    decodeURIComponent(btn.dataset.remarks)
-  );
-}
-
-// --- Pre-fill form for editing -----------------------------------------------
-function editLedger(id, contributorId, task, units, reviewer, ref, remarks) {
-  document.getElementById('a-edit-id').value = id;
-  // Lock contributor selector to the one this entry belongs to
-  document.getElementById('a-contrib').value = contributorId;
-  document.getElementById('a-contrib').disabled = true;
-  document.getElementById('a-task').value = task;
-  document.getElementById('a-units').value = units;
-  document.getElementById('a-reviewer').value = reviewer;
-  document.getElementById('a-ref').value = ref;
-  document.getElementById('a-remarks').value = remarks;
-  const btn = document.getElementById('a-submit-btn');
-  btn.textContent = 'Update Entry';
-  btn.className = 'btn btn-update';
-  // switch to Ledger tab so user sees context
-  showPanel('ledger');
-  // scroll to the award form
-  setTimeout(() => document.querySelector('.grid2')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  document.getElementById('a-msg').className = 'msg';
-  document.getElementById('a-msg').textContent = '';
-}
-
-async function awardUnits() {
-  const msg = document.getElementById('a-msg');
-  msg.className = 'msg';
-  const editId = document.getElementById('a-edit-id').value;
-  const task_description = document.getElementById('a-task').value.trim();
-  const units_awarded = parseFloat(document.getElementById('a-units').value);
-  const approving_reviewer = document.getElementById('a-reviewer').value.trim();
-  const task_reference = document.getElementById('a-ref').value.trim() || null;
-  const remarks = document.getElementById('a-remarks').value.trim() || null;
-
-  if (editId) {
-    // ── UPDATE mode ──────────────────────────────────────────────────────────
-    if (!task_description || !units_awarded || !approving_reviewer) {
-      msg.className='msg error'; msg.textContent='Task, units and reviewer are required.'; return;
+    // --- Delete contributor ------------------------------------------------------
+    async function deleteContributor(id, name) {
+      if (!confirm(`Delete contributor "${name}" and ALL their ledger entries? This cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/api/contributors/${id}`, { method: 'DELETE', headers });
+        if (handleAuthError(res)) return;
+        if (res.status === 204) {
+          document.getElementById(`ctr-${id}`)?.remove();
+          loadStats(); loadLedger(); loadContributors();
+        } else {
+          const d = await res.json();
+          alert(d.detail || 'Failed to delete contributor.');
+        }
+      } catch { alert('Connection error.'); }
     }
-    try {
-      const res = await fetch(`/api/ledger/${editId}`, {
-        method:'PUT', headers,
-        body: JSON.stringify({task_description, units_awarded, approving_reviewer, task_reference, remarks})
-      });
-      const d = await res.json();
-      if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to update entry.'; return; }
-      msg.className='msg success'; msg.textContent='Entry updated successfully.';
-      clearAwardForm();
-      loadStats(); loadLedger(); loadContributors();
-    } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
-  } else {
-    // ── CREATE mode ──────────────────────────────────────────────────────────
-    const contributor_id = parseInt(document.getElementById('a-contrib').value);
-    if (!contributor_id || !task_description || !units_awarded || !approving_reviewer) {
-      msg.className='msg error'; msg.textContent='Contributor, task, units and reviewer are required.'; return;
+
+    // --- Delete & undo ledger entry ----------------------------------------------
+    let _lastDeletedEntry = null;
+
+    async function deleteLedgerEntry(id) {
+      if (!confirm('Delete this ledger entry? You can undo immediately after.')) return;
+      try {
+        const res0 = await fetch('/api/ledger');
+        const all = await res0.json();
+        _lastDeletedEntry = all.find(e => e.id === id) || null;
+
+        const res = await fetch(`/api/ledger/${id}`, { method: 'DELETE', headers });
+        if (handleAuthError(res)) return;
+        if (res.status === 204) {
+          document.getElementById(`led-${id}`)?.remove();
+          document.getElementById('undo-btn').style.display = _lastDeletedEntry ? '' : 'none';
+          loadStats(); loadContributors();
+        } else {
+          const d = await res.json();
+          alert(d.detail || 'Failed to delete ledger entry.');
+          _lastDeletedEntry = null;
+        }
+      } catch { alert('Connection error.'); }
     }
-    try {
-      const res = await fetch('/api/ledger', { method:'POST', headers, body: JSON.stringify({contributor_id, task_description, units_awarded, approving_reviewer, task_reference, remarks}) });
-      const d = await res.json();
-      if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to award units.'; return; }
-      msg.className='msg success'; msg.textContent=`Awarded ${units_awarded} units successfully.`;
+
+    async function undoLastDelete() {
+      if (!_lastDeletedEntry) return;
+      const e = _lastDeletedEntry;
+      try {
+        const res = await fetch('/api/ledger', {
+          method: 'POST', headers,
+          body: JSON.stringify({
+            contributor_id: e.contributor_id,
+            task_description: e.task_description,
+            units_awarded: e.units_awarded,
+            approving_reviewer: e.approving_reviewer,
+            task_reference: e.task_reference || null,
+            remarks: e.remarks || null
+          })
+        });
+        if (res.ok) {
+          _lastDeletedEntry = null;
+          document.getElementById('undo-btn').style.display = 'none';
+          loadStats(); loadLedger(); loadContributors();
+        } else {
+          const d = await res.json();
+          alert(d.detail || 'Undo failed.');
+        }
+      } catch { alert('Connection error.'); }
+    }
+
+    // --- Stepper for Units Awarded -----------------------------------------------
+    function stepUnits(delta) {
+      const el = document.getElementById('a-units');
+      const current = parseFloat(el.value) || 0;
+      const next = Math.round((current + delta) * 10) / 10;
+      el.value = next < 0.1 ? 0.1 : next;
+    }
+
+    // --- Clear Award Units form --------------------------------------------------
+    function clearAwardForm() {
+      document.getElementById('a-contrib').value = '';
       document.getElementById('a-task').value = '';
       document.getElementById('a-units').value = '';
+      document.getElementById('a-reviewer').value = '';
       document.getElementById('a-ref').value = '';
       document.getElementById('a-remarks').value = '';
-      loadStats(); loadLedger(); loadContributors();
-    } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
-  }
-}
-
-function logout() { localStorage.removeItem('axxspace_admin_token'); window.location.href = '/login'; }
-
-// ── Investor management ───────────────────────────────────────────────────────
-function stepInvShares(delta) {
-  const el = document.getElementById('inv-shares');
-  const current = parseInt(el.value) || 0;
-  const next = current + delta;
-  el.value = next < 1 ? 1 : next;
-}
-
-async function addInvestor() {
-  const msg   = document.getElementById('inv-msg');
-  msg.className = 'msg';
-  const name   = document.getElementById('inv-name').value.trim();
-  const email  = document.getElementById('inv-email').value.trim();
-  const phone  = document.getElementById('inv-phone').value.trim() || null;
-  const shares = parseFloat(document.getElementById('inv-shares').value);
-  const pass   = document.getElementById('inv-pass').value;
-  const pass2  = document.getElementById('inv-pass2').value;
-
-  if (!name || !email)         { msg.className='msg error'; msg.textContent='Name and email are required.'; return; }
-  if (!shares || shares < 1)   { msg.className='msg error'; msg.textContent='Shares must be at least 1.'; return; }
-  if (!pass)                   { msg.className='msg error'; msg.textContent='Password is required.'; return; }
-  if (pass.length < 6)         { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
-  if (pass !== pass2)          { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
-
-  try {
-    const res = await fetch('/api/investors', {
-      method: 'POST', headers,
-      body: JSON.stringify({ name, email, phone, shares, password: pass })
-    });
-    const d = await res.json();
-    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to add investor.'; return; }
-    const kes = (d.shares * 50).toLocaleString();
-    msg.className='msg success';
-    msg.textContent=`Investor ${d.name} added — ${d.shares} shares · KES ${kes}`;
-    ['inv-name','inv-email','inv-phone','inv-shares','inv-pass','inv-pass2'].forEach(id => document.getElementById(id).value='');
-    loadInvestors();
-  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
-}
-
-async function loadInvestors() {
-  try {
-    const res = await fetch('/api/investors', { headers });
-    if (handleAuthError(res)) return;
-    const data = await res.json();
-    const tbody = document.getElementById('investors-body');
-    if (!tbody) return;
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty">No investors yet. Add one above.</td></tr>';
-      document.getElementById('inv-summary').textContent = '';
-      return;
+      document.getElementById('a-edit-id').value = '';
+      const btn = document.getElementById('a-submit-btn');
+      btn.textContent = 'Award Units';
+      btn.className = 'btn';
+      document.getElementById('a-contrib').disabled = false;
+      const msg = document.getElementById('a-msg');
+      msg.className = 'msg'; msg.textContent = '';
+      // scroll back to form
+      document.querySelector('.card h2')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    const totalShares = data.reduce((s,i) => s+i.shares, 0);
-    const totalKES    = totalShares * 50;
-    document.getElementById('inv-summary').textContent =
-      `${data.length} investor${data.length!==1?'s':''} · ${totalShares.toLocaleString()} total shares · KES ${totalKES.toLocaleString()}`;
-    tbody.innerHTML = data.map((inv,i) => `
+
+    // --- Pre-fill form for editing -----------------------------------------------
+    function editLedger(id, contributorId, task, units, reviewer, ref, remarks) {
+      document.getElementById('a-edit-id').value = id;
+      // Lock contributor selector to the one this entry belongs to
+      document.getElementById('a-contrib').value = contributorId;
+      document.getElementById('a-contrib').disabled = true;
+      document.getElementById('a-task').value = task;
+      document.getElementById('a-units').value = units;
+      document.getElementById('a-reviewer').value = reviewer;
+      document.getElementById('a-ref').value = ref;
+      document.getElementById('a-remarks').value = remarks;
+      const btn = document.getElementById('a-submit-btn');
+      btn.textContent = 'Update Entry';
+      btn.className = 'btn btn-update';
+      // switch to Ledger tab so user sees context
+      showPanel('ledger');
+      // scroll to the award form
+      setTimeout(() => document.querySelector('.grid2')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      document.getElementById('a-msg').className = 'msg';
+      document.getElementById('a-msg').textContent = '';
+    }
+
+    async function awardUnits() {
+      const msg = document.getElementById('a-msg');
+      msg.className = 'msg';
+      const editId = document.getElementById('a-edit-id').value;
+      const task_description = document.getElementById('a-task').value.trim();
+      const units_awarded = parseFloat(document.getElementById('a-units').value);
+      const approving_reviewer = document.getElementById('a-reviewer').value.trim();
+      const task_reference = document.getElementById('a-ref').value.trim() || null;
+      const remarks = document.getElementById('a-remarks').value.trim() || null;
+
+      if (editId) {
+        // ── UPDATE mode ──────────────────────────────────────────────────────────
+        if (!task_description || !units_awarded || !approving_reviewer) {
+          msg.className = 'msg error'; msg.textContent = 'Task, units and reviewer are required.'; return;
+        }
+        try {
+          const res = await fetch(`/api/ledger/${editId}`, {
+            method: 'PUT', headers,
+            body: JSON.stringify({ task_description, units_awarded, approving_reviewer, task_reference, remarks })
+          });
+          const d = await res.json();
+          if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to update entry.'; return; }
+          msg.className = 'msg success'; msg.textContent = 'Entry updated successfully.';
+          clearAwardForm();
+          loadStats(); loadLedger(); loadContributors();
+        } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+      } else {
+        // ── CREATE mode ──────────────────────────────────────────────────────────
+        const contributor_id = parseInt(document.getElementById('a-contrib').value);
+        if (!contributor_id || !task_description || !units_awarded || !approving_reviewer) {
+          msg.className = 'msg error'; msg.textContent = 'Contributor, task, units and reviewer are required.'; return;
+        }
+        try {
+          const res = await fetch('/api/ledger', { method: 'POST', headers, body: JSON.stringify({ contributor_id, task_description, units_awarded, approving_reviewer, task_reference, remarks }) });
+          const d = await res.json();
+          if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to award units.'; return; }
+          msg.className = 'msg success'; msg.textContent = `Awarded ${units_awarded} units successfully.`;
+          document.getElementById('a-task').value = '';
+          document.getElementById('a-units').value = '';
+          document.getElementById('a-ref').value = '';
+          document.getElementById('a-remarks').value = '';
+          loadStats(); loadLedger(); loadContributors();
+        } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+      }
+    }
+
+    function logout() { localStorage.removeItem('axxspace_admin_token'); window.location.href = '/login'; }
+
+    // ── Investor management ───────────────────────────────────────────────────────
+    function stepInvShares(delta) {
+      const el = document.getElementById('inv-shares');
+      const current = parseInt(el.value) || 0;
+      const next = current + delta;
+      el.value = next < 1 ? 1 : next;
+    }
+
+    async function addInvestor() {
+      const msg = document.getElementById('inv-msg');
+      msg.className = 'msg';
+      const name = document.getElementById('inv-name').value.trim();
+      const email = document.getElementById('inv-email').value.trim();
+      const phone = document.getElementById('inv-phone').value.trim() || null;
+      const shares = parseFloat(document.getElementById('inv-shares').value);
+      const pass = document.getElementById('inv-pass').value;
+      const pass2 = document.getElementById('inv-pass2').value;
+
+      if (!name || !email) { msg.className = 'msg error'; msg.textContent = 'Name and email are required.'; return; }
+      if (!shares || shares < 1) { msg.className = 'msg error'; msg.textContent = 'Shares must be at least 1.'; return; }
+      if (!pass) { msg.className = 'msg error'; msg.textContent = 'Password is required.'; return; }
+      if (pass.length < 6) { msg.className = 'msg error'; msg.textContent = 'Password must be at least 6 characters.'; return; }
+      if (pass !== pass2) { msg.className = 'msg error'; msg.textContent = 'Passwords do not match.'; return; }
+
+      try {
+        const res = await fetch('/api/investors', {
+          method: 'POST', headers,
+          body: JSON.stringify({ name, email, phone, shares, password: pass })
+        });
+        const d = await res.json();
+        if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to add investor.'; return; }
+        const kes = (d.shares * 50).toLocaleString();
+        msg.className = 'msg success';
+        msg.textContent = `Investor ${d.name} added — ${d.shares} shares · KES ${kes}`;
+        ['inv-name', 'inv-email', 'inv-phone', 'inv-shares', 'inv-pass', 'inv-pass2'].forEach(id => document.getElementById(id).value = '');
+        loadInvestors();
+      } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+    }
+
+    async function loadInvestors() {
+      try {
+        const res = await fetch('/api/investors', { headers });
+        if (handleAuthError(res)) return;
+        const data = await res.json();
+        const tbody = document.getElementById('investors-body');
+        if (!tbody) return;
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="empty">No investors yet. Add one above.</td></tr>';
+          document.getElementById('inv-summary').textContent = '';
+          return;
+        }
+        const totalShares = data.reduce((s, i) => s + i.shares, 0);
+        const totalKES = totalShares * 50;
+        document.getElementById('inv-summary').textContent =
+          `${data.length} investor${data.length !== 1 ? 's' : ''} · ${totalShares.toLocaleString()} total shares · KES ${totalKES.toLocaleString()}`;
+        tbody.innerHTML = data.map((inv, i) => `
       <tr id="inv-row-${inv.id}">
-        <td style="color:var(--muted);font-family:'Space Mono',monospace">${i+1}</td>
+        <td style="color:var(--muted);font-family:'Space Mono',monospace">${i + 1}</td>
         <td style="font-weight:500">${inv.name}</td>
         <td style="color:var(--muted)">${inv.email}</td>
-        <td style="color:var(--muted)">${inv.phone||'—'}</td>
+        <td style="color:var(--muted)">${inv.phone || '—'}</td>
         <td style="font-family:'Space Mono',monospace;color:var(--investor)">${inv.shares.toLocaleString()}</td>
-        <td style="font-family:'Space Mono',monospace;color:var(--gold)">KES ${(inv.shares*50).toLocaleString()}</td>
+        <td style="font-family:'Space Mono',monospace;color:var(--gold)">KES ${(inv.shares * 50).toLocaleString()}</td>
         <td style="color:var(--muted)">${new Date(inv.created_at).toLocaleDateString()}</td>
         <td><div class="action-cell">
-          <button class="btn-reset-pw" onclick="openResetPwModal(${inv.id},'${inv.name.replace(/'/g,"\\'")  }','investor')" title="Reset investor password">🔑 Reset PW</button>
-          <button class="btn-delete" onclick="deleteInvestor(${inv.id},'${inv.name.replace(/'/g,"\\'")  }')">🗑 Delete</button>
+          <button class="btn-reset-pw" onclick="openResetPwModal(${inv.id},'${inv.name.replace(/'/g, "\\'")}','investor')" title="Reset investor password">🔑 Reset PW</button>
+          <button class="btn-delete" onclick="deleteInvestor(${inv.id},'${inv.name.replace(/'/g, "\\'")}')">🗑 Delete</button>
         </div></td>
       </tr>`).join('');
-  } catch { /* silently fail on tab load */ }
-}
-
-async function deleteInvestor(id, name) {
-  if (!confirm(`Delete investor "${name}"? This cannot be undone.`)) return;
-  try {
-    const res = await fetch(`/api/investors/${id}`, { method:'DELETE', headers });
-    if (handleAuthError(res)) return;
-    if (res.status === 204) {
-      document.getElementById(`inv-row-${id}`)?.remove();
-      loadInvestors();
-    } else {
-      const d = await res.json();
-      alert(d.detail || 'Failed to delete investor.');
+      } catch { /* silently fail on tab load */ }
     }
-  } catch { alert('Connection error.'); }
-}
 
-// ── Admin Reset Password ─────────────────────────────────────────────────────
-let _resetPwId   = null;
-let _resetPwType = null; // 'contributor' | 'investor'
+    async function deleteInvestor(id, name) {
+      if (!confirm(`Delete investor "${name}"? This cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/api/investors/${id}`, { method: 'DELETE', headers });
+        if (handleAuthError(res)) return;
+        if (res.status === 204) {
+          document.getElementById(`inv-row-${id}`)?.remove();
+          loadInvestors();
+        } else {
+          const d = await res.json();
+          alert(d.detail || 'Failed to delete investor.');
+        }
+      } catch { alert('Connection error.'); }
+    }
 
-function openResetPwModal(id, name, type) {
-  _resetPwId   = id;
-  _resetPwType = type;
-  document.getElementById('rpw-name').textContent = name;
-  document.getElementById('rpw-type-label').textContent = type === 'investor' ? '📈 Investor' : '👤 Contributor';
-  document.getElementById('rpw-new').value = '';
-  document.getElementById('rpw-confirm').value = '';
-  const msg = document.getElementById('rpw-msg');
-  msg.className = 'msg';
-  document.getElementById('reset-pw-modal').classList.add('open');
-  setTimeout(() => document.getElementById('rpw-new').focus(), 80);
-}
+    // ── Admin Reset Password ─────────────────────────────────────────────────────
+    let _resetPwId = null;
+    let _resetPwType = null; // 'contributor' | 'investor'
 
-function closeResetPwModal() {
-  document.getElementById('reset-pw-modal').classList.remove('open');
-}
+    function openResetPwModal(id, name, type) {
+      _resetPwId = id;
+      _resetPwType = type;
+      document.getElementById('rpw-name').textContent = name;
+      document.getElementById('rpw-type-label').textContent = type === 'investor' ? '📈 Investor' : '👤 Contributor';
+      document.getElementById('rpw-new').value = '';
+      document.getElementById('rpw-confirm').value = '';
+      const msg = document.getElementById('rpw-msg');
+      msg.className = 'msg';
+      document.getElementById('reset-pw-modal').classList.add('open');
+      setTimeout(() => document.getElementById('rpw-new').focus(), 80);
+    }
 
-async function submitAdminResetPw() {
-  const newPwd  = document.getElementById('rpw-new').value;
-  const confirm = document.getElementById('rpw-confirm').value;
-  const msg     = document.getElementById('rpw-msg');
-  const btn     = document.getElementById('rpw-btn');
-  msg.className = 'msg';
+    function closeResetPwModal() {
+      document.getElementById('reset-pw-modal').classList.remove('open');
+    }
 
-  if (!newPwd || !confirm) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
-  if (newPwd.length < 6)   { msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
-  if (newPwd !== confirm)  { msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+    async function submitAdminResetPw() {
+      const newPwd = document.getElementById('rpw-new').value;
+      const confirm = document.getElementById('rpw-confirm').value;
+      const msg = document.getElementById('rpw-msg');
+      const btn = document.getElementById('rpw-btn');
+      msg.className = 'msg';
 
-  btn.disabled = true; btn.textContent = 'Resetting…';
-  try {
-    const endpoint = _resetPwType === 'investor'
-      ? `/api/investors/${_resetPwId}/reset-password`
-      : `/api/contributors/${_resetPwId}/reset-password`;
-    const res  = await fetch(endpoint, {
-      method: 'POST', headers,
-      body: JSON.stringify({ new_password: newPwd }),
-    });
-    if (handleAuthError(res)) return;
-    const d = await res.json();
-    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Reset failed.'; return; }
-    msg.className = 'msg success';
-    msg.textContent = '✓ Password reset successfully.';
-    setTimeout(closeResetPwModal, 1500);
-  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
-  finally { btn.disabled=false; btn.textContent='Set New Password'; }
-}
+      if (!newPwd || !confirm) { msg.className = 'msg error'; msg.textContent = 'Please fill in both fields.'; return; }
+      if (newPwd.length < 6) { msg.className = 'msg error'; msg.textContent = 'Password must be at least 6 characters.'; return; }
+      if (newPwd !== confirm) { msg.className = 'msg error'; msg.textContent = 'Passwords do not match.'; return; }
 
-loadConfig(); loadStats(); loadContributors(); loadLedger();
+      btn.disabled = true; btn.textContent = 'Resetting…';
+      try {
+        const endpoint = _resetPwType === 'investor'
+          ? `/api/investors/${_resetPwId}/reset-password`
+          : `/api/contributors/${_resetPwId}/reset-password`;
+        const res = await fetch(endpoint, {
+          method: 'POST', headers,
+          body: JSON.stringify({ new_password: newPwd }),
+        });
+        if (handleAuthError(res)) return;
+        const d = await res.json();
+        if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Reset failed.'; return; }
+        msg.className = 'msg success';
+        msg.textContent = '✓ Password reset successfully.';
+        setTimeout(closeResetPwModal, 1500);
+      } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+      finally { btn.disabled = false; btn.textContent = 'Set New Password'; }
+    }
 
-// ── Theme toggle ─────────────────────────────────────────────────
-(function () {
-  const saved = localStorage.getItem('axxspace_theme');
-  if (saved === 'light') document.documentElement.classList.add('light');
-  _applyThemeIcon();
-})();
-function _applyThemeIcon() {
-  const isLight = document.documentElement.classList.contains('light');
-  const el = document.getElementById('theme-icon');
-  if (el) el.textContent = isLight ? '☀️' : '🌙';
-}
-function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
-  _applyThemeIcon();
-}
-</script>
+    loadConfig(); loadStats(); loadContributors(); loadLedger(); loadSubmissions();
 
-<!-- Notification drawer -->
-<div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
-<div class="notif-drawer" id="notif-drawer">
-  <div class="drawer-header">
-    <h3>🔔 Notifications</h3>
-    <div class="drawer-actions">
-      <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
-      <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
-    </div>
-  </div>
-  <div class="notif-list" id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
-</div>
+    // ── Theme toggle ─────────────────────────────────────────────────
+    (function () {
+      const saved = localStorage.getItem('axxspace_theme');
+      if (saved === 'light') document.documentElement.classList.add('light');
+      _applyThemeIcon();
+    })();
+    function _applyThemeIcon() {
+      const isLight = document.documentElement.classList.contains('light');
+      const el = document.getElementById('theme-icon');
+      if (el) el.textContent = isLight ? '☀️' : '🌙';
+    }
+    function toggleTheme() {
+      const isLight = document.documentElement.classList.toggle('light');
+      localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
+      _applyThemeIcon();
+    }
+  </script>
 
-<!-- Chat widget -->
-<div class="chat-widget" id="chat-widget">
-  <div class="chat-panel" id="chat-panel">
-    <!-- Room list view -->
-    <div id="view-rooms">
-      <div class="chat-panel-header">
-        <h4>💬 Chats</h4>
-        <button class="btn-new-room" onclick="openNewRoomModal()">+ New Chat</button>
-      </div>
-      <div class="room-list" id="room-list"><div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">Loading rooms…</div></div>
-    </div>
-    <!-- Message thread view -->
-    <div id="view-thread" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-      <div class="chat-panel-header">
-        <button class="chat-back-btn" onclick="backToRooms()">←</button>
-        <h4 id="thread-room-name" style="flex:1;margin-left:0.3rem">Room</h4>
-      </div>
-      <div class="msg-thread" id="msg-thread"></div>
-      <div class="msg-input-row">
-        <input class="msg-input" id="msg-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg()" />
-        <button class="msg-send-btn" onclick="sendMsg()">↑</button>
+  <!-- Notification drawer -->
+  <div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
+  <div class="notif-drawer" id="notif-drawer">
+    <div class="drawer-header">
+      <h3>🔔 Notifications</h3>
+      <div class="drawer-actions">
+        <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
+        <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
       </div>
     </div>
-  </div>
-  <button class="chat-fab" onclick="toggleChat()" title="Chat">
-    💬<span class="chat-fab-badge" id="chat-fab-badge">0</span>
-  </button>
-</div>
-
-<!-- Reset Password modal (admin) -->
-<div class="modal-overlay" id="reset-pw-modal" onclick="if(event.target===this)closeResetPwModal()">
-  <div class="modal-box">
-    <h3>🔑 Reset Password</h3>
-    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
-      <span id="rpw-type-label" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:0.15rem 0.5rem;color:var(--gold);font-size:0.72rem;font-weight:600"></span>
-      &nbsp;<strong id="rpw-name" style="color:var(--text)"></strong>
-    </div>
-    <label class="modal-label">New Password</label>
-    <input class="modal-input" type="password" id="rpw-new" placeholder="Min. 6 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAdminResetPw()" />
-    <label class="modal-label">Confirm New Password</label>
-    <input class="modal-input" type="password" id="rpw-confirm" placeholder="Repeat new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAdminResetPw()" />
-    <div id="rpw-msg" class="msg"></div>
-    <div class="modal-footer">
-      <button class="btn-modal-cancel" onclick="closeResetPwModal()">Cancel</button>
-      <button class="btn-modal-ok" id="rpw-btn" onclick="submitAdminResetPw()" style="background:linear-gradient(135deg,var(--gold),#d97706);color:#0a0a0f">Set New Password</button>
+    <div class="notif-list" id="notif-list">
+      <div class="notif-empty">No notifications yet.</div>
     </div>
   </div>
-</div>
 
-<!-- Edit Contributor modal -->
+  <!-- Chat widget -->
+  <div class="chat-widget" id="chat-widget">
+    <div class="chat-panel" id="chat-panel">
+      <!-- Room list view -->
+      <div id="view-rooms">
+        <div class="chat-panel-header">
+          <h4>💬 Chats</h4>
+          <button class="btn-new-room" onclick="openNewRoomModal()">+ New Chat</button>
+        </div>
+        <div class="room-list" id="room-list">
+          <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">Loading rooms…</div>
+        </div>
+      </div>
+      <!-- Message thread view -->
+      <div id="view-thread" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="chat-panel-header">
+          <button class="chat-back-btn" onclick="backToRooms()">←</button>
+          <h4 id="thread-room-name" style="flex:1;margin-left:0.3rem">Room</h4>
+        </div>
+        <div class="msg-thread" id="msg-thread"></div>
+        <div class="msg-input-row">
+          <input class="msg-input" id="msg-input" placeholder="Type a message…"
+            onkeydown="if(event.key==='Enter')sendMsg()" />
+          <button class="msg-send-btn" onclick="sendMsg()">↑</button>
+        </div>
+      </div>
+    </div>
+    <button class="chat-fab" onclick="toggleChat()" title="Chat">
+      💬<span class="chat-fab-badge" id="chat-fab-badge">0</span>
+    </button>
+  </div>
 
-<div class="modal-overlay" id="edit-contrib-modal">
-  <div class="modal-box">
-    <h3>✏️ Edit Contributor</h3>
-    <input type="hidden" id="ec-id" />
-    <label class="modal-label">Full Name</label>
-    <input class="modal-input" id="ec-name" placeholder="Jane Doe" />
-    <label class="modal-label">Gmail Address</label>
-    <input class="modal-input" id="ec-email" type="email" placeholder="user@gmail.com" />
-    <label class="modal-label">Category</label>
-    <select class="modal-input" id="ec-cat"></select>
-    <div id="ec-msg" class="msg"></div>
-    <div class="modal-footer">
-      <button class="btn-modal-cancel" onclick="closeEditContributorModal()">Cancel</button>
-      <button class="btn-modal-ok" onclick="saveEditContributor()">Save Changes</button>
+  <!-- Reset Password modal (admin) -->
+  <div class="modal-overlay" id="reset-pw-modal" onclick="if(event.target===this)closeResetPwModal()">
+    <div class="modal-box">
+      <h3>🔑 Reset Password</h3>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
+        <span id="rpw-type-label"
+          style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:0.15rem 0.5rem;color:var(--gold);font-size:0.72rem;font-weight:600"></span>
+        &nbsp;<strong id="rpw-name" style="color:var(--text)"></strong>
+      </div>
+      <label class="modal-label">New Password</label>
+      <input class="modal-input" type="password" id="rpw-new" placeholder="Min. 6 characters"
+        autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAdminResetPw()" />
+      <label class="modal-label">Confirm New Password</label>
+      <input class="modal-input" type="password" id="rpw-confirm" placeholder="Repeat new password"
+        autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAdminResetPw()" />
+      <div id="rpw-msg" class="msg"></div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeResetPwModal()">Cancel</button>
+        <button class="btn-modal-ok" id="rpw-btn" onclick="submitAdminResetPw()"
+          style="background:linear-gradient(135deg,var(--gold),#d97706);color:#0a0a0f">Set New Password</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- New room modal -->
-<div class="modal-overlay" id="new-room-modal">
-  <div class="modal-box">
-    <h3>🗨️ New Chat Room</h3>
-    <label class="modal-label">Room name</label>
-    <input class="modal-input" id="new-room-name" placeholder="e.g. Sprint 3 sync" />
-    <label class="modal-label">Invite members</label>
-    <div class="invitee-list" id="invitee-list">Loading…</div>
-    <div class="modal-footer">
-      <button class="btn-modal-cancel" onclick="closeNewRoomModal()">Cancel</button>
-      <button class="btn-modal-ok" onclick="createRoom()">Create &amp; Invite</button>
+  <!-- Edit Contributor modal -->
+
+  <div class="modal-overlay" id="edit-contrib-modal">
+    <div class="modal-box">
+      <h3>✏️ Edit Contributor</h3>
+      <input type="hidden" id="ec-id" />
+      <label class="modal-label">Full Name</label>
+      <input class="modal-input" id="ec-name" placeholder="Jane Doe" />
+      <label class="modal-label">Gmail Address</label>
+      <input class="modal-input" id="ec-email" type="email" placeholder="user@gmail.com" />
+      <label class="modal-label">Category</label>
+      <select class="modal-input" id="ec-cat"></select>
+      <div id="ec-msg" class="msg"></div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeEditContributorModal()">Cancel</button>
+        <button class="btn-modal-ok" onclick="saveEditContributor()">Save Changes</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-// ── Admin chat & notification JS ─────────────────────────────────────────
-const _adminTok = localStorage.getItem('axxspace_admin_token');
-const _aHdrs = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _adminTok };
+  <!-- New room modal -->
+  <div class="modal-overlay" id="new-room-modal">
+    <div class="modal-box">
+      <h3>🗨️ New Chat Room</h3>
+      <label class="modal-label">Room name</label>
+      <input class="modal-input" id="new-room-name" placeholder="e.g. Sprint 3 sync" />
+      <label class="modal-label">Invite members</label>
+      <div class="invitee-list" id="invitee-list">Loading…</div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeNewRoomModal()">Cancel</button>
+        <button class="btn-modal-ok" onclick="createRoom()">Create &amp; Invite</button>
+      </div>
+    </div>
+  </div>
 
-let _notifications = [];
-let _rooms = [];
-let _activeRoomId = null;
-let _chatUnread = 0;
+  <script>
+    // ── Admin chat & notification JS ─────────────────────────────────────────
+    const _adminTok = localStorage.getItem('axxspace_admin_token');
+    const _aHdrs = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _adminTok };
 
-// ── Notification drawer ───────────────────────────────────────────────────
-function openDrawer()  { document.getElementById('notif-overlay').classList.add('open'); document.getElementById('notif-drawer').classList.add('open'); }
-function closeDrawer() { document.getElementById('notif-overlay').classList.remove('open'); document.getElementById('notif-drawer').classList.remove('open'); }
+    let _notifications = [];
+    let _rooms = [];
+    let _activeRoomId = null;
+    let _chatUnread = 0;
 
-function _updateBadge() {
-  const unread = _notifications.filter(n => !n.is_read).length;
-  const badge = document.getElementById('notif-badge');
-  badge.textContent = unread;
-  badge.classList.toggle('show', unread > 0);
-}
+    // ── Notification drawer ───────────────────────────────────────────────────
+    function openDrawer() { document.getElementById('notif-overlay').classList.add('open'); document.getElementById('notif-drawer').classList.add('open'); }
+    function closeDrawer() { document.getElementById('notif-overlay').classList.remove('open'); document.getElementById('notif-drawer').classList.remove('open'); }
 
-function _renderNotifList() {
-  const list = document.getElementById('notif-list');
-  if (!_notifications.length) { list.innerHTML = '<div class="notif-empty">🔔 No notifications yet.</div>'; return; }
-  list.innerHTML = _notifications.map(n => `
-    <div class="notif-item ${n.is_read ? '' : 'unread'}" id="anotif-${n.id}" onclick="_clickNotif(${n.id},${n.ref_id||'null'},'${n.kind}')">
-      <div class="notif-kind ${n.kind}">${n.kind.replace(/_/g,' ')}</div>
+    function _updateBadge() {
+      const unread = _notifications.filter(n => !n.is_read).length;
+      const badge = document.getElementById('notif-badge');
+      badge.textContent = unread;
+      badge.classList.toggle('show', unread > 0);
+    }
+
+    function _renderNotifList() {
+      const list = document.getElementById('notif-list');
+      if (!_notifications.length) { list.innerHTML = '<div class="notif-empty">🔔 No notifications yet.</div>'; return; }
+      list.innerHTML = _notifications.map(n => `
+    <div class="notif-item ${n.is_read ? '' : 'unread'}" id="anotif-${n.id}" onclick="_clickNotif(${n.id},${n.ref_id || 'null'},'${n.kind}')">
+      <div class="notif-kind ${n.kind}">${n.kind.replace(/_/g, ' ')}</div>
       <div class="notif-title">${n.title}</div>
       <div class="notif-body">${n.body}</div>
       <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
     </div>`).join('');
-}
+    }
 
-async function _loadNotifications() {
-  try {
-    const res = await fetch('/api/admin/notifications', { headers: _aHdrs });
-    if (!res.ok) return;
-    _notifications = await res.json();
-    _updateBadge();
-    _renderNotifList();
-  } catch {}
-}
+    async function _loadNotifications() {
+      try {
+        const res = await fetch('/api/admin/notifications', { headers: _aHdrs });
+        if (!res.ok) return;
+        _notifications = await res.json();
+        _updateBadge();
+        _renderNotifList();
+      } catch { }
+    }
 
-async function _clickNotif(id, refId, kind) {
-  _notifications = _notifications.map(n => n.id === id ? {...n, is_read: true} : n);
-  _updateBadge(); _renderNotifList();
-  await fetch(`/api/admin/notifications/${id}/read`, { method: 'POST', headers: _aHdrs });
-  if (kind === 'chat_invite' && refId) {
-    closeDrawer();
-    await _loadRooms();
-    _openRoom(refId);
-    document.getElementById('chat-panel').classList.add('open');
-  }
-}
+    async function _clickNotif(id, refId, kind) {
+      _notifications = _notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
+      _updateBadge(); _renderNotifList();
+      await fetch(`/api/admin/notifications/${id}/read`, { method: 'POST', headers: _aHdrs });
+      if (kind === 'chat_invite' && refId) {
+        closeDrawer();
+        await _loadRooms();
+        _openRoom(refId);
+        document.getElementById('chat-panel').classList.add('open');
+      }
+    }
 
-async function markAllRead() {
-  await fetch('/api/admin/notifications/read-all', { method: 'POST', headers: _aHdrs });
-  _notifications = _notifications.map(n => ({...n, is_read: true}));
-  _updateBadge(); _renderNotifList();
-}
+    async function markAllRead() {
+      await fetch('/api/admin/notifications/read-all', { method: 'POST', headers: _aHdrs });
+      _notifications = _notifications.map(n => ({ ...n, is_read: true }));
+      _updateBadge(); _renderNotifList();
+    }
 
-// ── Chat panel ───────────────────────────────────────────────────────────
-function toggleChat() {
-  const panel = document.getElementById('chat-panel');
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) {
-    _loadRooms();
-    _chatUnread = 0;
-    document.getElementById('chat-fab-badge').classList.remove('show');
-  }
-}
+    // ── Chat panel ───────────────────────────────────────────────────────────
+    function toggleChat() {
+      const panel = document.getElementById('chat-panel');
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) {
+        _loadRooms();
+        _chatUnread = 0;
+        document.getElementById('chat-fab-badge').classList.remove('show');
+      }
+    }
 
-async function _loadRooms() {
-  const res = await fetch(`/api/chat/rooms?token=${_adminTok}`);
-  if (!res.ok) return;
-  _rooms = await res.json();
-  _renderRoomList();
-}
+    async function _loadRooms() {
+      const res = await fetch(`/api/chat/rooms?token=${_adminTok}`);
+      if (!res.ok) return;
+      _rooms = await res.json();
+      _renderRoomList();
+    }
 
-function _renderRoomList() {
-  const el = document.getElementById('room-list');
-  if (!_rooms.length) { el.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">💬 No chats yet. Create one!</div>'; return; }
-  el.innerHTML = _rooms.map(r => `
+    function _renderRoomList() {
+      const el = document.getElementById('room-list');
+      if (!_rooms.length) { el.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.875rem">💬 No chats yet. Create one!</div>'; return; }
+      el.innerHTML = _rooms.map(r => `
     <div class="room-item" onclick="_openRoom(${r.id})">
       <span style="font-size:1.1rem">💬</span>
       <span class="room-name">${r.name}</span>
       <span class="room-meta">${r.member_ids.length} members</span>
     </div>`).join('');
-}
+    }
 
-async function _openRoom(roomId) {
-  _activeRoomId = roomId;
-  const room = _rooms.find(r => r.id === roomId);
-  document.getElementById('thread-room-name').textContent = room ? room.name : 'Chat';
-  document.getElementById('view-rooms').style.display = 'none';
-  const vt = document.getElementById('view-thread');
-  vt.style.display = 'flex';
-  const res = await fetch(`/api/chat/rooms/${roomId}/messages?token=${_adminTok}`);
-  if (!res.ok) return;
-  const msgs = await res.json();
-  _renderMessages(msgs);
-}
+    async function _openRoom(roomId) {
+      _activeRoomId = roomId;
+      const room = _rooms.find(r => r.id === roomId);
+      document.getElementById('thread-room-name').textContent = room ? room.name : 'Chat';
+      document.getElementById('view-rooms').style.display = 'none';
+      const vt = document.getElementById('view-thread');
+      vt.style.display = 'flex';
+      const res = await fetch(`/api/chat/rooms/${roomId}/messages?token=${_adminTok}`);
+      if (!res.ok) return;
+      const msgs = await res.json();
+      _renderMessages(msgs);
+    }
 
-function _renderMessages(msgs) {
-  const thread = document.getElementById('msg-thread');
-  thread.innerHTML = msgs.map(m => {
-    const isMe = m.sender_id === null; // admin has no sender_id
-    return `<div>
+    function _renderMessages(msgs) {
+      const thread = document.getElementById('msg-thread');
+      thread.innerHTML = msgs.map(m => {
+        const isMe = m.sender_id === null; // admin has no sender_id
+        return `<div>
       ${!isMe ? `<div class="msg-sender">${m.sender_name}</div>` : ''}
       <div class="msg-bubble ${isMe ? 'me' : 'other'}">${m.body}
-        <div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
       </div>
     </div>`;
-  }).join('');
-  thread.scrollTop = thread.scrollHeight;
-}
+      }).join('');
+      thread.scrollTop = thread.scrollHeight;
+    }
 
-async function sendMsg() {
-  const inp = document.getElementById('msg-input');
-  const body = inp.value.trim();
-  if (!body || !_activeRoomId) return;
-  inp.value = '';
-  try {
-    const res = await fetch(`/api/chat/rooms/${_activeRoomId}/messages?token=${_adminTok}`, {
-      method: 'POST', headers: _aHdrs, body: JSON.stringify({ body })
-    });
-    if (!res.ok) return;
-    const msg = await res.json();
-    const thread = document.getElementById('msg-thread');
-    thread.innerHTML += `<div>
+    async function sendMsg() {
+      const inp = document.getElementById('msg-input');
+      const body = inp.value.trim();
+      if (!body || !_activeRoomId) return;
+      inp.value = '';
+      try {
+        const res = await fetch(`/api/chat/rooms/${_activeRoomId}/messages?token=${_adminTok}`, {
+          method: 'POST', headers: _aHdrs, body: JSON.stringify({ body })
+        });
+        if (!res.ok) return;
+        const msg = await res.json();
+        const thread = document.getElementById('msg-thread');
+        thread.innerHTML += `<div>
       <div class="msg-bubble me">${msg.body}
-        <div class="msg-time">${new Date(msg.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="msg-time">${new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
       </div>
     </div>`;
-    thread.scrollTop = thread.scrollHeight;
-  } catch {}
-}
+        thread.scrollTop = thread.scrollHeight;
+      } catch { }
+    }
 
-function backToRooms() {
-  _activeRoomId = null;
-  document.getElementById('view-thread').style.display = 'none';
-  document.getElementById('view-rooms').style.display = '';
-  _loadRooms();
-}
+    function backToRooms() {
+      _activeRoomId = null;
+      document.getElementById('view-thread').style.display = 'none';
+      document.getElementById('view-rooms').style.display = '';
+      _loadRooms();
+    }
 
-async function openNewRoomModal() {
-  document.getElementById('new-room-modal').classList.add('open');
-  document.getElementById('new-room-name').value = '';
-  const il = document.getElementById('invitee-list');
-  il.innerHTML = 'Loading…';
-  try {
-    const res = await fetch(`/api/contributors/for-chat?token=${_adminTok}`);
-    const members = await res.json();
-    il.innerHTML = members.map(m => `
+    async function openNewRoomModal() {
+      document.getElementById('new-room-modal').classList.add('open');
+      document.getElementById('new-room-name').value = '';
+      const il = document.getElementById('invitee-list');
+      il.innerHTML = 'Loading…';
+      try {
+        const res = await fetch(`/api/contributors/for-chat?token=${_adminTok}`);
+        const members = await res.json();
+        il.innerHTML = members.map(m => `
       <label class="invitee-item">
         <input type="checkbox" value="${m.id}" />${m.name}
         <span style="font-size:0.72rem;color:var(--muted);margin-left:auto">${m.category}</span>
       </label>`).join('');
-  } catch { il.innerHTML = 'Failed to load members.'; }
-}
-
-function closeNewRoomModal() { document.getElementById('new-room-modal').classList.remove('open'); }
-
-async function createRoom() {
-  const name = document.getElementById('new-room-name').value.trim();
-  if (!name) { alert('Please enter a room name.'); return; }
-  const checked = [...document.querySelectorAll('#invitee-list input[type=checkbox]:checked')];
-  const invitee_ids = checked.map(cb => parseInt(cb.value));
-  try {
-    const res = await fetch(`/api/chat/rooms?token=${_adminTok}`, {
-      method: 'POST', headers: _aHdrs, body: JSON.stringify({ name, invitee_ids })
-    });
-    const room = await res.json().catch(() => null);
-    if (!res.ok) { alert(room?.detail || 'Failed to create room.'); return; }
-    closeNewRoomModal();
-    await _loadRooms();
-    if (room) _openRoom(room.id);
-    document.getElementById('chat-panel').classList.add('open');
-  } catch { alert('Connection error.'); }
-}
-
-// ── SSE (real-time) with polling fallback ────────────────────────────────
-function _startSSE() {
-  if (!_adminTok) return;
-  const es = new EventSource(`/api/events?token=${encodeURIComponent(_adminTok)}`);
-  es.addEventListener('notification', e => {
-    const n = JSON.parse(e.data);
-    if (!_notifications.find(x => x.id === n.id)) {
-      _notifications.unshift({ ...n, is_read: false });
-      _updateBadge(); _renderNotifList();
+      } catch { il.innerHTML = 'Failed to load members.'; }
     }
-  });
-  es.addEventListener('chat_message', e => {
-    const m = JSON.parse(e.data);
-    if (m.room_id === _activeRoomId) {
-      const thread = document.getElementById('msg-thread');
-      if (thread) {
-        const isMe = m.sender_id === null;
-        thread.innerHTML += `<div>
+
+    function closeNewRoomModal() { document.getElementById('new-room-modal').classList.remove('open'); }
+
+    async function createRoom() {
+      const name = document.getElementById('new-room-name').value.trim();
+      if (!name) { alert('Please enter a room name.'); return; }
+      const checked = [...document.querySelectorAll('#invitee-list input[type=checkbox]:checked')];
+      const invitee_ids = checked.map(cb => parseInt(cb.value));
+      try {
+        const res = await fetch(`/api/chat/rooms?token=${_adminTok}`, {
+          method: 'POST', headers: _aHdrs, body: JSON.stringify({ name, invitee_ids })
+        });
+        const room = await res.json().catch(() => null);
+        if (!res.ok) { alert(room?.detail || 'Failed to create room.'); return; }
+        closeNewRoomModal();
+        await _loadRooms();
+        if (room) _openRoom(room.id);
+        document.getElementById('chat-panel').classList.add('open');
+      } catch { alert('Connection error.'); }
+    }
+
+    // ── SSE (real-time) with polling fallback ────────────────────────────────
+    function _startSSE() {
+      if (!_adminTok) return;
+      const es = new EventSource(`/api/events?token=${encodeURIComponent(_adminTok)}`);
+      es.addEventListener('notification', e => {
+        const n = JSON.parse(e.data);
+        if (!_notifications.find(x => x.id === n.id)) {
+          _notifications.unshift({ ...n, is_read: false });
+          _updateBadge(); _renderNotifList();
+        }
+      });
+      es.addEventListener('chat_message', e => {
+        const m = JSON.parse(e.data);
+        if (m.room_id === _activeRoomId) {
+          const thread = document.getElementById('msg-thread');
+          if (thread) {
+            const isMe = m.sender_id === null;
+            thread.innerHTML += `<div>
           ${!isMe ? `<div class="msg-sender">${m.sender_name}</div>` : ''}
           <div class="msg-bubble ${isMe ? 'me' : 'other'}">${m.body}
-            <div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+            <div class="msg-time">${new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
         </div>`;
-        thread.scrollTop = thread.scrollHeight;
-      }
-    } else {
-      _chatUnread++;
-      const fab = document.getElementById('chat-fab-badge');
-      fab.textContent = _chatUnread; fab.classList.add('show');
+            thread.scrollTop = thread.scrollHeight;
+          }
+        } else {
+          _chatUnread++;
+          const fab = document.getElementById('chat-fab-badge');
+          fab.textContent = _chatUnread; fab.classList.add('show');
+        }
+      });
+      es.onerror = () => { es.close(); setTimeout(_startSSE, 8000); };
     }
-  });
-  es.onerror = () => { es.close(); setTimeout(_startSSE, 8000); };
-}
 
-_loadNotifications();
-_startSSE();
-setInterval(_loadNotifications, 30000);
+    _loadNotifications();
+    _startSSE();
+    setInterval(_loadNotifications, 30000);
 
-// ── Edit Contributor modal ────────────────────────────────────────────────
-function openEditContributorModal(id, name, email, category) {
-  document.getElementById('ec-id').value = id;
-  document.getElementById('ec-name').value = name;
-  document.getElementById('ec-email').value = email;
-  // Populate category select from existing options
-  const catSrc = document.getElementById('c-cat');
-  const catDst = document.getElementById('ec-cat');
-  catDst.innerHTML = catSrc.innerHTML;
-  catDst.value = category;
-  const msg = document.getElementById('ec-msg');
-  msg.className = 'msg'; msg.textContent = '';
-  document.getElementById('edit-contrib-modal').classList.add('open');
-}
+    // ── Edit Contributor modal ────────────────────────────────────────────────
+    function openEditContributorModal(id, name, email, category) {
+      document.getElementById('ec-id').value = id;
+      document.getElementById('ec-name').value = name;
+      document.getElementById('ec-email').value = email;
+      // Populate category select from existing options
+      const catSrc = document.getElementById('c-cat');
+      const catDst = document.getElementById('ec-cat');
+      catDst.innerHTML = catSrc.innerHTML;
+      catDst.value = category;
+      const msg = document.getElementById('ec-msg');
+      msg.className = 'msg'; msg.textContent = '';
+      document.getElementById('edit-contrib-modal').classList.add('open');
+    }
 
-function closeEditContributorModal() {
-  document.getElementById('edit-contrib-modal').classList.remove('open');
-}
+    function closeEditContributorModal() {
+      document.getElementById('edit-contrib-modal').classList.remove('open');
+    }
 
-async function saveEditContributor() {
-  const id       = document.getElementById('ec-id').value;
-  const name     = document.getElementById('ec-name').value.trim();
-  const email    = document.getElementById('ec-email').value.trim();
-  const category = document.getElementById('ec-cat').value;
-  const msg      = document.getElementById('ec-msg');
-  msg.className = 'msg';
+    async function saveEditContributor() {
+      const id = document.getElementById('ec-id').value;
+      const name = document.getElementById('ec-name').value.trim();
+      const email = document.getElementById('ec-email').value.trim();
+      const category = document.getElementById('ec-cat').value;
+      const msg = document.getElementById('ec-msg');
+      msg.className = 'msg';
 
-  if (!name)     { msg.className='msg error'; msg.textContent='Name is required.'; return; }
-  if (!email)    { msg.className='msg error'; msg.textContent='Email is required.'; return; }
-  if (!/^[a-zA-Z0-9._%+\-]+@gmail\.com$/i.test(email)) {
-    msg.className='msg error'; msg.textContent='Must be a valid Gmail address.'; return;
-  }
-  if (!category) { msg.className='msg error'; msg.textContent='Category is required.'; return; }
+      if (!name) { msg.className = 'msg error'; msg.textContent = 'Name is required.'; return; }
+      if (!email) { msg.className = 'msg error'; msg.textContent = 'Email is required.'; return; }
+      if (!/^[a-zA-Z0-9._%+\-]+@gmail\.com$/i.test(email)) {
+        msg.className = 'msg error'; msg.textContent = 'Must be a valid Gmail address.'; return;
+      }
+      if (!category) { msg.className = 'msg error'; msg.textContent = 'Category is required.'; return; }
 
-  try {
-    const res = await fetch(`/api/contributors/${id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ name, email: email.toLowerCase(), category })
-    });
-    const d = await res.json();
-    if (!res.ok) { msg.className='msg error'; msg.textContent=d.detail||'Failed to update.'; return; }
-    msg.className='msg success'; msg.textContent='Contributor updated successfully!';
-    setTimeout(() => {
-      closeEditContributorModal();
-      loadContributors();
-    }, 900);
-  } catch { msg.className='msg error'; msg.textContent='Connection error.'; }
-}
-</script>
+      try {
+        const res = await fetch(`/api/contributors/${id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ name, email: email.toLowerCase(), category })
+        });
+        const d = await res.json();
+        if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to update.'; return; }
+        msg.className = 'msg success'; msg.textContent = 'Contributor updated successfully!';
+        setTimeout(() => {
+          closeEditContributorModal();
+          loadContributors();
+        }, 900);
+      } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+    }
+  </script>
 </body>
+
 </html>

@@ -195,15 +195,11 @@ def update_ledger_entry(
     entry = db.get(crud.models.LedgerEntry, entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Ledger entry not found.")
-    try:
-        units = crud.validate_units(payload.units_awarded)
-    except BusinessRuleError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    entry.task_description = payload.task_description.strip()
-    entry.units_awarded = units
-    entry.approving_reviewer = payload.approving_reviewer.strip()
-    entry.task_reference = payload.task_reference.strip() if payload.task_reference else None
-    entry.remarks = payload.remarks.strip() if payload.remarks else None
+    entry.task_description = payload.task_description
+    entry.units_awarded = payload.units_awarded
+    entry.approving_reviewer = payload.approving_reviewer
+    entry.task_reference = payload.task_reference
+    entry.remarks = payload.remarks
     db.commit()
     db.refresh(entry)
     return crud._entry_to_out(entry)
@@ -284,7 +280,7 @@ def admin_reset_contributor_password(
     return {"ok": True, "message": "Password reset successfully."}
 
 
-@app.post("/api/investors/{investor_id}/reset-password", status_code=200)
+@app.post(\"/api/investors/{investor_id}/reset-password\", status_code=200)
 def admin_reset_investor_password(
     investor_id: int,
     payload: schemas.ResetPasswordRequest,
@@ -296,6 +292,60 @@ def admin_reset_investor_password(
     if not ok:
         raise HTTPException(status_code=404, detail="Investor not found.")
     return {"ok": True, "message": "Investor password reset successfully."}
+
+
+# --- Task Submissions --------------------------------------------------------
+
+@app.post(
+    "/api/members/submissions",
+    response_model=schemas.TaskSubmissionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def member_submit_task(
+    payload: schemas.TaskSubmissionCreate,
+    db: Session = Depends(get_db),
+    contributor_id: int = Depends(require_member),
+) -> schemas.TaskSubmissionOut:
+    """Authenticated member submits a completed task for admin review."""
+    sub = crud.create_task_submission(db, contributor_id, payload)
+    return crud._submission_to_out(sub)
+
+
+@app.get("/api/members/submissions", response_model=list[schemas.TaskSubmissionOut])
+def member_list_submissions(
+    db: Session = Depends(get_db),
+    contributor_id: int = Depends(require_member),
+) -> list[schemas.TaskSubmissionOut]:
+    """Return all submissions for the authenticated member."""
+    return crud.list_member_submissions(db, contributor_id)
+
+
+@app.get("/api/admin/submissions", response_model=list[schemas.TaskSubmissionOut])
+def admin_list_submissions(
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> list[schemas.TaskSubmissionOut]:
+    """Admin: list all pending task submissions."""
+    return crud.list_pending_submissions(db)
+
+
+@app.post(
+    "/api/admin/submissions/{submission_id}/award",
+    response_model=schemas.LedgerEntryOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def admin_award_submission(
+    submission_id: int,
+    payload: schemas.AwardSubmissionRequest,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.LedgerEntryOut:
+    """Admin awards units for a pending submission, creating a ledger entry."""
+    try:
+        entry = crud.award_submission(db, submission_id, payload)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return crud._entry_to_out(entry)
 
 # --- Investor auth & management -----------------------------------------------
 @app.post("/api/investors", response_model=schemas.InvestorOut, status_code=201)

@@ -280,7 +280,7 @@ def admin_reset_contributor_password(
     return {"ok": True, "message": "Password reset successfully."}
 
 
-@app.post(\"/api/investors/{investor_id}/reset-password\", status_code=200)
+@app.post("/api/investors/{investor_id}/reset-password", status_code=200)
 def admin_reset_investor_password(
     investor_id: int,
     payload: schemas.ResetPasswordRequest,

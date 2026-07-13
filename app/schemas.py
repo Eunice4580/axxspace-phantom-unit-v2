@@ -248,6 +248,8 @@ class TaskSubmissionOut(BaseModel):
     units_awarded: float | None
     awarded_at: datetime | None
     submitted_at: datetime
+    review_rating: str | None = None
+    rejection_reason: str | None = None
 
 
 class AwardSubmissionRequest(BaseModel):
@@ -255,3 +257,9 @@ class AwardSubmissionRequest(BaseModel):
     approving_reviewer: str = Field(..., min_length=1, max_length=200)
     task_reference: str | None = Field(default=None, max_length=100)
     remarks: str | None = None
+    review_rating: str = Field(..., min_length=1, max_length=50)
+
+
+class RejectSubmissionRequest(BaseModel):
+    """Admin rejects a pending submission. Rejection reason is mandatory."""
+    rejection_reason: str = Field(..., min_length=1, max_length=1000)

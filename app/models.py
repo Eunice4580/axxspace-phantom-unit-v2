@@ -121,12 +121,15 @@ class TaskSubmission(Base):
     )
     task_title: Mapped[str] = mapped_column(String(300), nullable=False)
     task_description: Mapped[str] = mapped_column(Text, nullable=False)
-    # status: "pending" | "awarded"
+    # status: "pending" | "awarded" | "rejected"
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
     # Filled in by admin after award
     units_awarded: Mapped[float | None] = mapped_column(Float, nullable=True)
     awarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+    # Admin review feedback
+    review_rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     contributor: Mapped[Contributor] = relationship()
 
 

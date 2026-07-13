@@ -31,7 +31,34 @@ STATIC_DIR = BASE_DIR / "static"
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     init_db()
+    _migrate_task_submissions()
     yield
+
+
+def _migrate_task_submissions() -> None:
+    """Safely add new columns to task_submissions for existing deployments."""
+    from sqlalchemy import text
+    from app.database import engine
+    from app.config import settings
+    with engine.connect() as conn:
+        if settings.database_url.startswith("sqlite"):
+            rows = conn.execute(text("PRAGMA table_info(task_submissions)")).fetchall()
+            existing = {row[1] for row in rows}
+            if "review_rating" not in existing:
+                conn.execute(text("ALTER TABLE task_submissions ADD COLUMN review_rating VARCHAR(50)"))
+            if "rejection_reason" not in existing:
+                conn.execute(text("ALTER TABLE task_submissions ADD COLUMN rejection_reason TEXT"))
+        else:
+            # PostgreSQL supports IF NOT EXISTS
+            conn.execute(text(
+                "ALTER TABLE task_submissions "
+                "ADD COLUMN IF NOT EXISTS review_rating VARCHAR(50)"
+            ))
+            conn.execute(text(
+                "ALTER TABLE task_submissions "
+                "ADD COLUMN IF NOT EXISTS rejection_reason TEXT"
+            ))
+        conn.commit()
 
 app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 
@@ -346,6 +373,25 @@ def admin_award_submission(
     except crud.BusinessRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return crud._entry_to_out(entry)
+
+
+@app.post(
+    "/api/admin/submissions/{submission_id}/reject",
+    response_model=schemas.TaskSubmissionOut,
+    status_code=status.HTTP_200_OK,
+)
+def admin_reject_submission(
+    submission_id: int,
+    payload: schemas.RejectSubmissionRequest,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.TaskSubmissionOut:
+    """Admin rejects a pending submission with a mandatory reason."""
+    try:
+        sub = crud.reject_submission(db, submission_id, payload.rejection_reason)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return crud._submission_to_out(sub)
 
 # --- Investor auth & management -----------------------------------------------
 @app.post("/api/investors", response_model=schemas.InvestorOut, status_code=201)

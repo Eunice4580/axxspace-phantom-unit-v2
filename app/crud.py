@@ -770,6 +770,8 @@ def _submission_to_out(sub: models.TaskSubmission) -> schemas.TaskSubmissionOut:
         units_awarded=sub.units_awarded,
         awarded_at=sub.awarded_at,
         submitted_at=sub.submitted_at,
+        review_rating=sub.review_rating,
+        rejection_reason=sub.rejection_reason,
     )
 
 
@@ -846,13 +848,64 @@ def award_submission(
         task_reference=award_data.task_reference,
         remarks=award_data.remarks,
     )
-    # Create ledger entry (with notification to member)
+    # Create ledger entry (with units_awarded notification to member)
     entry = award_units_with_notify(db, ledger_data)
 
-    # Mark submission as awarded
+    # Mark submission as awarded and store rating
     sub.status = "awarded"
     sub.units_awarded = award_data.units_awarded
+    sub.review_rating = award_data.review_rating.strip()
     sub.awarded_at = datetime.now(timezone.utc)
     db.commit()
 
+    # Fire a separate notification about the rating
+    contributor = get_contributor(db, sub.contributor_id)
+    if contributor:
+        create_notification(
+            db,
+            contributor_id=contributor.id,
+            kind="task_reviewed",
+            title=f"Task rated: {sub.review_rating}",
+            body=(
+                f'Your task "{sub.task_title[:80]}" was reviewed and '
+                f"rated: {sub.review_rating}."
+            ),
+            ref_id=sub.id,
+        )
+
     return entry
+
+
+def reject_submission(
+    db: Session,
+    submission_id: int,
+    rejection_reason: str,
+) -> models.TaskSubmission:
+    """Admin rejects a pending submission with a mandatory reason."""
+    sub = db.get(models.TaskSubmission, submission_id)
+    if sub is None:
+        raise BusinessRuleError("Submission not found.")
+    if sub.status != "pending":
+        raise BusinessRuleError("Submission has already been processed.")
+
+    sub.status = "rejected"
+    sub.rejection_reason = rejection_reason.strip()
+    db.commit()
+    db.refresh(sub)
+
+    # Notify the member about the rejection
+    contributor = get_contributor(db, sub.contributor_id)
+    if contributor:
+        create_notification(
+            db,
+            contributor_id=contributor.id,
+            kind="task_rejected",
+            title="Task submission not approved",
+            body=(
+                f'Your task "{sub.task_title[:80]}" was not approved. '
+                f"Reason: {rejection_reason[:200]}"
+            ),
+            ref_id=sub.id,
+        )
+
+    return sub

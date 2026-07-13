@@ -362,9 +362,11 @@
     font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--muted); margin-bottom: 0.3rem;
   }
-  .notif-kind.units_awarded { color: var(--success); }
-  .notif-kind.chat_invite   { color: var(--accent); }
-  .notif-kind.ledger_deleted{ color: var(--error); }
+  .notif-kind.units_awarded  { color: var(--success); }
+  .notif-kind.chat_invite    { color: var(--accent); }
+  .notif-kind.ledger_deleted { color: var(--error); }
+  .notif-kind.task_reviewed  { color: #38bdf8; }
+  .notif-kind.task_rejected  { color: var(--error); }
   .notif-title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.2rem; }
   .notif-body  { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
   .notif-time  { font-size: 0.68rem; color: var(--muted); margin-top: 0.4rem; }
@@ -493,7 +495,9 @@
             <th>Task Title</th>
             <th>Description</th>
             <th>Status</th>
+            <th>Rating</th>
             <th>Units</th>
+            <th>Feedback</th>
           </tr></thead>
           <tbody id="subs-body"></tbody>
         </table>
@@ -752,19 +756,52 @@ async function loadSubmissions() {
     } else {
       document.getElementById('subs-table').style.display = 'table';
       document.getElementById('subs-body').innerHTML = subs.map(s => {
-        const isPending = s.status === 'pending';
-        const statusHtml = isPending
-          ? `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(245,158,11,0.12);color:var(--gold);border:1px solid rgba(245,158,11,0.3);">⏳ Pending</span>`
-          : `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.3);">✅ Awarded</span>`;
+        const isAwarded  = s.status === 'awarded';
+        const isRejected = s.status === 'rejected';
+
+        // Status pill
+        let statusHtml;
+        if (isAwarded) {
+          statusHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.3);">✅ Awarded</span>`;
+        } else if (isRejected) {
+          statusHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(239,68,68,0.12);color:var(--error);border:1px solid rgba(239,68,68,0.3);">❌ Rejected</span>`;
+        } else {
+          statusHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(245,158,11,0.12);color:var(--gold);border:1px solid rgba(245,158,11,0.3);">⏳ Pending</span>`;
+        }
+
+        // Rating pill
+        const RC = {
+          'Excellent':         { bg:'rgba(16,185,129,0.15)',  bd:'#10b981', cl:'#10b981', ic:'✨' },
+          'Well Done':         { bg:'rgba(99,102,241,0.15)', bd:'#6366f1', cl:'#a5b4fc', ic:'👏' },
+          'Good':              { bg:'rgba(14,165,233,0.15)', bd:'#0ea5e9', cl:'#38bdf8', ic:'⭐' },
+          'Needs Improvement': { bg:'rgba(245,158,11,0.15)', bd:'#f59e0b', cl:'#f59e0b', ic:'📈' },
+          'Poor':              { bg:'rgba(239,68,68,0.15)',  bd:'#ef4444', cl:'#ef4444', ic:'⚠️' },
+        };
+        let ratingHtml = `<span style="color:var(--muted)">—</span>`;
+        if (s.review_rating && RC[s.review_rating]) {
+          const r = RC[s.review_rating];
+          ratingHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:${r.bg};color:${r.cl};border:1px solid ${r.bd};">${r.ic} ${s.review_rating}</span>`;
+        }
+
+        // Units
         const unitsHtml = s.units_awarded != null
           ? `<span style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">${parseFloat(s.units_awarded).toFixed(2)}</span>`
           : `<span style="color:var(--muted)">—</span>`;
+
+        // Feedback / rejection reason
+        let feedbackHtml = `<span style="color:var(--muted)">—</span>`;
+        if (isRejected && s.rejection_reason) {
+          feedbackHtml = `<span style="color:var(--error);font-size:0.8rem;line-height:1.4">${s.rejection_reason}</span>`;
+        }
+
         return `<tr>
           <td style="color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace;font-size:0.78rem">${new Date(s.submitted_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
-          <td style="font-weight:600;max-width:160px">${s.task_title}</td>
-          <td style="color:var(--muted);max-width:260px;font-size:0.83rem">${s.task_description}</td>
+          <td style="font-weight:600;max-width:140px">${s.task_title}</td>
+          <td style="color:var(--muted);max-width:200px;font-size:0.83rem">${s.task_description}</td>
           <td>${statusHtml}</td>
+          <td>${ratingHtml}</td>
           <td>${unitsHtml}</td>
+          <td style="max-width:200px;font-size:0.82rem">${feedbackHtml}</td>
         </tr>`;
       }).join('');
     }

@@ -1371,6 +1371,32 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* ── Rating pills ───────────────────────────────────────── */
+    .rating-group {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.35rem;
+    }
+    .rating-pill {
+      padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.78rem;
+      font-family: inherit; font-weight: 600; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--surface2);
+      color: var(--muted); transition: all 0.18s;
+    }
+    .rating-pill:hover { border-color: var(--accent); color: var(--text); }
+    .rating-pill.selected-excellent  { background:rgba(16,185,129,0.15); border-color:#10b981; color:#10b981; }
+    .rating-pill.selected-welldone   { background:rgba(99,102,241,0.15); border-color:#6366f1; color:#a5b4fc; }
+    .rating-pill.selected-good       { background:rgba(14,165,233,0.15); border-color:#0ea5e9; color:#38bdf8; }
+    .rating-pill.selected-needsimp   { background:rgba(245,158,11,0.15); border-color:#f59e0b; color:#f59e0b; }
+    .rating-pill.selected-poor       { background:rgba(239,68,68,0.15);  border-color:#ef4444; color:#ef4444; }
+
+    /* inline reject badge inside table */
+    .btn-reject {
+      padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.75rem;
+      font-family: inherit; font-weight: 600; cursor: pointer;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.35);
+      color: var(--error); transition: all 0.18s; white-space: nowrap;
+    }
+    .btn-reject:hover { background: rgba(239,68,68,0.18); }
   </style>
 </head>
 
@@ -1628,7 +1654,7 @@
 
   <!-- Award Submission Modal -->
   <div class="modal-overlay" id="award-modal" onclick="closeAwardModal()">
-    <div class="modal-box" onclick="event.stopPropagation()" style="width:420px">
+    <div class="modal-box" onclick="event.stopPropagation()" style="width:450px">
       <h3 style="margin-bottom:1.25rem">🏆 Award Units for Submission</h3>
       <input type="hidden" id="award-sub-id" value="" />
 
@@ -1637,6 +1663,18 @@
         <div id="award-task-title" style="font-weight:700;margin-bottom:0.35rem"></div>
         <div id="award-task-desc" style="font-size:0.82rem;color:var(--muted);line-height:1.5"></div>
         <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted)">By: <strong id="award-member-name"></strong></div>
+      </div>
+
+      <div class="form-group">
+        <label class="modal-label">Performance Rating <span style="color:var(--error)">*</span></label>
+        <div class="rating-group" id="award-rating-group">
+          <button type="button" class="rating-pill" data-rating="Excellent"          data-cls="selected-excellent" onclick="selectRating(this)">✨ Excellent</button>
+          <button type="button" class="rating-pill" data-rating="Well Done"          data-cls="selected-welldone"  onclick="selectRating(this)">👏 Well Done</button>
+          <button type="button" class="rating-pill" data-rating="Good"               data-cls="selected-good"      onclick="selectRating(this)">⭐ Good</button>
+          <button type="button" class="rating-pill" data-rating="Needs Improvement"  data-cls="selected-needsimp"  onclick="selectRating(this)">📈 Needs Improvement</button>
+          <button type="button" class="rating-pill" data-rating="Poor"               data-cls="selected-poor"      onclick="selectRating(this)">⚠️ Poor</button>
+        </div>
+        <input type="hidden" id="award-rating" value="" />
       </div>
 
       <div class="form-group">
@@ -1670,6 +1708,39 @@
         <button class="btn-modal-cancel" onclick="closeAwardModal()">Cancel</button>
         <button class="btn-modal-ok" id="award-confirm-btn" onclick="confirmAward()"
           style="background:linear-gradient(135deg,var(--success),#059669)">✅ Award Units</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reject Submission Modal -->
+  <div class="modal-overlay" id="reject-modal" onclick="closeRejectModal()">
+    <div class="modal-box" onclick="event.stopPropagation()" style="width:420px">
+      <h3 style="margin-bottom:1.25rem;color:var(--error)">🚫 Reject Submission</h3>
+      <input type="hidden" id="reject-sub-id" value="" />
+
+      <div style="background:var(--surface2);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:1rem;margin-bottom:1.25rem">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.3rem">Task being rejected</div>
+        <div id="reject-task-title" style="font-weight:700;margin-bottom:0.2rem"></div>
+        <div style="font-size:0.75rem;color:var(--muted)">By: <strong id="reject-member-name"></strong></div>
+      </div>
+
+      <div class="form-group">
+        <label class="modal-label">Rejection Reason <span style="color:var(--error)">*</span></label>
+        <textarea id="reject-reason" rows="4"
+          placeholder="Explain clearly why this task is not approved…"
+          class="modal-input" style="resize:vertical"
+          oninput="toggleRejectBtn()"></textarea>
+        <div class="hint">Required — the member will see this explanation.</div>
+      </div>
+
+      <div id="reject-modal-msg" style="font-size:0.82rem;margin-bottom:0.75rem;display:none"></div>
+
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeRejectModal()">Cancel</button>
+        <button class="btn-modal-ok" id="reject-confirm-btn" onclick="confirmReject()" disabled
+          style="background:linear-gradient(135deg,#ef4444,#b91c1c);opacity:0.45;cursor:not-allowed">
+          🚫 Confirm Reject
+        </button>
       </div>
     </div>
   </div>
@@ -1736,12 +1807,17 @@
             </td>
             <td style="font-weight:600">${s.contributor_name}</td>
             <td style="font-weight:500;max-width:180px">${s.task_title}</td>
-            <td style="color:var(--muted);font-size:0.82rem;max-width:280px;line-height:1.45">${s.task_description}</td>
+            <td style="color:var(--muted);font-size:0.82rem;max-width:240px;line-height:1.45">${s.task_description}</td>
             <td>
-              <button class="btn-undo" onclick="openAwardModal(${s.id},'${escHtml(s.task_title)}','${escHtml(s.task_description)}','${escHtml(s.contributor_name)}')"
-                style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.4);color:var(--success);white-space:nowrap">
-                🏆 Award
-              </button>
+              <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+                <button class="btn-undo" onclick="openAwardModal(${s.id},'${escHtml(s.task_title)}','${escHtml(s.task_description)}','${escHtml(s.contributor_name)}')"
+                  style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.4);color:var(--success);white-space:nowrap">
+                  🏆 Award
+                </button>
+                <button class="btn-reject" onclick="openRejectModal(${s.id},'${escHtml(s.task_title)}','${escHtml(s.contributor_name)}')">
+                  🚫 Reject
+                </button>
+              </div>
             </td>
           </tr>`).join('');
       } catch {
@@ -1762,6 +1838,11 @@
       document.getElementById('award-reviewer').value = '';
       document.getElementById('award-ref').value      = '';
       document.getElementById('award-remarks').value  = '';
+      // Reset rating selection
+      document.getElementById('award-rating').value = '';
+      document.querySelectorAll('#award-rating-group .rating-pill').forEach(p => {
+        p.className = 'rating-pill';
+      });
       const msg = document.getElementById('award-modal-msg');
       msg.style.display = 'none';
       document.getElementById('award-modal').classList.add('open');
@@ -1783,10 +1864,17 @@
       const reviewer = document.getElementById('award-reviewer').value.trim();
       const ref      = document.getElementById('award-ref').value.trim() || null;
       const remarks  = document.getElementById('award-remarks').value.trim() || null;
+      const rating   = document.getElementById('award-rating').value;
 
       const msgEl = document.getElementById('award-modal-msg');
       msgEl.style.display = 'none';
 
+      if (!rating) {
+        msgEl.textContent = '⚠️ Please select a performance rating.';
+        msgEl.style.color = 'var(--error)';
+        msgEl.style.display = 'block';
+        return;
+      }
       if (!units || units <= 0) {
         msgEl.textContent = '⚠️ Please enter a valid number of units.';
         msgEl.style.color = 'var(--error)';
@@ -1808,7 +1896,13 @@
         const res = await fetch(`/api/admin/submissions/${subId}/award`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ units_awarded: units, approving_reviewer: reviewer, task_reference: ref, remarks }),
+          body: JSON.stringify({
+            units_awarded: units,
+            approving_reviewer: reviewer,
+            task_reference: ref,
+            remarks,
+            review_rating: rating,
+          }),
         });
         if (handleAuthError(res)) return;
         if (!res.ok) {
@@ -1816,14 +1910,12 @@
           throw new Error(err.detail || 'Award failed.');
         }
         closeAwardModal();
-        // Remove row from table
         const row = document.getElementById(`sub-row-${subId}`);
         if (row) row.remove();
-        // Refresh stats
         loadStats();
         loadContributors();
         loadLedger();
-        loadSubmissions(); // refresh count badge
+        loadSubmissions();
       } catch (e) {
         msgEl.textContent = '❌ ' + e.message;
         msgEl.style.color = 'var(--error)';
@@ -1831,6 +1923,82 @@
       } finally {
         btn.disabled = false;
         btn.textContent = '✅ Award Units';
+      }
+    }
+
+    // ── Rating pill selection ──────────────────────────────────────────────
+    function selectRating(btn) {
+      document.querySelectorAll('#award-rating-group .rating-pill').forEach(p => {
+        p.className = 'rating-pill';
+      });
+      btn.classList.add(btn.dataset.cls);
+      document.getElementById('award-rating').value = btn.dataset.rating;
+    }
+
+    // ── Reject modal ───────────────────────────────────────────────────────
+    function openRejectModal(subId, title, memberName) {
+      document.getElementById('reject-sub-id').value = subId;
+      document.getElementById('reject-task-title').textContent = title;
+      document.getElementById('reject-member-name').textContent = memberName;
+      document.getElementById('reject-reason').value = '';
+      document.getElementById('reject-modal-msg').style.display = 'none';
+      toggleRejectBtn();
+      document.getElementById('reject-modal').classList.add('open');
+    }
+
+    function closeRejectModal() {
+      document.getElementById('reject-modal').classList.remove('open');
+    }
+
+    function toggleRejectBtn() {
+      const reason = document.getElementById('reject-reason').value.trim();
+      const btn = document.getElementById('reject-confirm-btn');
+      const ready = reason.length > 0;
+      btn.disabled = !ready;
+      btn.style.opacity = ready ? '1' : '0.45';
+      btn.style.cursor  = ready ? 'pointer' : 'not-allowed';
+    }
+
+    async function confirmReject() {
+      const subId  = document.getElementById('reject-sub-id').value;
+      const reason = document.getElementById('reject-reason').value.trim();
+      const msgEl  = document.getElementById('reject-modal-msg');
+      msgEl.style.display = 'none';
+
+      if (!reason) {
+        msgEl.textContent = '⚠️ Rejection reason is required.';
+        msgEl.style.color = 'var(--error)';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('reject-confirm-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Rejecting…';
+
+      try {
+        const res = await fetch(`/api/admin/submissions/${subId}/reject`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ rejection_reason: reason }),
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Rejection failed.');
+        }
+        closeRejectModal();
+        const row = document.getElementById(`sub-row-${subId}`);
+        if (row) row.remove();
+        loadSubmissions();
+      } catch (e) {
+        msgEl.textContent = '❌ ' + e.message;
+        msgEl.style.color = 'var(--error)';
+        msgEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚫 Confirm Reject';
+        toggleRejectBtn();
       }
     }
 

@@ -71,12 +71,14 @@ class Settings(BaseSettings):
     # Issued admin tokens are valid for this many seconds.
     token_max_age_seconds: int = 60 * 60 * 8  # 8 hours
 
-    # ── Email (Resend API) ────────────────────────────────────────────────────
-    # Resend uses HTTPS (not SMTP) so it works on Render's free tier.
-    # Sign up free at https://resend.com → API Keys → Create API Key
-    # Then set RESEND_API_KEY in your Render environment variables.
-    resend_api_key: str = ""        # e.g. re_xxxxxxxxxxxxxxxxx
-    email_from: str = "AXXSPACE <onboarding@resend.dev>"  # use resend.dev until you verify a domain
+    # ── Email (Brevo API) ─────────────────────────────────────────────────────
+    # Brevo (formerly Sendinblue) sends via HTTPS — works on Render free tier.
+    # Sign up free at https://brevo.com → SMTP & API → API Keys → Create API Key
+    # Then set BREVO_API_KEY in your Render environment variables.
+    # Free tier: 300 emails/day, sends to ANY email, no domain required.
+    brevo_api_key: str = ""         # e.g. xkeysib-xxxxxxxxx
+    email_from_name: str = "AXXSPACE"
+    email_from_address: str = "phantomunitsaxxspace@gmail.com"
 
 
 settings = Settings()

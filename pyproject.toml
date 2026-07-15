@@ -13,7 +13,7 @@ dependencies = [
     "itsdangerous>=2.1",
     "python-multipart>=0.0.9",
     "psycopg2-binary>=2.9",
-    "resend>=2.0",
+    "brevo-python>=5.0.0",
 ]
 
 [project.optional-dependencies]

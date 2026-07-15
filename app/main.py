@@ -338,20 +338,22 @@ def admin_test_email(
 def admin_email_debug(
     _: str = Depends(require_admin),
 ) -> dict:
-    """Admin only: show Resend config and attempt a ping — helps diagnose email issues on Render."""
+    """Admin only: show Brevo config and test the API key."""
     cfg = {
-        "provider": "Resend (HTTPS API)",
-        "resend_api_key_set": bool(settings.resend_api_key),
-        "resend_api_key_prefix": settings.resend_api_key[:8] + "..." if settings.resend_api_key else "(not set)",
-        "email_from": settings.email_from,
+        "provider": "Brevo (HTTPS API)",
+        "brevo_api_key_set": bool(settings.brevo_api_key),
+        "brevo_api_key_prefix": settings.brevo_api_key[:12] + "..." if settings.brevo_api_key else "(not set)",
+        "email_from_name": settings.email_from_name,
+        "email_from_address": settings.email_from_address,
     }
-    # Try a real Resend API call to verify the key works
     try:
-        import resend as _resend
-        _resend.api_key = settings.resend_api_key
-        # List domains — lightweight call that doesn't send an email
-        _resend.Domains.list()
-        cfg["connection_test"] = "SUCCESS — Resend API key is valid"
+        import brevo_python
+        from brevo_python.api.account_api import AccountApi
+        configuration = brevo_python.Configuration()
+        configuration.api_key["api-key"] = settings.brevo_api_key
+        account = AccountApi(brevo_python.ApiClient(configuration))
+        info = account.get_account()
+        cfg["connection_test"] = f"SUCCESS — account: {info.email}"
     except Exception as exc:
         cfg["connection_test"] = f"FAILED: {type(exc).__name__}: {exc}"
     return cfg

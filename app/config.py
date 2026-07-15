@@ -76,7 +76,8 @@ class Settings(BaseSettings):
     # notifications. Use a Gmail "App Password" (not your normal password):
     #   https://support.google.com/accounts/answer/185833
     smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
+    smtp_port: int = 465          # 465 = SSL (works on Render); 587 = STARTTLS
+    smtp_use_ssl: bool = True     # True → SMTP_SSL (port 465); False → SMTP + STARTTLS (port 587)
     smtp_user: str = ""          # e.g. yourapp@gmail.com
     smtp_password: str = ""      # 16-character Gmail App Password
     # Optional: customise the "From" display name shown to recipients.

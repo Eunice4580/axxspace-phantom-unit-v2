@@ -167,11 +167,18 @@ def _send(to_email: str, subject: str, html_body: str) -> None:
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.sendmail(settings.smtp_user, [to_email], msg.as_string())
+        if settings.smtp_use_ssl:
+            # Port 465 — direct SSL (works on Render)
+            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.login(settings.smtp_user, settings.smtp_password)
+                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
+        else:
+            # Port 587 — STARTTLS (local dev)
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(settings.smtp_user, settings.smtp_password)
+                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
         logger.info("Email sent → %s | %s", to_email, subject)
     except Exception:
         logger.exception("Failed to send email to %s", to_email)
@@ -203,11 +210,16 @@ def send_test_email(to_email: str) -> dict:
     msg["To"] = to_email
     msg.attach(MIMEText(html, "html"))
     try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.sendmail(settings.smtp_user, [to_email], msg.as_string())
+        if settings.smtp_use_ssl:
+            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.login(settings.smtp_user, settings.smtp_password)
+                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
+        else:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(settings.smtp_user, settings.smtp_password)
+                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
         logger.info("Test email sent → %s", to_email)
         return {"ok": True, "message": f"Test email sent to {to_email}"}
     except smtplib.SMTPAuthenticationError as e:

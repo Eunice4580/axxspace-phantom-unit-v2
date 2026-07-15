@@ -338,36 +338,22 @@ def admin_test_email(
 def admin_email_debug(
     _: str = Depends(require_admin),
 ) -> dict:
-    """Admin only: show loaded SMTP config and test connection — helps diagnose Render issues."""
-    import smtplib
-    import traceback
-
+    """Admin only: show Resend config and attempt a ping — helps diagnose email issues on Render."""
     cfg = {
-        "smtp_host": settings.smtp_host,
-        "smtp_port": settings.smtp_port,
-        "smtp_use_ssl": settings.smtp_use_ssl,
-        "smtp_user": settings.smtp_user or "(not set)",
-        "smtp_password_set": bool(settings.smtp_password),
-        "smtp_password_length": len(settings.smtp_password),
-        "email_from": settings.email_from or "(not set)",
+        "provider": "Resend (HTTPS API)",
+        "resend_api_key_set": bool(settings.resend_api_key),
+        "resend_api_key_prefix": settings.resend_api_key[:8] + "..." if settings.resend_api_key else "(not set)",
+        "email_from": settings.email_from,
     }
-
-    # Try to connect and authenticate
+    # Try a real Resend API call to verify the key works
     try:
-        if settings.smtp_use_ssl:
-            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-                server.login(settings.smtp_user, settings.smtp_password)
-            cfg["connection_test"] = "SUCCESS (SMTP_SSL port 465)"
-        else:
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-            cfg["connection_test"] = "SUCCESS (SMTP STARTTLS port 587)"
+        import resend as _resend
+        _resend.api_key = settings.resend_api_key
+        # List domains — lightweight call that doesn't send an email
+        _resend.Domains.list()
+        cfg["connection_test"] = "SUCCESS — Resend API key is valid"
     except Exception as exc:
         cfg["connection_test"] = f"FAILED: {type(exc).__name__}: {exc}"
-        cfg["traceback"] = traceback.format_exc()
-
     return cfg
 
 

@@ -1,44 +1,40 @@
 """Email notification service for AXXSPACE Phantom Unit System.
 
-Sends transactional emails via Gmail SMTP for key platform events:
-  - Password reset by admin
-  - Units awarded (ledger update)
-  - Chat room invitation
-  - Task submission rejection
+Sends transactional emails via the Resend API (HTTPS) instead of SMTP.
+Render's free tier blocks all outbound SMTP connections (OSError 101),
+but HTTPS is always available — Resend uses port 443.
 
-Configuration via environment variables:
-  SMTP_USER     – your Gmail address (e.g. yourapp@gmail.com)
-  SMTP_PASSWORD – Gmail App Password (NOT your normal Gmail password)
-  EMAIL_FROM    – display name + address shown to recipients (optional)
+Setup:
+  1. Sign up free at https://resend.com
+  2. Go to API Keys → Create API Key
+  3. Add RESEND_API_KEY to your Render environment variables
 
-Emails are sent in a background thread so they never block the HTTP response.
-If SMTP credentials are not configured, emails are silently skipped.
+Free tier: 3 000 emails/month, 100/day — plenty for this platform.
 """
 from __future__ import annotations
 
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
+import resend
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Log SMTP config on startup so Render logs confirm whether credentials loaded
-def _log_smtp_config() -> None:
-    if settings.smtp_user and settings.smtp_password:
-        logger.warning(
-            "[EMAIL] SMTP ready — user=%s port=%s ssl=%s",
-            settings.smtp_user, settings.smtp_port, settings.smtp_use_ssl,
-        )
-    else:
-        logger.warning(
-            "[EMAIL] SMTP NOT configured — smtp_user=%r smtp_password_set=%s",
-            settings.smtp_user, bool(settings.smtp_password),
-        )
 
-_log_smtp_config()
+# ─────────────────────────────────────────────────────────────────────────────
+# Startup check
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _log_config() -> None:
+    if settings.resend_api_key:
+        resend.api_key = settings.resend_api_key
+        logger.warning("[EMAIL] Resend ready — from=%s", settings.email_from)
+    else:
+        logger.warning("[EMAIL] Resend NOT configured — set RESEND_API_KEY env var")
+
+_log_config()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HTML email templates
@@ -64,9 +60,6 @@ _BASE_HTML = """
   .body p {{ margin:0 0 16px; font-size:15px; line-height:1.6; color:#cbd5e1; }}
   .highlight {{ background:#2d2d4e; border-left:4px solid #a855f7;
                 padding:14px 18px; border-radius:8px; margin:20px 0; font-size:14px; }}
-  .btn {{ display:inline-block; background:linear-gradient(135deg,#6c63ff,#a855f7);
-          color:#fff; text-decoration:none; padding:14px 30px; border-radius:10px;
-          font-size:15px; font-weight:600; margin:20px 0; }}
   .footer {{ background:#111122; padding:20px 32px; text-align:center;
              color:#4a5568; font-size:12px; }}
   .badge {{ display:inline-block; background:rgba(168,85,247,0.15);
@@ -161,89 +154,60 @@ def _task_rejected_html(name: str, task_title: str, reason: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Core send function
+# Core send function (uses Resend HTTP API — works on Render free tier)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _send(to_email: str, subject: str, html_body: str) -> None:
-    """Internal: send one email synchronously."""
-    if not settings.smtp_user or not settings.smtp_password:
-        logger.warning("[EMAIL] SKIPPED (no credentials) subject=%r smtp_user=%r", subject, settings.smtp_user)
+    """Send one email via Resend API (HTTPS — always works on Render)."""
+    if not settings.resend_api_key:
+        logger.warning("[EMAIL] SKIPPED — RESEND_API_KEY not set. subject=%r", subject)
         return
     if not to_email:
-        logger.warning("[EMAIL] SKIPPED (no recipient) subject=%r", subject)
+        logger.warning("[EMAIL] SKIPPED — no recipient address. subject=%r", subject)
         return
 
-    logger.warning("[EMAIL] Attempting send → %s | %s", to_email, subject)
-
-    from_addr = settings.email_from or f"AXXSPACE <{settings.smtp_user}>"
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = from_addr
-    msg["To"] = to_email
-    msg.attach(MIMEText(html_body, "html"))
-
+    resend.api_key = settings.resend_api_key
+    logger.warning("[EMAIL] Sending → %s | %s", to_email, subject)
     try:
-        if settings.smtp_use_ssl:
-            # Port 465 — direct SSL (works on Render)
-            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-                server.login(settings.smtp_user, settings.smtp_password)
-                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
-        else:
-            # Port 587 — STARTTLS (local dev)
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
-        logger.warning("[EMAIL] SUCCESS → %s | %s", to_email, subject)
+        params: resend.Emails.SendParams = {
+            "from": settings.email_from,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_body,
+        }
+        resp = resend.Emails.send(params)
+        logger.warning("[EMAIL] SUCCESS id=%s → %s", resp.get("id"), to_email)
     except Exception as exc:
         logger.exception("[EMAIL] FAILED → %s | error: %s", to_email, exc)
 
 
-def _send_async(to_email: str, subject: str, html_body: str) -> None:
-    """Send email synchronously.
-
-    Previously used a background thread but Render's free tier kills threads
-    before they complete. Running synchronously guarantees delivery.
-    """
-    _send(to_email, subject, html_body)
-
+# ─────────────────────────────────────────────────────────────────────────────
+# Test email (synchronous, returns result dict for the admin endpoint)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def send_test_email(to_email: str) -> dict:
     """Send a test email synchronously and return a result dict."""
-    if not settings.smtp_user or not settings.smtp_password:
-        return {"ok": False, "error": "SMTP credentials not configured (SMTP_USER / SMTP_PASSWORD missing)."}
+    if not settings.resend_api_key:
+        return {"ok": False, "error": "RESEND_API_KEY not configured — add it to Render environment variables."}
+    resend.api_key = settings.resend_api_key
     subject = "✅ AXXSPACE — Test Email"
     html = _render(subject, """
     <h2>✅ Email is working!</h2>
     <p>This is a test email from the AXXSPACE platform.</p>
-    <p>If you received this, your Gmail SMTP configuration is correct.</p>
+    <p>If you received this, your Resend configuration is correct.</p>
     """)
-    from_addr = settings.email_from or f"AXXSPACE <{settings.smtp_user}>"
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = from_addr
-    msg["To"] = to_email
-    msg.attach(MIMEText(html, "html"))
     try:
-        if settings.smtp_use_ssl:
-            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-                server.login(settings.smtp_user, settings.smtp_password)
-                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
-        else:
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-                server.sendmail(settings.smtp_user, [to_email], msg.as_string())
-        logger.info("Test email sent → %s", to_email)
-        return {"ok": True, "message": f"Test email sent to {to_email}"}
-    except smtplib.SMTPAuthenticationError as e:
-        return {"ok": False, "error": f"Gmail authentication failed — check App Password. Detail: {e}"}
-    except smtplib.SMTPException as e:
-        return {"ok": False, "error": f"SMTP error: {e}"}
-    except Exception as e:
-        return {"ok": False, "error": f"Unexpected error: {e}"}
+        params: resend.Emails.SendParams = {
+            "from": settings.email_from,
+            "to": [to_email],
+            "subject": subject,
+            "html": html,
+        }
+        resp = resend.Emails.send(params)
+        logger.warning("[EMAIL] Test email sent id=%s → %s", resp.get("id"), to_email)
+        return {"ok": True, "message": f"Test email sent to {to_email}", "id": resp.get("id")}
+    except Exception as exc:
+        return {"ok": False, "error": f"Resend error: {exc}"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

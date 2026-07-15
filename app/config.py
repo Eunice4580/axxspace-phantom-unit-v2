@@ -71,17 +71,12 @@ class Settings(BaseSettings):
     # Issued admin tokens are valid for this many seconds.
     token_max_age_seconds: int = 60 * 60 * 8  # 8 hours
 
-    # ── Email (Gmail SMTP) ────────────────────────────────────────────────────
-    # Set these in your .env / Render environment variables to enable email
-    # notifications. Use a Gmail "App Password" (not your normal password):
-    #   https://support.google.com/accounts/answer/185833
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 465          # 465 = SSL (works on Render); 587 = STARTTLS
-    smtp_use_ssl: bool = True     # True → SMTP_SSL (port 465); False → SMTP + STARTTLS (port 587)
-    smtp_user: str = ""          # e.g. yourapp@gmail.com
-    smtp_password: str = ""      # 16-character Gmail App Password
-    # Optional: customise the "From" display name shown to recipients.
-    email_from: str = ""         # e.g. "AXXSPACE <noreply@yourdomain.com>"
+    # ── Email (Resend API) ────────────────────────────────────────────────────
+    # Resend uses HTTPS (not SMTP) so it works on Render's free tier.
+    # Sign up free at https://resend.com → API Keys → Create API Key
+    # Then set RESEND_API_KEY in your Render environment variables.
+    resend_api_key: str = ""        # e.g. re_xxxxxxxxxxxxxxxxx
+    email_from: str = "AXXSPACE <onboarding@resend.dev>"  # use resend.dev until you verify a domain
 
 
 settings = Settings()

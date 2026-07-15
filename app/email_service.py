@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 import smtplib
-import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -185,12 +184,12 @@ def _send(to_email: str, subject: str, html_body: str) -> None:
 
 
 def _send_async(to_email: str, subject: str, html_body: str) -> None:
-    """Fire-and-forget: send email in a non-daemon background thread.
+    """Send email synchronously.
 
-    Non-daemon so Render/gunicorn workers don't kill it before it finishes.
+    Previously used a background thread but Render's free tier kills threads
+    before they complete. Running synchronously guarantees delivery.
     """
-    t = threading.Thread(target=_send, args=(to_email, subject, html_body), daemon=False)
-    t.start()
+    _send(to_email, subject, html_body)
 
 
 def send_test_email(to_email: str) -> dict:
@@ -236,7 +235,7 @@ def send_test_email(to_email: str) -> dict:
 
 def send_password_reset(to_email: str, name: str, new_password: str) -> None:
     """Notify a member/investor that their password was reset by an admin."""
-    _send_async(
+    _send(
         to_email,
         "Your AXXSPACE password has been reset",
         _password_reset_html(name, new_password),
@@ -252,7 +251,7 @@ def send_units_awarded(
     reviewer: str,
 ) -> None:
     """Notify a member that the admin awarded them contribution units."""
-    _send_async(
+    _send(
         to_email,
         f"🏆 You received {units:g} units — AXXSPACE",
         _units_awarded_html(name, units, value_eur, task, reviewer),
@@ -263,7 +262,7 @@ def send_chat_invite(
     to_email: str, name: str, room_name: str, invited_by: str
 ) -> None:
     """Notify a member that they've been invited to a chat room."""
-    _send_async(
+    _send(
         to_email,
         f"💬 You're invited to '{room_name}' — AXXSPACE",
         _chat_invite_html(name, room_name, invited_by),
@@ -274,7 +273,7 @@ def send_task_rejected(
     to_email: str, name: str, task_title: str, reason: str
 ) -> None:
     """Notify a member that their task submission was rejected."""
-    _send_async(
+    _send(
         to_email,
         "📋 Task submission update — AXXSPACE",
         _task_rejected_html(name, task_title, reason),

@@ -25,6 +25,21 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Log SMTP config on startup so Render logs confirm whether credentials loaded
+def _log_smtp_config() -> None:
+    if settings.smtp_user and settings.smtp_password:
+        logger.warning(
+            "[EMAIL] SMTP ready — user=%s port=%s ssl=%s",
+            settings.smtp_user, settings.smtp_port, settings.smtp_use_ssl,
+        )
+    else:
+        logger.warning(
+            "[EMAIL] SMTP NOT configured — smtp_user=%r smtp_password_set=%s",
+            settings.smtp_user, bool(settings.smtp_password),
+        )
+
+_log_smtp_config()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # HTML email templates
 # ─────────────────────────────────────────────────────────────────────────────
@@ -150,13 +165,15 @@ def _task_rejected_html(name: str, task_title: str, reason: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _send(to_email: str, subject: str, html_body: str) -> None:
-    """Internal: send one email synchronously. Call only from a background thread."""
+    """Internal: send one email synchronously."""
     if not settings.smtp_user or not settings.smtp_password:
-        logger.debug("Email skipped (SMTP not configured): %s", subject)
+        logger.warning("[EMAIL] SKIPPED (no credentials) subject=%r smtp_user=%r", subject, settings.smtp_user)
         return
     if not to_email:
-        logger.debug("Email skipped (no recipient address): %s", subject)
+        logger.warning("[EMAIL] SKIPPED (no recipient) subject=%r", subject)
         return
+
+    logger.warning("[EMAIL] Attempting send → %s | %s", to_email, subject)
 
     from_addr = settings.email_from or f"AXXSPACE <{settings.smtp_user}>"
     msg = MIMEMultipart("alternative")
@@ -178,9 +195,9 @@ def _send(to_email: str, subject: str, html_body: str) -> None:
                 server.starttls()
                 server.login(settings.smtp_user, settings.smtp_password)
                 server.sendmail(settings.smtp_user, [to_email], msg.as_string())
-        logger.info("Email sent → %s | %s", to_email, subject)
-    except Exception:
-        logger.exception("Failed to send email to %s", to_email)
+        logger.warning("[EMAIL] SUCCESS → %s | %s", to_email, subject)
+    except Exception as exc:
+        logger.exception("[EMAIL] FAILED → %s | error: %s", to_email, exc)
 
 
 def _send_async(to_email: str, subject: str, html_body: str) -> None:

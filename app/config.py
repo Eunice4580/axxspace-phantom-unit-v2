@@ -71,5 +71,16 @@ class Settings(BaseSettings):
     # Issued admin tokens are valid for this many seconds.
     token_max_age_seconds: int = 60 * 60 * 8  # 8 hours
 
+    # ── Email (Gmail SMTP) ────────────────────────────────────────────────────
+    # Set these in your .env / Render environment variables to enable email
+    # notifications. Use a Gmail "App Password" (not your normal password):
+    #   https://support.google.com/accounts/answer/185833
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""          # e.g. yourapp@gmail.com
+    smtp_password: str = ""      # 16-character Gmail App Password
+    # Optional: customise the "From" display name shown to recipients.
+    email_from: str = ""         # e.g. "AXXSPACE <noreply@yourdomain.com>"
+
 
 settings = Settings()

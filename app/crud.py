@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.config import EUR_PER_UNIT, TOTAL_POOL_UNITS, UNIT_INCREMENT
 from app.auth import hash_password, verify_member_password
+from app import email_service
 
 class BusinessRuleError(ValueError):
     """Raised when an operation would violate a compensation-plan rule."""
@@ -285,6 +286,13 @@ def reset_contributor_password(db: Session, contributor_id: int, new_password: s
         return False
     contributor.password_hash = hash_password(new_password)
     db.commit()
+    # Email the member their new password
+    if contributor.email:
+        email_service.send_password_reset(
+            to_email=contributor.email,
+            name=contributor.name,
+            new_password=new_password,
+        )
     return True
 
 
@@ -295,6 +303,13 @@ def reset_investor_password(db: Session, investor_id: int, new_password: str) ->
         return False
     investor.password_hash = hash_password(new_password)
     db.commit()
+    # Email the investor their new password
+    if investor.email:
+        email_service.send_password_reset(
+            to_email=investor.email,
+            name=investor.name,
+            new_password=new_password,
+        )
     return True
 
 
@@ -492,6 +507,15 @@ def create_chat_room(
             body=f"{creator_name} invited you to join the chat room \"{name}\".",
             ref_id=room.id,
         )
+        # Also send an email to the invitee
+        invitee = get_contributor(db, cid)
+        if invitee and invitee.email:
+            email_service.send_chat_invite(
+                to_email=invitee.email,
+                name=invitee.name,
+                room_name=name,
+                invited_by=creator_name,
+            )
 
     # Notify admin when a member creates a room
     if creator_contributor_id is not None:
@@ -608,7 +632,7 @@ def get_latest_message_id(db: Session, room_ids: list[int]) -> int:
 def award_units_with_notify(
     db: Session, data: schemas.LedgerEntryCreate
 ) -> models.LedgerEntry:
-    """award_units that also fires a notification to the recipient member."""
+    """award_units that also fires a notification and email to the recipient member."""
     entry = award_units(db, data)
     contributor = get_contributor(db, data.contributor_id)
     if contributor:
@@ -623,6 +647,16 @@ def award_units_with_notify(
                 f"{' …' if len(entry.task_description) > 120 else ''}."
             ),
         )
+        # Send email notification
+        if contributor.email:
+            email_service.send_units_awarded(
+                to_email=contributor.email,
+                name=contributor.name,
+                units=entry.units_awarded,
+                value_eur=_round_units(entry.units_awarded) * EUR_PER_UNIT,
+                task=entry.task_description,
+                reviewer=entry.approving_reviewer,
+            )
     return entry
 
 
@@ -907,5 +941,13 @@ def reject_submission(
             ),
             ref_id=sub.id,
         )
+        # Send email notification
+        if contributor.email:
+            email_service.send_task_rejected(
+                to_email=contributor.email,
+                name=contributor.name,
+                task_title=sub.task_title,
+                reason=rejection_reason,
+            )
 
     return sub

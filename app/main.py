@@ -334,6 +334,43 @@ def admin_test_email(
     return result
 
 
+@app.get("/api/admin/email-debug", status_code=200)
+def admin_email_debug(
+    _: str = Depends(require_admin),
+) -> dict:
+    """Admin only: show loaded SMTP config and test connection — helps diagnose Render issues."""
+    import smtplib
+    import traceback
+
+    cfg = {
+        "smtp_host": settings.smtp_host,
+        "smtp_port": settings.smtp_port,
+        "smtp_use_ssl": settings.smtp_use_ssl,
+        "smtp_user": settings.smtp_user or "(not set)",
+        "smtp_password_set": bool(settings.smtp_password),
+        "smtp_password_length": len(settings.smtp_password),
+        "email_from": settings.email_from or "(not set)",
+    }
+
+    # Try to connect and authenticate
+    try:
+        if settings.smtp_use_ssl:
+            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.login(settings.smtp_user, settings.smtp_password)
+            cfg["connection_test"] = "SUCCESS (SMTP_SSL port 465)"
+        else:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(settings.smtp_user, settings.smtp_password)
+            cfg["connection_test"] = "SUCCESS (SMTP STARTTLS port 587)"
+    except Exception as exc:
+        cfg["connection_test"] = f"FAILED: {type(exc).__name__}: {exc}"
+        cfg["traceback"] = traceback.format_exc()
+
+    return cfg
+
+
 
 # --- Task Submissions --------------------------------------------------------
 

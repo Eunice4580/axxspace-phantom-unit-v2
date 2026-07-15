@@ -178,9 +178,44 @@ def _send(to_email: str, subject: str, html_body: str) -> None:
 
 
 def _send_async(to_email: str, subject: str, html_body: str) -> None:
-    """Fire-and-forget: send email in a daemon background thread."""
-    t = threading.Thread(target=_send, args=(to_email, subject, html_body), daemon=True)
+    """Fire-and-forget: send email in a non-daemon background thread.
+
+    Non-daemon so Render/gunicorn workers don't kill it before it finishes.
+    """
+    t = threading.Thread(target=_send, args=(to_email, subject, html_body), daemon=False)
     t.start()
+
+
+def send_test_email(to_email: str) -> dict:
+    """Send a test email synchronously and return a result dict."""
+    if not settings.smtp_user or not settings.smtp_password:
+        return {"ok": False, "error": "SMTP credentials not configured (SMTP_USER / SMTP_PASSWORD missing)."}
+    subject = "✅ AXXSPACE — Test Email"
+    html = _render(subject, """
+    <h2>✅ Email is working!</h2>
+    <p>This is a test email from the AXXSPACE platform.</p>
+    <p>If you received this, your Gmail SMTP configuration is correct.</p>
+    """)
+    from_addr = settings.email_from or f"AXXSPACE <{settings.smtp_user}>"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = from_addr
+    msg["To"] = to_email
+    msg.attach(MIMEText(html, "html"))
+    try:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.sendmail(settings.smtp_user, [to_email], msg.as_string())
+        logger.info("Test email sent → %s", to_email)
+        return {"ok": True, "message": f"Test email sent to {to_email}"}
+    except smtplib.SMTPAuthenticationError as e:
+        return {"ok": False, "error": f"Gmail authentication failed — check App Password. Detail: {e}"}
+    except smtplib.SMTPException as e:
+        return {"ok": False, "error": f"SMTP error: {e}"}
+    except Exception as e:
+        return {"ok": False, "error": f"Unexpected error: {e}"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

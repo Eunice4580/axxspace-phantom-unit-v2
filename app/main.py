@@ -321,6 +321,20 @@ def admin_reset_investor_password(
     return {"ok": True, "message": "Investor password reset successfully."}
 
 
+@app.post("/api/admin/test-email", status_code=200)
+def admin_test_email(
+    payload: schemas.TestEmailRequest,
+    _: str = Depends(require_admin),
+) -> dict:
+    """Admin only: send a test email to verify SMTP configuration is working."""
+    from app.email_service import send_test_email
+    result = send_test_email(payload.to_email)
+    if not result["ok"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+
+
 # --- Task Submissions --------------------------------------------------------
 
 @app.post(

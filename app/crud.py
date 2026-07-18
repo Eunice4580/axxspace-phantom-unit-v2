@@ -866,7 +866,7 @@ def award_submission(
     award_data: schemas.AwardSubmissionRequest,
 ) -> models.LedgerEntry:
     """Admin awards units for a pending submission, creating a ledger entry."""
-    from datetime import timezone
+    from datetime import datetime, timezone
     sub = db.get(models.TaskSubmission, submission_id)
     if sub is None:
         raise BusinessRuleError("Submission not found.")

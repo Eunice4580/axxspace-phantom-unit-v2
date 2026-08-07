@@ -295,12 +295,60 @@
   .empty-state { padding: 3.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
   .empty-state span { font-size: 2rem; display: block; margin-bottom: 0.75rem; }
 
-  @media (max-width: 600px) {
-    nav { padding: 1rem 1.25rem; }
-    .page { padding: 0 1rem 3rem; }
-    .profile-header { padding: 2rem 0 1.5rem; gap: 1.25rem; }
-    .stat-val { font-size: 1.5rem; }
-    th, td { padding: 0.65rem 0.75rem; }
+  /* ── Mobile nav ───────────────────────────────────────────────── */
+  .hamburger {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .mobile-menu {
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.25rem 1rem;
+    backdrop-filter: blur(14px);
+    position: sticky;
+    top: 60px;
+    z-index: 99;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a, .mobile-menu button {
+    display: block; width: 100%;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  @media (max-width: 640px) {
+    nav { padding: 0.85rem 1.1rem; }
+    .page { padding: 0 0.9rem 3rem; }
+    .profile-header { padding: 1.75rem 0 1.25rem; gap: 1rem; }
+    .stat-val { font-size: 1.4rem; }
+    th, td { padding: 0.6rem 0.7rem; font-size: 0.8rem; }
+    /* Hide desktop nav items on mobile */
+    .nav-right .nav-user,
+    .nav-right .btn-ghost,
+    .nav-right #home-link,
+    .nav-right #signout-btn,
+    .nav-right .theme-toggle {
+      display: none !important;
+    }
+    .hamburger { display: block; }
   }
 
   /* ── Notification bell ────────────────────────────────── */
@@ -392,8 +440,15 @@
     <span class="nav-user" id="nav-name">Loading…</span>
     <a href="/home" class="btn-ghost" id="home-link">← Home</a>
     <button class="btn-ghost" onclick="logout()" id="signout-btn">Sign out</button>
+    <button class="hamburger" onclick="toggleMobileMenu()" title="Menu">☰</button>
   </div>
 </nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/home">← Home</a>
+  <a href="/chat">💬 Chat</a>
+  <button onclick="toggleTheme()">🌙 Toggle Theme</button>
+  <button onclick="logout()">Sign out</button>
+</div>
 
 <div class="page">
 
@@ -485,11 +540,11 @@
     <!-- My Submissions history -->
     <div style="margin-top:2rem">
       <div style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;font-weight:600">My Submissions</div>
-      <div class="table-wrap" id="my-subs-wrap">
+      <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:var(--surface)" id="my-subs-wrap">
         <div class="loading-state" id="subs-loading">
           <div class="spinner"></div>Loading submissions…
         </div>
-        <table id="subs-table" style="display:none">
+        <table id="subs-table" style="display:none;min-width:600px">
           <thead><tr>
             <th>Submitted</th>
             <th>Task Title</th>
@@ -511,12 +566,12 @@
   <!-- Ledger history -->
   <section>
     <div class="section-hd"><h2>📋 Ledger History</h2></div>
-    <div class="table-wrap">
+    <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:var(--surface)">
       <div class="loading-state" id="ledger-loading">
         <div class="spinner"></div>
         Loading your ledger…
       </div>
-      <table id="ledger-table" style="display:none">
+      <table id="ledger-table" style="display:none;min-width:520px">
         <thead><tr>
           <th>Date</th>
           <th>Task Description</th>
@@ -926,11 +981,16 @@ function _applyThemeIcon() {
   const isLight = document.documentElement.classList.contains('light');
   const el = document.getElementById('theme-icon');
   if (el) el.textContent = isLight ? '☀️' : '🌙';
+  const mobileBtn = document.querySelector('.mobile-menu button[onclick="toggleTheme()"]');
+  if (mobileBtn) mobileBtn.textContent = (isLight ? '🌙' : '☀️') + ' Toggle Theme';
 }
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
   _applyThemeIcon();
+}
+function toggleMobileMenu() {
+  document.getElementById('mobile-menu').classList.toggle('open');
 }
 </script>
 </body>

@@ -802,6 +802,64 @@
       color: var(--muted);
       font-size: 0.875rem;
     }
+
+    /* ── Mobile nav ─────────────────────────────────────── */
+    .hamburger {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.6rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem 1rem;
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 60px;
+      z-index: 99;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a, .mobile-menu button {
+      display: block; width: 100%;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      text-align: left;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 0.85rem 1.1rem; }
+      .page { padding: 0 0.9rem 3rem; }
+      .hero { padding: 3rem 0 2rem; }
+      .hero h1 { font-size: 1.9rem; }
+      .hero-sub { font-size: 0.95rem; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .about-grid { grid-template-columns: 1fr; }
+      .tiers-grid { grid-template-columns: repeat(2, 1fr); }
+      /* Hide desktop nav items on mobile */
+      .nav-right .nav-user,
+      .nav-right .btn-ghost,
+      .nav-right .btn-accent,
+      .nav-right .theme-toggle {
+        display: none !important;
+      }
+      .hamburger { display: block; }
+    }
   </style>
 </head>
 
@@ -822,8 +880,15 @@
       <span class="nav-user" id="nav-name">Loading…</span>
       <a href="/member" class="btn-accent" id="my-account-btn">My Account →</a>
       <button class="btn-ghost" onclick="logout()">Sign out</button>
+      <button class="hamburger" onclick="toggleMobileMenu()" title="Menu">☰</button>
     </div>
   </nav>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/member">My Account →</a>
+    <a href="/chat">💬 Chat</a>
+    <button onclick="toggleTheme()">🌙 Toggle Theme</button>
+    <button onclick="logout()">Sign out</button>
+  </div>
 
   <div class="page">
 
@@ -1245,12 +1310,18 @@
       const isLight = document.documentElement.classList.contains('light');
       const el = document.getElementById('theme-icon');
       if (el) el.textContent = isLight ? '☀️' : '🌙';
+      const mobileBtn = document.querySelector('.mobile-menu button[onclick="toggleTheme()"]');
+      if (mobileBtn) mobileBtn.textContent = (isLight ? '🌙' : '☀️') + ' Toggle Theme';
     }
 
     function toggleTheme() {
       const isLight = document.documentElement.classList.toggle('light');
       localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
       _applyThemeIcon();
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('mobile-menu').classList.toggle('open');
     }
   </script>
 

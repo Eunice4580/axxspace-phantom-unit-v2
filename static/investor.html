@@ -9,6 +9,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden;max-width:100%}
 :root{
   --bg:#060a12;--surface:#0c1220;--surface2:#111b2e;--surface3:#162033;
   --border:#1a2540;--accent:#0ea5e9;--accent2:#0284c7;--accent-glow:rgba(14,165,233,0.22);
@@ -294,18 +295,20 @@ main{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1}
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
         Illustrative projections at assumed annual growth rates. Not financial advice.
       </div>
-      <table class="roi-table">
-        <thead>
-          <tr>
-            <th>Horizon</th>
-            <th>10% p.a.</th>
-            <th>15% p.a.</th>
-            <th>25% p.a.</th>
-            <th>Shares remain</th>
-          </tr>
-        </thead>
-        <tbody id="roi-body"></tbody>
-      </table>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table class="roi-table" style="min-width:400px">
+          <thead>
+            <tr>
+              <th>Horizon</th>
+              <th>10% p.a.</th>
+              <th>15% p.a.</th>
+              <th>25% p.a.</th>
+              <th>Shares remain</th>
+            </tr>
+          </thead>
+          <tbody id="roi-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Perks -->

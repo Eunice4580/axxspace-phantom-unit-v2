@@ -15,6 +15,7 @@
       margin: 0;
       padding: 0;
     }
+    html { overflow-x: hidden; max-width: 100%; }
 
     :root {
       --bg: #0a0a0f;
@@ -500,9 +501,10 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 1rem;
       overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 1rem;
     }
 
     .badge {

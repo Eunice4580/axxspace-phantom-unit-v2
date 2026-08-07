@@ -263,8 +263,3 @@ class AwardSubmissionRequest(BaseModel):
 class RejectSubmissionRequest(BaseModel):
     """Admin rejects a pending submission. Rejection reason is mandatory."""
     rejection_reason: str = Field(..., min_length=1, max_length=1000)
-
-
-class TestEmailRequest(BaseModel):
-    """Admin sends a test email to verify SMTP is working."""
-    to_email: str = Field(..., min_length=5, max_length=200)

@@ -321,43 +321,6 @@ def admin_reset_investor_password(
     return {"ok": True, "message": "Investor password reset successfully."}
 
 
-@app.post("/api/admin/test-email", status_code=200)
-def admin_test_email(
-    payload: schemas.TestEmailRequest,
-    _: str = Depends(require_admin),
-) -> dict:
-    """Admin only: send a test email to verify SMTP configuration is working."""
-    from app.email_service import send_test_email
-    result = send_test_email(payload.to_email)
-    if not result["ok"]:
-        raise HTTPException(status_code=500, detail=result["error"])
-    return result
-
-
-@app.get("/api/admin/email-debug", status_code=200)
-def admin_email_debug(
-    _: str = Depends(require_admin),
-) -> dict:
-    """Admin only: show Brevo config and test the API key."""
-    cfg = {
-        "provider": "Brevo (HTTPS API)",
-        "brevo_api_key_set": bool(settings.brevo_api_key),
-        "brevo_api_key_prefix": settings.brevo_api_key[:12] + "..." if settings.brevo_api_key else "(not set)",
-        "email_from_name": settings.email_from_name,
-        "email_from_address": settings.email_from_address,
-    }
-    try:
-        import brevo_python
-        from brevo_python.api.account_api import AccountApi
-        configuration = brevo_python.Configuration()
-        configuration.api_key["api-key"] = settings.brevo_api_key
-        account = AccountApi(brevo_python.ApiClient(configuration))
-        info = account.get_account()
-        cfg["connection_test"] = f"SUCCESS — account: {info.email}"
-    except Exception as exc:
-        cfg["connection_test"] = f"FAILED: {type(exc).__name__}: {exc}"
-    return cfg
-
 
 
 # --- Task Submissions --------------------------------------------------------

@@ -6,4 +6,3 @@ pydantic-settings>=2.2
 itsdangerous>=2.1
 python-multipart>=0.0.9
 psycopg2-binary>=2.9
-brevo-python>=5.0.0

@@ -84,11 +84,15 @@ def create_contributor(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Category must be one of: {', '.join(ELIGIBILITY_CATEGORIES)}",
         )
-    contributor = crud.create_contributor(db, payload)
+    try:
+        contributor = crud.create_contributor(db, payload)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return schemas.ContributorOut(
         id=contributor.id,
         name=contributor.name,
         email=contributor.email,
+        role=contributor.role,
         category=contributor.category,
         created_at=contributor.created_at,
         total_units=0.0,
@@ -157,11 +161,11 @@ def member_login(
     payload: schemas.MemberLoginRequest,
     db: Session = Depends(get_db),
 ) -> schemas.MemberTokenResponse:
-    contributor = crud.authenticate_member(db, payload.email, payload.password)
+    contributor = crud.authenticate_member(db, payload.email, payload.password, payload.role)
     if contributor is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
+            detail=f"Invalid email or password, or you are not registered as a {payload.role}.",
         )
     token = create_member_token(contributor.id)
     return schemas.MemberTokenResponse(
@@ -199,6 +203,52 @@ def login_page() -> FileResponse:
 @app.get("/member")
 def member_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "member.html")
+
+
+# --- Task Submissions ---------------------------------------------------------
+@app.post("/api/submissions", response_model=schemas.TaskSubmissionOut, status_code=201)
+def submit_task(
+    payload: schemas.TaskSubmissionCreate,
+    db: Session = Depends(get_db),
+    contributor_id: int = Depends(require_member),
+) -> schemas.TaskSubmissionOut:
+    """Member submits a task for admin review."""
+    sub = crud.create_submission(db, contributor_id, payload)
+    return crud._submission_to_out(sub)
+
+
+@app.get("/api/submissions/me", response_model=list[schemas.TaskSubmissionOut])
+def my_submissions(
+    db: Session = Depends(get_db),
+    contributor_id: int = Depends(require_member),
+) -> list[schemas.TaskSubmissionOut]:
+    """Member views their own submissions."""
+    return crud.list_submissions(db, contributor_id=contributor_id)
+
+
+@app.get("/api/submissions", response_model=list[schemas.TaskSubmissionOut])
+def list_submissions(
+    status: str | None = None,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> list[schemas.TaskSubmissionOut]:
+    """Admin lists all submissions, optionally filtered by status."""
+    return crud.list_submissions(db, status=status)
+
+
+@app.post("/api/submissions/{submission_id}/resolve", response_model=schemas.TaskSubmissionOut)
+def resolve_submission(
+    submission_id: int,
+    payload: schemas.SubmissionResolveRequest,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> schemas.TaskSubmissionOut:
+    """Admin resolves a submission: award (with units), done, or cancel — all with a note."""
+    try:
+        sub = crud.resolve_submission(db, submission_id, payload)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return crud._submission_to_out(sub)
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

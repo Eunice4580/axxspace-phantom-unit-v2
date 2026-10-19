@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -49,9 +50,16 @@ def remaining_units(db: Session) -> float:
 
 # --- Contributors ------------------------------------------------------------
 def create_contributor(db: Session, data: schemas.ContributorCreate) -> models.Contributor:
+    if data.email:
+        existing = get_contributor_by_email(db, data.email.strip(), data.role)
+        if existing is not None:
+            raise BusinessRuleError(
+                f"A {data.role} account with that email already exists."
+            )
     contributor = models.Contributor(
         name=data.name.strip(),
         email=(data.email.strip() if data.email else None),
+        role=data.role,
         category=data.category.strip(),
     )
     db.add(contributor)
@@ -85,6 +93,7 @@ def list_contributors(db: Session) -> list[schemas.ContributorOut]:
                 id=c.id,
                 name=c.name,
                 email=c.email,
+                role=c.role,
                 category=c.category,
                 created_at=c.created_at,
                 total_units=total,
@@ -117,6 +126,22 @@ def award_units(db: Session, data: schemas.LedgerEntryCreate) -> models.LedgerEn
         remarks=(data.remarks.strip() if data.remarks else None),
     )
     db.add(entry)
+    db.flush()  # get entry.id before committing
+
+    # Auto-resolve any pending submission from this contributor so it doesn't
+    # stay stuck in the queue after units are awarded via the direct form.
+    pending = db.execute(
+        select(models.TaskSubmission).where(
+            models.TaskSubmission.contributor_id == contributor.id,
+            models.TaskSubmission.status == "pending",
+        )
+    ).scalars().first()
+    if pending is not None:
+        pending.status = "awarded"
+        pending.admin_note = "Awarded via direct Award Units form."
+        pending.ledger_entry_id = entry.id
+        pending.resolved_at = _utcnow()
+
     db.commit()
     db.refresh(entry)
     return entry
@@ -207,19 +232,34 @@ def growth(db: Session) -> schemas.GrowthResponse:
 
 
 # --- Member self-service -----------------------------------------------------
-def get_contributor_by_email(db: Session, email: str) -> models.Contributor | None:
+def get_contributor_by_email(db: Session, email: str, role: str) -> models.Contributor | None:
+    """Return the contributor matching *email* and *role*, or None.
+
+    Because the same email may exist under different roles (member / investor),
+    the lookup must always filter on both columns.
+    """
     return db.execute(
-        select(models.Contributor).where(models.Contributor.email == email)
+        select(models.Contributor).where(
+            models.Contributor.email == email,
+            models.Contributor.role == role,
+        )
     ).scalar_one_or_none()
 
 
 def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.Contributor:
-    """Create a new contributor with a hashed password (self-registration)."""
-    existing = get_contributor_by_email(db, data.email)
+    """Create a new contributor with a hashed password (self-registration).
+
+    The lookup is scoped to *data.role* so the same email can independently
+    register as a 'member' and as an 'investor' — they become two separate
+    contributor records, each with its own password and unit balance.
+    """
+    existing = get_contributor_by_email(db, data.email, data.role)
     if existing is not None:
         if existing.password_hash is not None:
-            raise BusinessRuleError("An account with that email already exists.")
-        # Admin-created contributor claims their account by setting a password.
+            raise BusinessRuleError(
+                f"A {data.role} account with that email already exists."
+            )
+        # Admin-created contributor (no password yet) claims their account.
         existing.name = data.name.strip()
         existing.category = data.category.strip()
         existing.password_hash = hash_password(data.password)
@@ -230,6 +270,7 @@ def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.
     contributor = models.Contributor(
         name=data.name.strip(),
         email=data.email.strip(),
+        role=data.role,
         category=data.category.strip(),
         password_hash=hash_password(data.password),
     )
@@ -239,9 +280,13 @@ def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.
     return contributor
 
 
-def authenticate_member(db: Session, email: str, password: str) -> models.Contributor | None:
-    """Return contributor if email+password match, else None."""
-    contributor = get_contributor_by_email(db, email)
+def authenticate_member(db: Session, email: str, password: str, role: str) -> models.Contributor | None:
+    """Return the contributor if email + password + role all match, else None.
+
+    A valid investor login will NOT match a member-only account and vice-versa,
+    even if the email and password are identical.
+    """
+    contributor = get_contributor_by_email(db, email, role)
     if contributor is None or contributor.password_hash is None:
         return None
     if not verify_member_password(password, contributor.password_hash):
@@ -291,6 +336,7 @@ def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfil
         id=contributor.id,
         name=contributor.name,
         email=contributor.email,
+        role=contributor.role,
         category=contributor.category,
         created_at=contributor.created_at,
         total_units=total,
@@ -299,3 +345,111 @@ def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfil
         ledger=ledger,
         growth_points=growth_points,
     )
+
+
+# --- Task Submissions --------------------------------------------------------
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _submission_to_out(s: models.TaskSubmission) -> schemas.TaskSubmissionOut:
+    return schemas.TaskSubmissionOut(
+        id=s.id,
+        contributor_id=s.contributor_id,
+        contributor_name=s.contributor.name,
+        task_description=s.task_description,
+        task_reference=s.task_reference,
+        remarks=s.remarks,
+        status=s.status,
+        admin_note=s.admin_note,
+        ledger_entry_id=s.ledger_entry_id,
+        submitted_at=s.submitted_at,
+        resolved_at=s.resolved_at,
+    )
+
+
+def create_submission(
+    db: Session, contributor_id: int, data: schemas.TaskSubmissionCreate
+) -> models.TaskSubmission:
+    """Member submits a task for admin review."""
+    sub = models.TaskSubmission(
+        contributor_id=contributor_id,
+        task_description=data.task_description.strip(),
+        task_reference=(data.task_reference.strip() if data.task_reference else None),
+        remarks=(data.remarks.strip() if data.remarks else None),
+    )
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+    return sub
+
+
+def list_submissions(
+    db: Session,
+    status: str | None = None,
+    contributor_id: int | None = None,
+) -> list[schemas.TaskSubmissionOut]:
+    """List submissions filtered by status and/or contributor. None = all."""
+    q = select(models.TaskSubmission).order_by(models.TaskSubmission.submitted_at.desc())
+    if status:
+        q = q.where(models.TaskSubmission.status == status)
+    if contributor_id is not None:
+        q = q.where(models.TaskSubmission.contributor_id == contributor_id)
+    rows = db.execute(q).scalars().all()
+    return [_submission_to_out(s) for s in rows]
+
+
+def resolve_submission(
+    db: Session,
+    submission_id: int,
+    data: schemas.SubmissionResolveRequest,
+) -> models.TaskSubmission:
+    """Admin resolves a submission: award, done, or cancel.
+
+    * ``award``  — units_awarded + approving_reviewer required; creates a ledger entry.
+    * ``done``   — marks complete without awarding units; admin_note required.
+    * ``cancel`` — rejects/cancels the submission; admin_note required.
+    """
+    sub = db.get(models.TaskSubmission, submission_id)
+    if sub is None:
+        raise BusinessRuleError("Submission not found.")
+    if sub.status != "pending":
+        raise BusinessRuleError(f"Submission is already {sub.status}.")
+
+    now = _utcnow()
+
+    if data.action == "award":
+        if not data.units_awarded or not data.approving_reviewer:
+            raise BusinessRuleError(
+                "units_awarded and approving_reviewer are required to award."
+            )
+        units = validate_units(data.units_awarded)
+        available = remaining_units(db)
+        if units > available + 1e-9:
+            raise BusinessRuleError(
+                f"Award of {units:g} units exceeds the remaining pool of {available:g} units."
+            )
+        entry = models.LedgerEntry(
+            contributor_id=sub.contributor_id,
+            task_description=sub.task_description,
+            task_reference=sub.task_reference,
+            units_awarded=units,
+            approving_reviewer=data.approving_reviewer.strip(),
+            remarks=data.admin_note,
+        )
+        db.add(entry)
+        db.flush()
+        sub.status = "awarded"
+        sub.ledger_entry_id = entry.id
+
+    elif data.action == "done":
+        sub.status = "done"
+
+    elif data.action == "cancel":
+        sub.status = "cancelled"
+
+    sub.admin_note = (data.admin_note.strip() if data.admin_note else None)
+    sub.resolved_at = now
+    db.commit()
+    db.refresh(sub)
+    return sub

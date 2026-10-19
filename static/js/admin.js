@@ -39,20 +39,61 @@ function showLogin() {
   document.getElementById("login-view").classList.remove("hidden");
   document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("logout-link").classList.add("hidden");
+  stopAutoRefresh();
 }
 function showAdmin() {
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("admin-view").classList.remove("hidden");
   document.getElementById("logout-link").classList.remove("hidden");
   refreshAll();
+  startAutoRefresh();
+}
+
+// --- Auto-refresh ------------------------------------------------------------
+const POLL_INTERVAL_MS = 30_000; // poll every 30 seconds
+let _pollTimer = null;
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  _pollTimer = setInterval(() => {
+    // Skip if the tab is hidden — fire immediately when it becomes visible again.
+    if (!document.hidden) refreshAll(true);
+  }, POLL_INTERVAL_MS);
+}
+
+function stopAutoRefresh() {
+  if (_pollTimer !== null) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+// Refresh instantly when the user switches back to this tab.
+document.addEventListener("visibilitychange", () => {
+  const adminVisible = !document.getElementById("admin-view").classList.contains("hidden");
+  if (!document.hidden && getToken() && adminVisible) {
+    refreshAll(true);
+  }
+});
+
+// --- Live indicator ----------------------------------------------------------
+function setLiveIndicator(state) {
+  // state: 'syncing' | 'live' | 'error'
+  const el = document.getElementById("live-indicator");
+  if (!el) return;
+  el.className = "live-badge " + state;
+  el.textContent = state === "syncing" ? "⟳ Syncing…"
+                 : state === "error"   ? "⚠ Offline"
+                 :                       "● Live";
 }
 
 // --- Config (categories + tiers) --------------------------------------------
 let CONFIG = null;
 async function loadConfig() {
   CONFIG = await api("/api/config");
-  const catSel = document.getElementById("c-category");
-  catSel.innerHTML = CONFIG.categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  const options = CONFIG.categories
+    .map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+    .join("");
+  // Populate both create-account forms
+  document.getElementById("m-category").innerHTML = options;
+  document.getElementById("i-category").innerHTML = options;
   const hint = document.getElementById("tier-hint");
   hint.innerHTML = CONFIG.task_tiers
     .map((t) => `<button type="button" data-min="${t.min}" title="${t.name}: ${t.min}–${t.max}">${t.name} (${t.min}–${t.max})</button>`)
@@ -63,17 +104,26 @@ async function loadConfig() {
 }
 
 // --- Data refresh ------------------------------------------------------------
-async function refreshAll() {
+async function refreshAll(silent = false) {
+  if (!silent) setLiveIndicator("syncing");
   try {
-    const [stats, contributors, ledger] = await Promise.all([
-      api("/api/stats"), api("/api/contributors"), api("/api/ledger"),
+    const [stats, contributors, ledger, submissions] = await Promise.all([
+      api("/api/stats"),
+      api("/api/contributors"),
+      api("/api/ledger"),
+      api("/api/submissions?status=pending", { auth: true }),
     ]);
     renderStats(stats);
     renderContributorSelect(contributors);
     renderAccounts(contributors);
     renderRecent(ledger.slice(0, 10));
+    renderSubmissions(submissions);
+    setLiveIndicator("live");
+    const el = document.getElementById("last-refreshed");
+    if (el) el.textContent = "Last updated: " + new Date().toLocaleTimeString("en-GB");
   } catch (err) {
-    toast(err.message, false);
+    setLiveIndicator("error");
+    if (!silent) toast(err.message, false);
   }
 }
 
@@ -97,20 +147,21 @@ function renderContributorSelect(contributors) {
     return;
   }
   sel.innerHTML = contributors
-    .map((c) => `<option value="${c.id}">${escapeHtml(c.name)} — ${fmtUnits(c.total_units)} units</option>`)
+    .map((c) => `<option value="${c.id}">${escapeHtml(c.name)} (${c.role}) — ${fmtUnits(c.total_units)} units</option>`)
     .join("");
 }
 
 function renderAccounts(contributors) {
   const body = document.getElementById("accounts-body");
   if (!contributors.length) {
-    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px">No accounts yet.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">No accounts yet.</td></tr>`;
     return;
   }
   body.innerHTML = contributors.map((c) => `
     <tr>
       <td>${escapeHtml(c.name)}</td>
       <td><span class="pill">${escapeHtml(c.category)}</span></td>
+      <td><span class="pill pill-role pill-${escapeHtml(c.role)}">${escapeHtml(c.role)}</span></td>
       <td>${c.email ? escapeHtml(c.email) : "—"}</td>
       <td class="units">${fmtUnits(c.total_units)}</td>
       <td>${eur(c.total_value_eur)}</td>
@@ -138,7 +189,10 @@ function renderRecent(entries) {
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
-    const { token } = await api("/api/auth/login", { method: "POST", body: { password: document.getElementById("password").value } });
+    const { token } = await api("/api/auth/login", {
+      method: "POST",
+      body: { password: document.getElementById("password").value },
+    });
     setToken(token);
     document.getElementById("password").value = "";
     toast("Logged in.");
@@ -155,19 +209,42 @@ document.getElementById("logout-link").addEventListener("click", (e) => {
   showLogin();
 });
 
-document.getElementById("contributor-form").addEventListener("submit", async (e) => {
+// Create member account
+document.getElementById("member-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
     await api("/api/contributors", {
       method: "POST", auth: true,
       body: {
-        name: document.getElementById("c-name").value,
-        email: document.getElementById("c-email").value || null,
-        category: document.getElementById("c-category").value,
+        name: document.getElementById("m-name").value,
+        email: document.getElementById("m-email").value || null,
+        category: document.getElementById("m-category").value,
+        role: "member",
       },
     });
     e.target.reset();
-    toast("Account created.");
+    toast("Member account created.");
+    refreshAll();
+  } catch (err) {
+    toast(err.message, false);
+  }
+});
+
+// Create investor account
+document.getElementById("investor-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api("/api/contributors", {
+      method: "POST", auth: true,
+      body: {
+        name: document.getElementById("i-name").value,
+        email: document.getElementById("i-email").value || null,
+        category: document.getElementById("i-category").value,
+        role: "investor",
+      },
+    });
+    e.target.reset();
+    toast("Investor account created.");
     refreshAll();
   } catch (err) {
     toast(err.message, false);
@@ -190,6 +267,101 @@ document.getElementById("award-form").addEventListener("submit", async (e) => {
     });
     e.target.reset();
     toast(`Awarded ${fmtUnits(entry.units_awarded)} units to ${entry.contributor_name}.`);
+    refreshAll();
+  } catch (err) {
+    toast(err.message, false);
+  }
+});
+
+// --- Submissions -------------------------------------------------------------
+function renderSubmissions(submissions) {
+  const body  = document.getElementById("submissions-body");
+  const count = document.getElementById("submissions-count");
+  count.textContent = `${submissions.length} pending`;
+
+  if (!submissions.length) {
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">No pending submissions.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = submissions.map((s) => `
+    <tr>
+      <td>${fmtDate(s.submitted_at)}</td>
+      <td>${escapeHtml(s.contributor_name)}</td>
+      <td>${escapeHtml(s.task_description)}</td>
+      <td>${s.task_reference ? escapeHtml(s.task_reference) : "—"}</td>
+      <td>${s.remarks ? escapeHtml(s.remarks) : "—"}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm btn-award"  onclick="openModal(${s.id},'award','Award units for: ${escapeHtml(s.contributor_name)}','Award units to this member and explain what was verified.')">Award</button>
+        <button class="btn-sm btn-done"   onclick="openModal(${s.id},'done','Mark as Done: ${escapeHtml(s.contributor_name)}','Mark this task as done without awarding units. Add a note for the member.')">Done</button>
+        <button class="btn-sm btn-cancel" onclick="openModal(${s.id},'cancel','Cancel submission: ${escapeHtml(s.contributor_name)}','Explain to the member why this submission is being cancelled.')">Cancel</button>
+      </td>
+    </tr>`).join("");
+}
+
+// --- Resolve modal -----------------------------------------------------------
+let _modalSubmissionId = null;
+let _modalAction = null;
+
+function openModal(submissionId, action, title, desc) {
+  _modalSubmissionId = submissionId;
+  _modalAction = action;
+
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-desc").textContent  = desc;
+  document.getElementById("modal-note").value = "";
+  document.getElementById("modal-units").value = "";
+  document.getElementById("modal-reviewer").value = "";
+
+  // Show award-specific fields only when awarding
+  const awardExtra = document.getElementById("modal-award-extra");
+  awardExtra.classList.toggle("visible", action === "award");
+
+  // Style confirm button by action
+  const btn = document.getElementById("modal-confirm-btn");
+  btn.className = "btn btn-primary";
+  if (action === "cancel") btn.style.background = "rgba(239,68,68,0.7)";
+  else if (action === "done") btn.style.background = "rgba(99,102,241,0.7)";
+  else btn.style.background = "";
+
+  document.getElementById("resolve-modal").classList.add("open");
+  document.getElementById("modal-note").focus();
+}
+
+function closeModal() {
+  document.getElementById("resolve-modal").classList.remove("open");
+  _modalSubmissionId = null;
+  _modalAction = null;
+}
+
+// Close modal when clicking the backdrop
+document.getElementById("resolve-modal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById("modal-confirm-btn").addEventListener("click", async () => {
+  const note     = document.getElementById("modal-note").value.trim();
+  const units    = parseFloat(document.getElementById("modal-units").value);
+  const reviewer = document.getElementById("modal-reviewer").value.trim();
+
+  if (!note) { toast("Please write a short note before confirming.", false); return; }
+  if (_modalAction === "award" && (!units || !reviewer)) {
+    toast("Units and reviewer are required to award.", false); return;
+  }
+
+  const body = { action: _modalAction, admin_note: note };
+  if (_modalAction === "award") {
+    body.units_awarded = units;
+    body.approving_reviewer = reviewer;
+  }
+
+  try {
+    await api(`/api/submissions/${_modalSubmissionId}/resolve`, {
+      method: "POST", auth: true, body,
+    });
+    closeModal();
+    const label = _modalAction === "award" ? "awarded" : _modalAction === "done" ? "marked done" : "cancelled";
+    toast(`Submission ${label}.`);
     refreshAll();
   } catch (err) {
     toast(err.message, false);

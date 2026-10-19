@@ -22,6 +22,7 @@ class ContributorCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     email: str | None = Field(default=None, max_length=200)
     category: str = Field(..., min_length=1, max_length=100)
+    role: str = Field(default="member", pattern="^(member|investor)$")
 
 
 class ContributorOut(BaseModel):
@@ -30,6 +31,7 @@ class ContributorOut(BaseModel):
     id: int
     name: str
     email: str | None
+    role: str
     category: str
     created_at: datetime
     total_units: float = 0.0
@@ -96,11 +98,13 @@ class MemberRegisterRequest(BaseModel):
     email: str = Field(..., min_length=5, max_length=200)
     password: str = Field(..., min_length=6)
     category: str = Field(..., min_length=1, max_length=100)
+    role: str = Field(default="member", pattern="^(member|investor)$")
 
 
 class MemberLoginRequest(BaseModel):
     email: str
     password: str
+    role: str = Field(default="member", pattern="^(member|investor)$")
 
 
 class MemberTokenResponse(BaseModel):
@@ -114,6 +118,7 @@ class MemberProfileOut(BaseModel):
     id: int
     name: str
     email: str | None
+    role: str
     category: str
     created_at: datetime
     total_units: float
@@ -121,3 +126,36 @@ class MemberProfileOut(BaseModel):
     rank: int
     ledger: list[LedgerEntryOut]
     growth_points: list[GrowthPoint]
+
+
+# --- Task Submissions ---------------------------------------------------------
+class TaskSubmissionCreate(BaseModel):
+    """Sent by a member when they submit a task for review."""
+    task_description: str = Field(..., min_length=1)
+    task_reference: str | None = Field(default=None, max_length=100)
+    remarks: str | None = None
+
+
+class SubmissionResolveRequest(BaseModel):
+    """Sent by the admin to award, reject, or mark a submission as done."""
+    action: str = Field(..., pattern="^(award|done|cancel)$")
+    admin_note: str | None = None
+    # Required only when action='award'
+    units_awarded: float | None = None
+    approving_reviewer: str | None = None
+
+
+class TaskSubmissionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    contributor_id: int
+    contributor_name: str
+    task_description: str
+    task_reference: str | None
+    remarks: str | None
+    status: str
+    admin_note: str | None
+    ledger_entry_id: int | None
+    submitted_at: datetime
+    resolved_at: datetime | None

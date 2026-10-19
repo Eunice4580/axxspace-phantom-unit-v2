@@ -7,6 +7,78 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/css/styles.css" />
+    /* Submission status pills */
+    .pill-pending   { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+    .pill-awarded   { background: rgba(52,211,153,0.15);  color: #34d399; }
+    .pill-done      { background: rgba(99,102,241,0.15);  color: #818cf8; }
+    .pill-cancelled { background: rgba(239,68,68,0.15);   color: #f87171; }
+
+    /* Action buttons in submissions table */
+    .btn-sm {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid;
+      cursor: pointer;
+      transition: background 0.18s;
+      font-family: inherit;
+    }
+    .btn-award  { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.4); color: #34d399; }
+    .btn-award:hover  { background: rgba(52,211,153,0.25); }
+    .btn-done   { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.4); color: #818cf8; }
+    .btn-done:hover   { background: rgba(99,102,241,0.25); }
+    .btn-cancel { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.35);  color: #f87171; }
+    .btn-cancel:hover { background: rgba(239,68,68,0.22); }
+
+    /* Resolve modal overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 2rem;
+      width: min(480px, 92vw);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .modal-box h4 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+    .modal-box p  { color: var(--text-dim, #9ca3af); font-size: 0.85rem; margin-bottom: 1rem; }
+    .modal-box textarea {
+      width: 100%; min-height: 90px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: inherit;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.8rem;
+      resize: vertical;
+      margin-bottom: 1rem;
+    }
+    .modal-award-extra { margin-bottom: 1rem; display: none; }
+    .modal-award-extra.visible { display: block; }
+    .modal-award-extra input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: inherit;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+  </style>
 </head>
 <body>
   <nav class="nav">
@@ -43,35 +115,60 @@
     <div class="stat-grid" id="stat-grid"></div>
 
     <div class="grid-2">
-      <!-- Create contributor -->
+      <!-- Create member account -->
       <div class="card">
-        <h3>Create Account</h3>
-        <p class="muted">Add an eligible contributor (spec §4).</p>
-        <form id="contributor-form">
+        <h3>Create Member Account</h3>
+        <p class="muted">Add an eligible member contributor (spec §4).</p>
+        <form id="member-form">
           <div class="form-grid">
             <div class="full">
-              <label for="c-name">Contributor name</label>
-              <input id="c-name" required />
+              <label for="m-name">Full name</label>
+              <input id="m-name" required />
             </div>
             <div>
-              <label for="c-email">Email (optional)</label>
-              <input id="c-email" type="email" />
+              <label for="m-email">Email (optional)</label>
+              <input id="m-email" type="email" />
             </div>
             <div>
-              <label for="c-category">Eligibility category</label>
-              <select id="c-category" required></select>
+              <label for="m-category">Eligibility category</label>
+              <select id="m-category" required></select>
             </div>
           </div>
           <div style="height:14px"></div>
-          <button class="btn btn-primary btn-block" type="submit">Create account</button>
+          <button class="btn btn-primary btn-block" type="submit">Create member account</button>
         </form>
       </div>
 
-      <!-- Award units -->
+      <!-- Create investor account -->
       <div class="card">
-        <h3>Award Contribution Units</h3>
-        <p class="muted">Record a verified award to the ledger (spec §5–§7).</p>
-        <form id="award-form">
+        <h3>Create Investor Account</h3>
+        <p class="muted">Add an investor account linked to this system.</p>
+        <form id="investor-form">
+          <div class="form-grid">
+            <div class="full">
+              <label for="i-name">Full name</label>
+              <input id="i-name" required />
+            </div>
+            <div>
+              <label for="i-email">Email (optional)</label>
+              <input id="i-email" type="email" />
+            </div>
+            <div>
+              <label for="i-category">Eligibility category</label>
+              <select id="i-category" required></select>
+            </div>
+          </div>
+          <div style="height:14px"></div>
+          <button class="btn btn-primary btn-block" type="submit">Create investor account</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Award units -->
+    <div class="card">
+      <h3>Award Contribution Units</h3>
+      <p class="muted">Record a verified award to the ledger (spec §5–§7).</p>
+      <form id="award-form">
           <div class="form-grid">
             <div class="full">
               <label for="a-contributor">Contributor</label>
@@ -99,35 +196,106 @@
               <input id="a-remarks" />
             </div>
           </div>
-          <div style="height:14px"></div>
           <button class="btn btn-primary btn-block" type="submit">Award units</button>
         </form>
-      </div>
     </div>
 
+    <!-- Accounts table -->
     <div class="card">
       <div class="row-between">
         <div>
           <h3>Accounts</h3>
           <p class="muted">All contributor accounts and their current holdings.</p>
         </div>
+        <div class="table-meta">
+          <span id="last-refreshed"></span>
+          <span id="live-indicator" class="live-badge live">● Live</span>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Name</th><th>Category</th><th>Email</th><th>Units Held</th><th>Value</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Role</th>
+              <th>Email</th>
+              <th>Units Held</th>
+              <th>Value</th>
+            </tr>
+          </thead>
           <tbody id="accounts-body"></tbody>
         </table>
       </div>
     </div>
 
+    <!-- Ledger table -->
     <div class="card">
       <h3>Recent Ledger Entries</h3>
-      <p class="muted">Latest awards recorded.</p>
+      <p class="muted">Latest awards recorded — auto-refreshes every 30 seconds.</p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Contributor</th><th>Task</th><th>Ref #</th><th>Units</th><th>Reviewer</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Contributor</th>
+              <th>Task</th>
+              <th>Ref #</th>
+              <th>Units</th>
+              <th>Reviewer</th>
+            </tr>
+          </thead>
           <tbody id="recent-body"></tbody>
         </table>
+      </div>
+    </div>
+    <!-- Submissions queue -->
+    <div class="card" id="submissions-card">
+      <div class="row-between">
+        <div>
+          <h3>Pending Submissions</h3>
+          <p class="muted">Tasks submitted by members awaiting your review.</p>
+        </div>
+        <span class="pill" id="submissions-count">0 pending</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Submitted</th>
+              <th>Member</th>
+              <th>Task</th>
+              <th>Ref #</th>
+              <th>Remarks</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="submissions-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /admin-view -->
+
+  <!-- Resolve modal -->
+  <div class="modal-overlay" id="resolve-modal">
+    <div class="modal-box">
+      <h4 id="modal-title">Resolve Submission</h4>
+      <p id="modal-desc">Write a short note explaining your decision (required).</p>
+
+      <!-- Award-only extras -->
+      <div class="modal-award-extra" id="modal-award-extra">
+        <label style="font-size:0.82rem;font-weight:600;">Units to award</label>
+        <input id="modal-units" type="number" min="0.1" step="0.1" placeholder="e.g. 0.5" />
+        <label style="font-size:0.82rem;font-weight:600;margin-top:0.75rem;display:block;">Approving reviewer</label>
+        <input id="modal-reviewer" type="text" placeholder="Reviewer name" />
+      </div>
+
+      <textarea id="modal-note" placeholder="Note to member…"></textarea>
+
+      <div class="modal-actions">
+        <button class="btn" id="modal-cancel-btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modal-confirm-btn">Confirm</button>
       </div>
     </div>
   </div>

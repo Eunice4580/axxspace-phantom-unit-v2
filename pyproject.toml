@@ -3,7 +3,7 @@ name = "axxspace-phantom-unit"
 version = "1.0.0"
 description = "AXXSPACE Phantom Unit Compensation System v1.0 — contribution unit reward and ledger platform"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
@@ -13,7 +13,6 @@ dependencies = [
     "itsdangerous>=2.1",
     "python-multipart>=0.0.9",
     "psycopg2-binary>=2.9",
-    "brevo-python>=5.0.0",
 ]
 
 [project.optional-dependencies]

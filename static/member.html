@@ -1,215 +1,998 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AXXSPACE — My Dashboard</title>
-  <meta name="description" content="Your personal AXXSPACE Contribution Unit dashboard — track your earnings and growth." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    /* ── Member page extras ─────────────────────────────────── */
-    .welcome-banner {
-      background: linear-gradient(135deg, rgba(99,102,241,.18) 0%, rgba(16,185,129,.10) 100%);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2rem 2.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      animation: slideUp .4s ease;
-    }
-    @keyframes slideUp {
-      from { opacity:0; transform:translateY(18px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .welcome-left h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: .25rem; }
-    .welcome-left p  { color: var(--muted); font-size: .9rem; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AXXSPACE — My Account</title>
+<meta name="description" content="Your AXXSPACE contributor account — view your units, EUR value, rank, and full ledger history." />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; max-width: 100%; }
 
-    .member-badges { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
-    .badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: .3rem .85rem;
-      font-size: .78rem;
-      font-weight: 600;
-    }
-    .badge.rank  { border-color: rgba(251,191,36,.5); color: #fbbf24; }
-    .badge.cat   { border-color: rgba(99,102,241,.4); color: #818cf8; }
-    .badge.units { border-color: rgba(16,185,129,.4); color: #34d399; }
+  :root {
+    --bg:          #07070e;
+    --surface:     #0f0f1a;
+    --surface2:    #141428;
+    --border:      #1e1e36;
+    --accent:      #7c3aed;
+    --accent2:     #4f46e5;
+    --accent-glow: rgba(124,58,237,0.18);
+    --text:        #eaeaf5;
+    --muted:       #6b6b90;
+    --success:     #10b981;
+    --gold:        #f59e0b;
+    --info:        #38bdf8;
+    --error:       #ef4444;
+    --nav-bg:      rgba(7,7,14,0.88);
+  }
 
-    .btn-logout {
-      display: flex; align-items: center; gap: .5rem;
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.3);
-      border-radius: 8px;
-      color: #f87171;
-      font-family: inherit;
-      font-size: .85rem;
-      font-weight: 600;
-      padding: .55rem 1.1rem;
-      cursor: pointer;
-      transition: background .2s;
-    }
-    .btn-logout:hover { background: rgba(239,68,68,.22); }
+  :root.light {
+    --bg:          #f5f5fc;
+    --surface:     #ffffff;
+    --surface2:    #ededf8;
+    --border:      #dcdcf0;
+    --text:        #111128;
+    --muted:       #6b6b90;
+    --accent-glow: rgba(124,58,237,0.1);
+    --nav-bg:      rgba(245,245,252,0.88);
+  }
 
-    .member-stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .member-stat {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.4rem 1.5rem;
-      animation: slideUp .4s ease both;
-    }
-    .member-stat:nth-child(2) { animation-delay: .05s; }
-    .member-stat:nth-child(3) { animation-delay: .10s; }
-    .member-stat:nth-child(4) { animation-delay: .15s; }
-    .member-stat .ms-label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem; }
-    .member-stat .ms-value { font-size: 1.9rem; font-weight: 800; line-height: 1; }
-    .member-stat .ms-sub   { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
-    .ms-value.green { color: #34d399; }
-    .ms-value.indigo{ color: #818cf8; }
-    .ms-value.amber { color: #fbbf24; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Raleway', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%; left: -10%;
+    width: 750px; height: 750px;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.09) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+  /* Ambient glow — bottom right */
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -18%; right: -8%;
+    width: 650px; height: 650px;
+    background: radial-gradient(ellipse, rgba(79,70,229,0.07) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
 
-    .empty-ledger {
-      text-align: center;
-      padding: 3rem;
-      color: var(--muted);
-    }
-    .empty-ledger .icon { font-size: 2.5rem; margin-bottom: .75rem; }
+  /* Background Logo Watermark */
+  .bg-logo-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60vw;
+    height: 60vw;
+    max-width: 600px;
+    max-height: 600px;
+    min-width: 320px;
+    min-height: 320px;
+    background: url('/static/logo.png') no-repeat center center;
+    background-size: contain;
+    opacity: 0.07; /* A bit more visible in dark mode, centered and distributed */
+    pointer-events: none;
+    z-index: 0;
+    filter: saturate(0.85);
+    transition: opacity 0.3s, filter 0.3s;
+  }
 
-    /* Loading skeleton */
-    .skeleton {
-      background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 8px;
-      height: 1rem;
-      margin: .5rem 0;
+  /* Subtle dot-grid overlay */
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image: radial-gradient(rgba(124,58,237,0.10) 1px, transparent 1px);
+    background-size: 34px 34px;
+    pointer-events: none; z-index: 0;
+    mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  :root.light .bg-logo-watermark {
+    opacity: 0.12; /* Clean, visible watermark in light mode */
+    filter: saturate(0.75) brightness(1.02);
+  }
+
+  /* ── Nav ──────────────────────────────────────────── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--nav-bg);
+    backdrop-filter: blur(14px);
+    z-index: 100;
+  }
+  .logo { font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.24em; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .nav-user {
+    font-size: 0.85rem; color: var(--muted);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .nav-user::before {
+    content: ''; display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--success); border-radius: 50%;
+    box-shadow: 0 0 6px var(--success);
+  }
+  .btn-ghost {
+    padding: 0.45rem 1rem; background: transparent;
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--muted); font-family: inherit; font-size: 0.85rem;
+    cursor: pointer; transition: border-color 0.2s, color 0.2s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Theme toggle ───────────────────────────────────────────── */
+  .theme-toggle {
+    background: transparent; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.45rem 0.65rem; cursor: pointer; color: var(--muted);
+    transition: border-color 0.2s, color 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+  .theme-toggle svg { width: 16px; height: 16px; }
+
+  /* ── Icon treatments ───────────────────────────────────────── */
+  /* Section heading icon pill */
+  .section-hd h2 i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(79,70,229,0.1));
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 7px;
+    color: var(--accent);
+    vertical-align: middle;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+  .section-hd h2 i svg { width: 14px; height: 14px; }
+  /* Notification bell button */
+  .notif-btn {
+    background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(79,70,229,0.05));
+  }
+  .notif-btn svg { width: 16px; height: 16px; stroke-width: 2; }
+  /* Drawer header icon */
+  .drawer-header h3 i {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(79,70,229,0.1));
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 6px; color: var(--accent);
+    vertical-align: middle; margin-right: 0.4rem;
+  }
+  .drawer-header h3 i svg { width: 12px; height: 12px; }
+
+  /* ── Layout ───────────────────────────────────────── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 2rem 4rem; position: relative; z-index: 1; }
+
+  /* ── Profile header ───────────────────────────────── */
+  .profile-header {
+    display: flex; align-items: center; gap: 2rem;
+    padding: 3rem 0 2.5rem;
+    flex-wrap: wrap;
+  }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 0 28px rgba(124,58,237,0.4);
+  }
+  .profile-info { flex: 1; min-width: 200px; }
+  .profile-name { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+  .profile-meta { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 0.5rem; }
+  .meta-pill {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 20px;
+    border: 1px solid var(--border); color: var(--muted);
+    background: var(--surface);
+    font-family: 'Space Mono', monospace; letter-spacing: 0.04em;
+  }
+  .meta-pill.rank { border-color: rgba(245,158,11,0.4); color: var(--gold); background: rgba(245,158,11,0.07); }
+  .meta-pill.cat  { border-color: rgba(124,58,237,0.35); color: var(--accent); background: var(--accent-glow); }
+
+  /* ── Stats grid ───────────────────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 3rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    padding: 1.6rem 1.75rem;
+    transition: background 0.2s;
+  }
+  .stat-card:hover { background: var(--surface2); }
+  .stat-label {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); margin-bottom: 0.55rem;
+  }
+  .stat-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.9rem; font-weight: 700;
+    color: var(--accent); line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+  .stat-val.gold { color: var(--gold); }
+  .stat-val.info { color: var(--info); }
+  .stat-val.success { color: var(--success); }
+  .stat-sub { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── Section heading ──────────────────────────────── */
+  .section-hd {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .section-hd h2 { font-size: 1rem; font-weight: 700; }
+  .section-hd::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Growth chart ─────────────────────────────────── */
+  .chart-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+  }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+  .chart-title { font-size: 0.95rem; font-weight: 700; }
+  .chart-sub  { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+  #memberChart { max-height: 280px; }
+  .chart-empty { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.9rem; }
+  .chart-empty span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+
+  /* ── Ledger table ─────────────────────────────────── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  th {
+    text-align: left; padding: 0.75rem 1.1rem;
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  td { padding: 0.9rem 1.1rem; border-bottom: 1px solid rgba(30,30,54,0.6); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(124,58,237,0.04); }
+  .badge {
+    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 5px;
+    font-size: 0.72rem; font-weight: 500; font-family: 'Space Mono', monospace;
+    background: var(--accent-glow); color: var(--accent);
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+
+  /* Loading / empty states */
+  .loading-state { padding: 3.5rem; text-align: center; color: var(--muted); }
+  .loading-state .spinner {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state { padding: 3.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+  .empty-state span { font-size: 2rem; display: block; margin-bottom: 0.75rem; }
+
+  /* ── Mobile nav ───────────────────────────────────────────────── */
+  .hamburger {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .mobile-menu {
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.25rem 1rem;
+    backdrop-filter: blur(14px);
+    position: sticky;
+    top: 60px;
+    z-index: 99;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a, .mobile-menu button {
+    display: block; width: 100%;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  @media (max-width: 640px) {
+    nav { padding: 0.85rem 1.1rem; }
+    .page { padding: 0 0.9rem 3rem; }
+    .profile-header { padding: 1.75rem 0 1.25rem; gap: 1rem; }
+    .stat-val { font-size: 1.4rem; }
+    th, td { padding: 0.6rem 0.7rem; font-size: 0.8rem; }
+    /* Hide desktop nav items on mobile */
+    .nav-right .nav-user,
+    .nav-right .btn-ghost,
+    .nav-right #home-link,
+    .nav-right #signout-btn,
+    .nav-right .theme-toggle {
+      display: none !important;
     }
-    @keyframes shimmer { to { background-position: -200% 0; } }
-  </style>
+    .hamburger { display: block; }
+  }
+
+  /* ── Notification bell ────────────────────────────────── */
+  .notif-btn {
+    position: relative; background: transparent;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.45rem 0.65rem; cursor: pointer; font-size: 1.1rem;
+    color: var(--muted); transition: border-color 0.2s, color 0.2s;
+  }
+  .notif-btn:hover { border-color: var(--accent); color: var(--text); }
+  .notif-badge {
+    position: absolute; top: -6px; right: -6px;
+    background: var(--error); color: #fff; border-radius: 50%;
+    font-size: 0.62rem; font-weight: 700;
+    min-width: 17px; height: 17px; display: none;
+    align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+  }
+  .notif-badge.show { display: flex; }
+
+  /* ── Notification drawer ──────────────────────────────── */
+  .notif-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 200; display: none; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .notif-overlay.open { display: block; opacity: 1; }
+  .notif-drawer {
+    position: fixed; top: 0; right: -380px; width: 360px; max-width: 96vw;
+    height: 100vh; background: var(--surface); border-left: 1px solid var(--border);
+    z-index: 201; display: flex; flex-direction: column;
+    transition: right 0.28s cubic-bezier(.4,0,.2,1);
+    box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+  }
+  .notif-drawer.open { right: 0; }
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-header h3 { font-size: 0.95rem; font-weight: 700; }
+  .drawer-actions { display: flex; gap: 0.5rem; }
+  .drawer-close, .mark-all-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--muted); font-family: inherit; font-size: 0.75rem;
+    padding: 0.3rem 0.65rem; cursor: pointer; transition: all 0.2s;
+  }
+  .drawer-close:hover { border-color: var(--error); color: var(--error); }
+  .mark-all-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .notif-list { flex: 1; overflow-y: auto; padding: 0.75rem; }
+  .notif-item {
+    padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 0.5rem;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .notif-item:hover { border-color: var(--accent); }
+  .notif-item.unread { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.06); }
+  .notif-kind {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); margin-bottom: 0.3rem;
+  }
+  .notif-kind.units_awarded  { color: var(--success); }
+  .notif-kind.chat_invite    { color: var(--accent); }
+  .notif-kind.ledger_deleted { color: var(--error); }
+  .notif-kind.task_reviewed  { color: #38bdf8; }
+  .notif-kind.task_rejected  { color: var(--error); }
+  .notif-title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .notif-body  { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+  .notif-time  { font-size: 0.68rem; color: var(--muted); margin-top: 0.4rem; }
+  .notif-empty { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
+
+
+</style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="brand">
-      <div class="logo">AX</div>
-      <div>
-        <h1>AXXSPACE</h1>
-        <small>Phantom Unit Compensation System</small>
-      </div>
-    </div>
-    <div class="nav-links">
-      <a href="/">Dashboard</a>
-      <a href="/member" class="active">My Progress</a>
-      <button class="btn-logout" id="nav-logout-btn" onclick="doLogout()">Sign Out</button>
-    </div>
-  </nav>
+<div class="bg-logo-watermark"></div>
+<div class="bg-grid"></div>
 
-  <div class="container" id="main-content">
-    <!-- Loading state -->
-    <div id="loading-state">
-      <div class="skeleton" style="height:110px; border-radius:16px; margin-bottom:1.5rem;"></div>
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem;">
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:100px; border-radius:14px;"></div>
-      </div>
-    </div>
+<nav>
+  <div class="logo">AXXSPACE</div>
+  <div class="nav-right">
+    <button class="notif-btn" id="notif-bell" onclick="openDrawer()" title="Notifications">
+      🔔<span class="notif-badge" id="notif-badge">0</span>
+    </button>
+    <a href="/chat" class="btn-ghost" style="display:inline-flex;align-items:center;gap:0.4rem">💬 Chat</a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <span id="theme-icon">🌙</span>
+    </button>
+    <span class="nav-user" id="nav-name">Loading…</span>
+    <a href="/home" class="btn-ghost" id="home-link">← Home</a>
+    <button class="btn-ghost" onclick="logout()" id="signout-btn">Sign out</button>
+    <button class="hamburger" onclick="toggleMobileMenu()" title="Menu">☰</button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/home">← Home</a>
+  <a href="/chat">💬 Chat</a>
+  <button onclick="toggleTheme()">🌙 Toggle Theme</button>
+  <button onclick="logout()">Sign out</button>
+</div>
 
-    <!-- Content (hidden until loaded) -->
-    <div id="member-content" style="display:none;">
-      <!-- Welcome banner -->
-      <div class="welcome-banner">
-        <div class="welcome-left">
-          <h2 id="welcome-name">Loading…</h2>
-          <p id="welcome-email"></p>
-        </div>
-        <div class="member-badges">
-          <span class="badge cat"  id="badge-category">—</span>
-          <span class="badge rank" id="badge-rank">—</span>
-          <span class="badge units" id="badge-units">—</span>
-        </div>
-      </div>
+<div class="page">
 
-      <!-- Stat cards -->
-      <div class="member-stat-grid">
-        <div class="member-stat">
-          <div class="ms-label">Total Units Held</div>
-          <div class="ms-value green" id="stat-units">—</div>
-          <div class="ms-sub">Contribution Units</div>
-        </div>
-        <div class="member-stat">
-          <div class="ms-label">Reference Value</div>
-          <div class="ms-value indigo" id="stat-value">—</div>
-          <div class="ms-sub">EUR equivalent</div>
-        </div>
-        <div class="member-stat">
-          <div class="ms-label">Awards Received</div>
-          <div class="ms-value" id="stat-awards">—</div>
-          <div class="ms-sub">Total ledger entries</div>
-        </div>
-        <div class="member-stat">
-          <div class="ms-label">Leaderboard Rank</div>
-          <div class="ms-value amber" id="stat-rank">—</div>
-          <div class="ms-sub">Among all contributors</div>
-        </div>
-      </div>
-
-      <!-- Growth chart -->
-      <div class="card" style="margin-bottom:1.5rem;">
-        <div class="row-between">
-          <div>
-            <h3>My Unit Growth Over Time</h3>
-            <p class="muted">Cumulative Contribution Units you have earned.</p>
-          </div>
-        </div>
-        <canvas id="memberGrowthChart" height="110"></canvas>
-      </div>
-
-      <!-- Personal ledger -->
-      <div class="card">
-        <div class="row-between">
-          <div>
-            <h3>My Award Ledger</h3>
-            <p class="muted">Every unit award you have received, most recent first.</p>
-          </div>
-          <span class="pill" id="ledger-count">0 entries</span>
-        </div>
-        <div class="table-wrap" id="ledger-wrap">
-          <div class="empty-ledger" id="empty-ledger" style="display:none;">
-            <div class="icon">📭</div>
-            <p>No awards yet — your ledger is empty.</p>
-          </div>
-          <table id="ledger-table">
-            <thead>
-              <tr>
-                <th>Date</th><th>Task</th><th>Ref #</th>
-                <th>Units</th><th>Value (€)</th><th>Reviewer</th><th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody id="ledger-body"></tbody>
-          </table>
-        </div>
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="avatar" id="avatar-initial">?</div>
+    <div class="profile-info">
+      <div class="profile-name" id="profile-name">Loading…</div>
+      <div style="color:var(--muted);font-size:0.9rem;margin-top:0.2rem" id="profile-email">—</div>
+      <div class="profile-meta">
+        <span class="meta-pill cat" id="profile-cat">—</span>
+        <span class="meta-pill rank" id="profile-rank">—</span>
+        <span class="meta-pill" id="profile-joined">—</span>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="/static/js/auth.js"></script>
-  <script src="/static/js/member.js"></script>
+  <!-- Stats bar -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Units</div>
+      <div class="stat-val" id="stat-units">—</div>
+      <div class="stat-sub">Contribution units earned</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">EUR Value</div>
+      <div class="stat-val gold" id="stat-eur">—</div>
+      <div class="stat-sub">Reference monetary value</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Leaderboard Rank</div>
+      <div class="stat-val info" id="stat-rank">—</div>
+      <div class="stat-sub">Among all contributors</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Awards</div>
+      <div class="stat-val success" id="stat-awards">—</div>
+      <div class="stat-sub">Ledger entries recorded</div>
+    </div>
+  </div>
+
+  <!-- Growth chart -->
+  <section style="margin-bottom:3rem">
+    <div class="section-hd"><h2>📈 My Unit Growth</h2></div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Cumulative Units Over Time</div>
+          <div class="chart-sub">Your personal contribution trajectory</div>
+        </div>
+      </div>
+      <canvas id="memberChart"></canvas>
+      <div class="chart-empty" id="chart-empty" style="display:none">
+        <span>📊</span>No unit awards yet. Your chart will appear once the admin records your first award.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Submit Weekly Task ─────────────────────────────────────────── -->
+  <section style="margin-bottom:3rem" id="submit-task-section">
+    <div class="section-hd"><h2>📝 Submit Weekly Task</h2></div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;">
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">Task Title <span style="color:var(--error)">*</span></label>
+        <input id="sub-title" type="text" maxlength="300"
+          placeholder="e.g. Frontend redesign of the dashboard"
+          oninput="checkSubmitReady()"
+          style="width:100%;padding:0.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.2s;" />
+      </div>
+
+      <div style="margin-bottom:1.5rem">
+        <label style="display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">Task Description <span style="color:var(--error)">*</span></label>
+        <textarea id="sub-desc" rows="4" maxlength="3000"
+          placeholder="Describe what you did, what was achieved, and any relevant details…"
+          oninput="checkSubmitReady()"
+          style="width:100%;padding:0.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;outline:none;resize:vertical;min-height:100px;transition:border-color 0.2s;"></textarea>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <button id="submit-task-btn" onclick="submitTask()" disabled
+          style="padding:0.75rem 2rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;opacity:0.45;transition:opacity 0.2s,transform 0.15s;">
+          ✉️ Submit Task
+        </button>
+        <span id="sub-msg" style="font-size:0.82rem;display:none"></span>
+      </div>
+    </div>
+
+    <!-- My Submissions history -->
+    <div style="margin-top:2rem">
+      <div style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;font-weight:600">My Submissions</div>
+      <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:var(--surface)" id="my-subs-wrap">
+        <div class="loading-state" id="subs-loading">
+          <div class="spinner"></div>Loading submissions…
+        </div>
+        <table id="subs-table" style="display:none;min-width:600px">
+          <thead><tr>
+            <th>Submitted</th>
+            <th>Task Title</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Rating</th>
+            <th>Units</th>
+            <th>Feedback</th>
+          </tr></thead>
+          <tbody id="subs-body"></tbody>
+        </table>
+        <div class="empty-state" id="subs-empty" style="display:none">
+          <span>📋</span>No submissions yet. Use the form above to log your first completed task.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ledger history -->
+  <section>
+    <div class="section-hd"><h2>📋 Ledger History</h2></div>
+    <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:var(--surface)">
+      <div class="loading-state" id="ledger-loading">
+        <div class="spinner"></div>
+        Loading your ledger…
+      </div>
+      <table id="ledger-table" style="display:none;min-width:520px">
+        <thead><tr>
+          <th>Date</th>
+          <th>Task Description</th>
+          <th>Reference</th>
+          <th>Units</th>
+          <th>EUR Value</th>
+          <th>Reviewer</th>
+        </tr></thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+      <div class="empty-state" id="ledger-empty" style="display:none">
+        <span>📭</span>No ledger entries yet. Units appear here once the admin records your first award.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ── Token keys (must match login.html) ─────────────────────────────
+const TOKEN_KEY = 'axxspace_member_token';
+const NAME_KEY  = 'axxspace_member_name';
+const ID_KEY    = 'axxspace_member_id';
+
+const token = localStorage.getItem(TOKEN_KEY);
+if (!token) window.location.href = '/login';
+
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(NAME_KEY);
+  localStorage.removeItem(ID_KEY);
+  window.location.href = '/login';
+}
+
+// ── Chart instance ─────────────────────────────────────────────────
+let chartInstance = null;
+
+function buildChart(points) {
+  const canvas  = document.getElementById('memberChart');
+  const emptyEl = document.getElementById('chart-empty');
+
+  if (!points || points.length === 0) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  canvas.style.display = '';
+  emptyEl.style.display = 'none';
+
+  const labels = points.map(p => p.date);
+  const values = points.map(p => p.cumulative_units);
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Cumulative Units',
+        data: values,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.10)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#7c3aed',
+        pointRadius: 4,
+        pointHoverRadius: 8,
+        fill: true,
+        tension: 0.4,
+      }],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          borderColor: '#2e2e4e',
+          borderWidth: 1,
+          titleColor: '#eaeaf5',
+          bodyColor: '#9090b0',
+          padding: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toFixed(2)} units`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#6b6b90', font: { size: 11, family: 'Space Grotesk' } },
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#6b6b90',
+            font: { size: 11 },
+            callback: v => v.toFixed(1),
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+        },
+      },
+    },
+  });
+}
+
+// ── Load member profile ────────────────────────────────────────────
+async function load() {
+  try {
+    const res = await fetch('/api/members/me', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+
+    if (res.status === 401) { logout(); return; }
+    if (!res.ok) throw new Error('Failed to load profile');
+
+    const d = await res.json();
+
+    // Nav
+    document.getElementById('nav-name').textContent = d.name;
+
+    // Avatar initial
+    document.getElementById('avatar-initial').textContent = d.name.charAt(0).toUpperCase();
+
+    // Profile header
+    document.getElementById('profile-name').textContent  = d.name;
+    document.getElementById('profile-email').textContent = d.email || '—';
+    document.getElementById('profile-cat').textContent   = d.category;
+    document.getElementById('profile-rank').textContent  = `Rank #${d.rank}`;
+
+    const joined = new Date(d.created_at);
+    document.getElementById('profile-joined').textContent = `Joined ${joined.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}`;
+
+    // Stats
+    document.getElementById('stat-units').textContent  = d.total_units.toFixed(2);
+    document.getElementById('stat-eur').textContent    = '€' + d.total_value_eur.toFixed(2);
+    document.getElementById('stat-rank').textContent   = '#' + d.rank;
+    document.getElementById('stat-awards').textContent = d.ledger.length;
+
+    // Chart
+    buildChart(d.growth_points);
+
+    // Ledger
+    document.getElementById('ledger-loading').style.display = 'none';
+
+    if (d.ledger.length === 0) {
+      document.getElementById('ledger-empty').style.display = 'block';
+    } else {
+      document.getElementById('ledger-table').style.display = 'table';
+      document.getElementById('ledger-body').innerHTML = d.ledger.map(e => `
+        <tr>
+          <td style="color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace;font-size:0.8rem">
+            ${new Date(e.date_awarded).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </td>
+          <td style="max-width:280px">${e.task_description}</td>
+          <td>${e.task_reference ? `<span class="badge">${e.task_reference}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+          <td style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">${e.units_awarded.toFixed(2)}</td>
+          <td style="font-family:'Space Mono',monospace;color:var(--gold)">€${e.value_eur.toFixed(2)}</td>
+          <td style="color:var(--muted)">${e.approving_reviewer}</td>
+        </tr>`).join('');
+    }
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('ledger-loading').innerHTML = '<div style="color:var(--error)">Failed to load your profile. Please try refreshing.</div>';
+  }
+}
+
+load();
+
+// ── Task Submission ────────────────────────────────────────────────────────
+
+function checkSubmitReady() {
+  const title = document.getElementById('sub-title').value.trim();
+  const desc  = document.getElementById('sub-desc').value.trim();
+  const btn   = document.getElementById('submit-task-btn');
+  const ready = title.length > 0 && desc.length > 0;
+  btn.disabled = !ready;
+  btn.style.opacity = ready ? '1' : '0.45';
+  btn.style.cursor  = ready ? 'pointer' : 'not-allowed';
+}
+
+function _showSubMsg(text, isError) {
+  const el = document.getElementById('sub-msg');
+  el.textContent = text;
+  el.style.display = 'inline';
+  el.style.color = isError ? 'var(--error)' : 'var(--success)';
+  if (!isError) setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+async function submitTask() {
+  const title = document.getElementById('sub-title').value.trim();
+  const desc  = document.getElementById('sub-desc').value.trim();
+  if (!title || !desc) return;
+
+  const btn = document.getElementById('submit-task-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Submitting…';
+
+  try {
+    const res = await fetch('/api/members/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ task_title: title, task_description: desc }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Submission failed.');
+    }
+    document.getElementById('sub-title').value = '';
+    document.getElementById('sub-desc').value  = '';
+    checkSubmitReady();
+    _showSubMsg('✅ Task submitted! Admin will review and award units.', false);
+    loadSubmissions();
+  } catch (e) {
+    _showSubMsg('❌ ' + e.message, true);
+    btn.disabled = false;
+  }
+  btn.textContent = '✉️ Submit Task';
+}
+
+async function loadSubmissions() {
+  document.getElementById('subs-loading').style.display = 'block';
+  document.getElementById('subs-table').style.display   = 'none';
+  document.getElementById('subs-empty').style.display   = 'none';
+  try {
+    const res = await fetch('/api/members/submissions', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!res.ok) throw new Error();
+    const subs = await res.json();
+    document.getElementById('subs-loading').style.display = 'none';
+    if (subs.length === 0) {
+      document.getElementById('subs-empty').style.display = 'block';
+    } else {
+      document.getElementById('subs-table').style.display = 'table';
+      document.getElementById('subs-body').innerHTML = subs.map(s => {
+        const isAwarded  = s.status === 'awarded';
+        const isRejected = s.status === 'rejected';
+
+        // Status pill
+        let statusHtml;
+        if (isAwarded) {
+          statusHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.3);">✅ Awarded</span>`;
+        } else if (isRejected) {
+          statusHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(239,68,68,0.12);color:var(--error);border:1px solid rgba(239,68,68,0.3);">❌ Rejected</span>`;
+        } else {
+          statusHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:rgba(245,158,11,0.12);color:var(--gold);border:1px solid rgba(245,158,11,0.3);">⏳ Pending</span>`;
+        }
+
+        // Rating pill
+        const RC = {
+          'Excellent':         { bg:'rgba(16,185,129,0.15)',  bd:'#10b981', cl:'#10b981', ic:'✨' },
+          'Well Done':         { bg:'rgba(99,102,241,0.15)', bd:'#6366f1', cl:'#a5b4fc', ic:'👏' },
+          'Good':              { bg:'rgba(14,165,233,0.15)', bd:'#0ea5e9', cl:'#38bdf8', ic:'⭐' },
+          'Needs Improvement': { bg:'rgba(245,158,11,0.15)', bd:'#f59e0b', cl:'#f59e0b', ic:'📈' },
+          'Poor':              { bg:'rgba(239,68,68,0.15)',  bd:'#ef4444', cl:'#ef4444', ic:'⚠️' },
+        };
+        let ratingHtml = `<span style="color:var(--muted)">—</span>`;
+        if (s.review_rating && RC[s.review_rating]) {
+          const r = RC[s.review_rating];
+          ratingHtml = `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:${r.bg};color:${r.cl};border:1px solid ${r.bd};">${r.ic} ${s.review_rating}</span>`;
+        }
+
+        // Units
+        const unitsHtml = s.units_awarded != null
+          ? `<span style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">${parseFloat(s.units_awarded).toFixed(2)}</span>`
+          : `<span style="color:var(--muted)">—</span>`;
+
+        // Feedback / rejection reason
+        let feedbackHtml = `<span style="color:var(--muted)">—</span>`;
+        if (isRejected && s.rejection_reason) {
+          feedbackHtml = `<span style="color:var(--error);font-size:0.8rem;line-height:1.4">${s.rejection_reason}</span>`;
+        }
+
+        return `<tr>
+          <td style="color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace;font-size:0.78rem">${new Date(s.submitted_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
+          <td style="font-weight:600;max-width:140px">${s.task_title}</td>
+          <td style="color:var(--muted);max-width:200px;font-size:0.83rem">${s.task_description}</td>
+          <td>${statusHtml}</td>
+          <td>${ratingHtml}</td>
+          <td>${unitsHtml}</td>
+          <td style="max-width:200px;font-size:0.82rem">${feedbackHtml}</td>
+        </tr>`;
+      }).join('');
+    }
+  } catch {
+    document.getElementById('subs-loading').innerHTML = '<div style="color:var(--error);padding:1.5rem">Failed to load submissions.</div>';
+  }
+}
+
+loadSubmissions();</script>
+
+<!-- Notification drawer overlay -->
+<div class="notif-overlay" id="notif-overlay" onclick="closeDrawer()"></div>
+<div class="notif-drawer" id="notif-drawer">
+  <div class="drawer-header">
+    <h3>🔔 Notifications</h3>
+    <div class="drawer-actions">
+      <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
+      <button class="drawer-close" onclick="closeDrawer()">✕ Close</button>
+    </div>
+  </div>
+  <div class="notif-list" id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
+</div>
+
+
+
+<script>
+// ── Notification JS (member) ─────────────────────────────────────────────
+const _tok = localStorage.getItem('axxspace_member_token');
+const _myId = parseInt(localStorage.getItem('axxspace_member_id') || '0');
+const _hdrs = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _tok };
+
+let _notifications = [];
+
+// ── Notification drawer ───────────────────────────────────────────────
+function openDrawer()  { document.getElementById('notif-overlay').classList.add('open'); document.getElementById('notif-drawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('notif-overlay').classList.remove('open'); document.getElementById('notif-drawer').classList.remove('open'); }
+
+function _updateBadge() {
+  const unread = _notifications.filter(n => !n.is_read).length;
+  const badge = document.getElementById('notif-badge');
+  badge.textContent = unread;
+  badge.classList.toggle('show', unread > 0);
+}
+
+function _renderNotifList() {
+  const list = document.getElementById('notif-list');
+  if (!_notifications.length) { list.innerHTML = '<div class="notif-empty">🔔 No notifications yet.</div>'; return; }
+  list.innerHTML = _notifications.map(n => `
+    <div class="notif-item ${n.is_read ? '' : 'unread'}" id="notif-${n.id}" onclick="_clickNotif(${n.id},${n.ref_id || 'null'},'${n.kind}')">
+      <div class="notif-kind ${n.kind}">${n.kind.replace(/_/g,' ')}</div>
+      <div class="notif-title">${n.title}</div>
+      <div class="notif-body">${n.body}</div>
+      <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+async function _loadNotifications() {
+  try {
+    const res = await fetch('/api/notifications', { headers: _hdrs });
+    if (!res.ok) return;
+    _notifications = await res.json();
+    _updateBadge();
+    _renderNotifList();
+  } catch {}
+}
+
+async function _clickNotif(id, refId, kind) {
+  // mark read
+  _notifications = _notifications.map(n => n.id === id ? {...n, is_read: true} : n);
+  _updateBadge();
+  _renderNotifList();
+  await fetch(`/api/notifications/${id}/read`, { method: 'POST', headers: _hdrs });
+  // if chat invite, navigate to the full chat page and open that room
+  if (kind === 'chat_invite' && refId) {
+    closeDrawer();
+    window.location.href = `/chat?room=${refId}`;
+  }
+}
+
+async function markAllRead() {
+  await fetch('/api/notifications/read-all', { method: 'POST', headers: _hdrs });
+  _notifications = _notifications.map(n => ({...n, is_read: true}));
+  _updateBadge();
+  _renderNotifList();
+}
+
+// ── SSE real-time stream (notifications only) ─────────────────────────────
+let _sseRetry = 1000;
+function _connectSSE() {
+  if (!_tok) return;
+  const es = new EventSource(`/api/events?token=${encodeURIComponent(_tok)}`);
+  es.addEventListener('notification', e => {
+    const n = JSON.parse(e.data);
+    if (!_notifications.find(x => x.id === n.id)) {
+      _notifications.unshift({ ...n, is_read: false });
+      _updateBadge();
+      _renderNotifList();
+    }
+    _sseRetry = 1000;
+  });
+  es.addEventListener('connected', () => { _sseRetry = 1000; });
+  es.onerror = () => {
+    es.close();
+    _sseRetry = Math.min(_sseRetry * 2, 30000);
+    setTimeout(_connectSSE, _sseRetry);
+  };
+}
+
+// Init
+_loadNotifications();
+_connectSSE();
+// Fallback poll every 30s if SSE is slow
+setInterval(_loadNotifications, 30000);
+
+// ── Theme toggle ─────────────────────────────────────────────────
+(function () {
+  const saved = localStorage.getItem('axxspace_theme');
+  if (saved === 'light') document.documentElement.classList.add('light');
+  _applyThemeIcon();
+})();
+function _applyThemeIcon() {
+  const isLight = document.documentElement.classList.contains('light');
+  const el = document.getElementById('theme-icon');
+  if (el) el.textContent = isLight ? '☀️' : '🌙';
+  const mobileBtn = document.querySelector('.mobile-menu button[onclick="toggleTheme()"]');
+  if (mobileBtn) mobileBtn.textContent = (isLight ? '🌙' : '☀️') + ' Toggle Theme';
+}
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('axxspace_theme', isLight ? 'light' : 'dark');
+  _applyThemeIcon();
+}
+function toggleMobileMenu() {
+  document.getElementById('mobile-menu').classList.toggle('open');
+}
+</script>
 </body>
 </html>

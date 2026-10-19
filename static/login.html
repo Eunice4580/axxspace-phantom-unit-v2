@@ -1,308 +1,402 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AXXSPACE — Member Login</title>
-  <meta name="description" content="Sign in or create your AXXSPACE member account to track your Contribution Unit progress." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  <style>
-    /* ── Auth page layout ─────────────────────────────────────────── */
-    .auth-root {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
-      background: radial-gradient(ellipse at 60% 20%, rgba(99,102,241,.18) 0%, transparent 60%),
-                  radial-gradient(ellipse at 10% 80%, rgba(16,185,129,.10) 0%, transparent 50%),
-                  var(--bg);
-    }
-    .auth-card {
-      width: 100%;
-      max-width: 440px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2.5rem 2.5rem 2rem;
-      box-shadow: 0 24px 64px rgba(0,0,0,.45);
-      animation: slideUp .4s ease;
-    }
-    @keyframes slideUp {
-      from { opacity:0; transform:translateY(24px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .auth-brand {
-      display: flex;
-      align-items: center;
-      gap: .9rem;
-      margin-bottom: 2rem;
-    }
-    .auth-brand .logo {
-      width: 44px; height: 44px;
-      background: var(--accent-gradient);
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 1rem; color: #fff;
-      flex-shrink: 0;
-    }
-    .auth-brand h1 { font-size: 1.1rem; font-weight: 700; margin:0; }
-    .auth-brand small { color: var(--muted); font-size: .75rem; display:block; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AXXSPACE — Sign In</title>
+<meta name="description" content="Sign in to your AXXSPACE contributor, investor or admin account." />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; max-width: 100%; }
+  :root {
+    --bg: #07070e;
+    --surface: #0f0f1a;
+    --surface2: #15152a;
+    --border: #1e1e36;
+    --accent: #7c3aed;
+    --accent2: #4f46e5;
+    --accent-glow: rgba(124,58,237,0.25);
+    --text: #eaeaf5;
+    --muted: #6b6b90;
+    --success: #10b981;
+    --error: #ef4444;
+    --investor: #0ea5e9;
+    --investor-glow: rgba(14,165,233,0.25);
+  }
 
-    /* Tabs */
-    .auth-tabs {
-      display: flex;
-      background: var(--bg);
-      border-radius: 10px;
-      padding: 4px;
-      margin-bottom: 1.8rem;
-      border: 1px solid var(--border);
-    }
-    .auth-tab {
-      flex: 1;
-      padding: .6rem;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-family: inherit;
-      font-size: .875rem;
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all .2s;
-    }
-    .auth-tab.active {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(99,102,241,.35);
-    }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Raleway', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+  }
 
-    /* Form panel */
-    .auth-panel { display: none; }
-    .auth-panel.active { display: block; animation: fadeIn .25s ease; }
-    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 750px;
+    height: 750px;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulse 6s ease-in-out infinite;
+    z-index: 0;
+  }
+  /* Ambient glow — bottom left */
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -20%; left: -10%;
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse, rgba(160,124,30,0.07) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+    50%       { opacity: 1;   transform: translateX(-50%) scale(1.08); }
+  }
 
-    .auth-title { font-size: 1.35rem; font-weight: 700; margin-bottom: .35rem; }
-    .auth-sub   { color: var(--muted); font-size: .875rem; margin-bottom: 1.5rem; }
+  /* Subtle dot-grid overlay */
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image: radial-gradient(rgba(124,58,237,0.11) 1px, transparent 1px);
+    background-size: 34px 34px;
+    pointer-events: none; z-index: 0;
+    mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 25%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 25%, transparent 100%);
+  }
 
-    .form-group { margin-bottom: 1.1rem; }
-    .form-group label {
-      display: block;
-      font-size: .8rem;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: .4rem;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: .9rem;
-      padding: .75rem 1rem;
-      transition: border-color .2s, box-shadow .2s;
-      box-sizing: border-box;
-    }
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99,102,241,.18);
-    }
-    .form-group select option { background: var(--surface); }
+  .wrap {
+    width: 100%;
+    max-width: 460px;
+    padding: 2.5rem 2rem;
+    position: relative;
+    z-index: 1;
+  }
 
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  @media (max-width: 480px) {
+    .wrap { padding: 2rem 1.25rem; }
+    h1 { font-size: 1.5rem; }
+  }
 
-    .btn-auth {
-      width: 100%;
-      padding: .85rem;
-      background: var(--accent-gradient);
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      font-family: inherit;
-      font-size: .95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity .2s, transform .15s;
-      margin-top: .5rem;
-    }
-    .btn-auth:hover  { opacity: .9; transform: translateY(-1px); }
-    .btn-auth:active { transform: translateY(0); }
-    .btn-auth:disabled { opacity: .5; cursor: not-allowed; }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+  }
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.24em;
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .logo-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .auth-error {
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.35);
-      border-radius: 8px;
-      color: #f87171;
-      font-size: .85rem;
-      padding: .65rem .9rem;
-      margin-bottom: 1rem;
-      display: none;
-    }
-    .auth-error.show { display: block; animation: fadeIn .2s ease; }
+  h1 { font-size: 1.85rem; font-weight: 700; font-family: 'Cinzel', serif; margin-bottom: 0.4rem; letter-spacing: 0.02em; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 2.5rem; line-height: 1.5; }
 
-    .auth-footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
-    .auth-footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
-  </style>
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    padding: 4px;
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 0.6rem 0.3rem;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 500;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    font-family: inherit;
+    border-radius: 7px;
+    transition: all 0.25s;
+  }
+  .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 12px var(--accent-glow); }
+  .tab.active.inv { background: var(--investor); box-shadow: 0 2px 12px var(--investor-glow); }
+
+  /* Form */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .form-group { margin-bottom: 1.2rem; }
+  label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.45rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  #panel-investor input:focus { border-color: var(--investor); box-shadow: 0 0 0 3px var(--investor-glow); }
+  input::placeholder { color: var(--muted); }
+
+  .btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 9px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.12s, box-shadow 0.2s;
+    margin-top: 0.5rem;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+  }
+  .btn:hover { opacity: 0.9; box-shadow: 0 6px 28px rgba(124,58,237,0.45); }
+  .btn:active { transform: scale(0.985); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn.inv-btn {
+    background: linear-gradient(135deg, var(--investor), #0284c7);
+    box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+  }
+  .btn.inv-btn:hover { box-shadow: 0 6px 28px rgba(14,165,233,0.45); }
+
+  .msg {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    display: none;
+    line-height: 1.5;
+  }
+  .msg.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: var(--error);   display: block; }
+  .msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--success); display: block; }
+
+  .note {
+    margin-top: 1.25rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .note.member-note   { background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.18); }
+  .note.investor-note { background: rgba(14,165,233,0.07);  border: 1px solid rgba(14,165,233,0.18); }
+
+  .investor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(14,165,233,0.12);
+    border: 1px solid rgba(14,165,233,0.3);
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--investor);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.25rem;
+    text-transform: uppercase;
+</style>
 </head>
 <body>
-  <div class="auth-root">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <div class="logo">AX</div>
-        <div>
-          <h1>AXXSPACE</h1>
-          <small>Phantom Unit Compensation System</small>
-        </div>
-      </div>
+<div class="bg-grid"></div>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo">AXXSPACE</div>
+    <div class="logo-dot"></div>
+  </div>
+  <h1>Welcome back</h1>
+  <p class="sub">Sign in to your contributor, investor, or admin account.</p>
 
-      <div class="auth-tabs" role="tablist">
-        <button class="auth-tab active" id="tab-login" role="tab" aria-selected="true" onclick="switchTab('login')">Sign In</button>
-        <button class="auth-tab"        id="tab-signup" role="tab" aria-selected="false" onclick="switchTab('signup')">Sign Up</button>
-      </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-member"   onclick="switchTab('member')">Member</button>
+    <button class="tab inv"    id="tab-investor" onclick="switchTab('investor')">Investor</button>
+    <button class="tab"        id="tab-admin"    onclick="switchTab('admin')">Admin</button>
+  </div>
 
-      <!-- LOGIN PANEL -->
-      <div class="auth-panel active" id="panel-login">
-        <p class="auth-title">Welcome back</p>
-        <p class="auth-sub">Sign in to view your contribution progress.</p>
-        <div class="auth-error" id="login-error"></div>
-        <form id="login-form" onsubmit="handleLogin(event)">
-          <div class="form-group">
-            <label for="login-email">Email address</label>
-            <input id="login-email" type="email" placeholder="you@example.com" required autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password" />
-          </div>
-          <button class="btn-auth" id="login-btn" type="submit">Sign In →</button>
-        </form>
-      </div>
-
-      <!-- SIGNUP PANEL -->
-      <div class="auth-panel" id="panel-signup">
-        <p class="auth-title">Create your account</p>
-        <p class="auth-sub">Join AXXSPACE to track your Contribution Units.</p>
-        <div class="auth-error" id="signup-error"></div>
-        <form id="signup-form" onsubmit="handleSignup(event)">
-          <div class="form-group">
-            <label for="signup-name">Full name</label>
-            <input id="signup-name" type="text" placeholder="Jane Doe" required autocomplete="name" />
-          </div>
-          <div class="form-group">
-            <label for="signup-email">Email address</label>
-            <input id="signup-email" type="email" placeholder="you@example.com" required autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="signup-category">Role / Category</label>
-            <select id="signup-category" required>
-              <option value="" disabled selected>Select your role…</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="signup-password">Password</label>
-              <input id="signup-password" type="password" placeholder="min 6 chars" required autocomplete="new-password" minlength="6" />
-            </div>
-            <div class="form-group">
-              <label for="signup-confirm">Confirm</label>
-              <input id="signup-confirm" type="password" placeholder="repeat" required autocomplete="new-password" minlength="6" />
-            </div>
-          </div>
-          <button class="btn-auth" id="signup-btn" type="submit">Create Account →</button>
-        </form>
-      </div>
-
-      <div class="auth-footer">
-        <a href="/">← Back to Dashboard</a>
-      </div>
+  <!-- Member Login -->
+  <div class="panel active" id="panel-member">
+    <div class="form-group">
+      <label for="m-email">Email</label>
+      <input type="email" id="m-email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label for="m-password">Password</label>
+      <input type="password" id="m-password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn" id="m-btn" onclick="memberLogin()">Sign in as Member</button>
+    <div class="msg" id="m-msg"></div>
+    <div class="note member-note">
+      Don't have an account? Contact your admin — accounts are created by the AXXSPACE team.
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="/static/js/auth.js"></script>
-  <script>
-    // Populate category dropdown from API
-    fetch('/api/config').then(r => r.json()).then(cfg => {
-      const sel = document.getElementById('signup-category');
-      cfg.categories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = opt.textContent = cat;
-        sel.appendChild(opt);
-      });
+  <!-- Investor Login -->
+  <div class="panel" id="panel-investor">
+    <div class="investor-badge">📈 Investor Portal</div>
+    <div class="form-group">
+      <label for="i-email">Investor Email</label>
+      <input type="email" id="i-email" placeholder="investor@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label for="i-password">Password</label>
+      <input type="password" id="i-password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn inv-btn" id="i-btn" onclick="investorLogin()">Access Investor Dashboard</button>
+    <div class="msg" id="i-msg"></div>
+    <div class="note investor-note">
+      Investor accounts are set up by AXXSPACE admin. Contact us if you need access.
+    </div>
+  </div>
+
+  <!-- Admin Login -->
+  <div class="panel" id="panel-admin">
+    <div class="form-group">
+      <label for="a-password">Admin Password</label>
+      <input type="password" id="a-password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn" id="a-btn" onclick="adminLogin()">Access Admin Panel</button>
+    <div class="msg" id="a-msg"></div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'axxspace_member_token';
+const NAME_KEY  = 'axxspace_member_name';
+const ID_KEY    = 'axxspace_member_id';
+const INV_TOKEN = 'axxspace_investor_token';
+const INV_NAME  = 'axxspace_investor_name';
+const INV_ID    = 'axxspace_investor_id';
+
+// Already logged in? Redirect
+if (localStorage.getItem(TOKEN_KEY)) window.location.href = '/home';
+if (localStorage.getItem(INV_TOKEN)) window.location.href = '/investor';
+if (localStorage.getItem('axxspace_admin_token')) window.location.href = '/admin';
+
+function switchTab(tab) {
+  ['member','investor','admin'].forEach(t => {
+    const tabEl = document.getElementById('tab-'+t);
+    const panEl = document.getElementById('panel-'+t);
+    const isActive = (t === tab);
+    tabEl.classList.toggle('active', isActive);
+    panEl.classList.toggle('active', isActive);
+  });
+}
+
+async function memberLogin() {
+  const email    = document.getElementById('m-email').value.trim();
+  const password = document.getElementById('m-password').value;
+  const msg      = document.getElementById('m-msg');
+  const btn      = document.getElementById('m-btn');
+  msg.className  = 'msg';
+
+  if (!email || !password) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res  = await fetch('/api/members/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }),
     });
+    const data = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(NAME_KEY,  data.name);
+    localStorage.setItem(ID_KEY,    String(data.contributor_id));
+    msg.className='msg success'; msg.textContent=`Welcome back, ${data.name}! Redirecting…`;
+    setTimeout(() => window.location.href = '/home', 800);
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
+  finally { btn.disabled=false; btn.textContent='Sign in as Member'; }
+}
 
-    function switchTab(tab) {
-      document.querySelectorAll('.auth-tab').forEach(t => {
-        t.classList.toggle('active', t.id === `tab-${tab}`);
-        t.setAttribute('aria-selected', t.id === `tab-${tab}`);
-      });
-      document.querySelectorAll('.auth-panel').forEach(p => {
-        p.classList.toggle('active', p.id === `panel-${tab}`);
-      });
-    }
+async function investorLogin() {
+  const email    = document.getElementById('i-email').value.trim();
+  const password = document.getElementById('i-password').value;
+  const msg      = document.getElementById('i-msg');
+  const btn      = document.getElementById('i-btn');
+  msg.className  = 'msg';
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      const btn = document.getElementById('login-btn');
-      const errEl = document.getElementById('login-error');
-      errEl.classList.remove('show');
-      btn.disabled = true;
-      btn.textContent = 'Signing in…';
-      try {
-        const data = await authLogin(
-          document.getElementById('login-email').value,
-          document.getElementById('login-password').value
-        );
-        showToast('Welcome back, ' + data.name + '!');
-        setTimeout(() => window.location.href = '/member', 800);
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btn.textContent = 'Sign In →';
-      }
-    }
+  if (!email || !password) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res  = await fetch('/api/investors/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
+    localStorage.setItem(INV_TOKEN, data.token);
+    localStorage.setItem(INV_NAME,  data.name);
+    localStorage.setItem(INV_ID,    String(data.investor_id));
+    msg.className='msg success'; msg.textContent=`Welcome, ${data.name}! Loading your portfolio…`;
+    setTimeout(() => window.location.href = '/investor', 800);
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
+  finally { btn.disabled=false; btn.textContent='Access Investor Dashboard'; }
+}
 
-    async function handleSignup(e) {
-      e.preventDefault();
-      const btn = document.getElementById('signup-btn');
-      const errEl = document.getElementById('signup-error');
-      errEl.classList.remove('show');
-      const pw  = document.getElementById('signup-password').value;
-      const cpw = document.getElementById('signup-confirm').value;
-      if (pw !== cpw) {
-        errEl.textContent = 'Passwords do not match.';
-        errEl.classList.add('show');
-        return;
-      }
-      btn.disabled = true;
-      btn.textContent = 'Creating account…';
-      try {
-        const data = await authRegister(
-          document.getElementById('signup-name').value,
-          document.getElementById('signup-email').value,
-          pw,
-          document.getElementById('signup-category').value
-        );
-        showToast('Account created! Welcome, ' + data.name + '!');
-        setTimeout(() => window.location.href = '/member', 800);
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btn.textContent = 'Create Account →';
-      }
-    }
-  </script>
+async function adminLogin() {
+  const password = document.getElementById('a-password').value;
+  const msg      = document.getElementById('a-msg');
+  const btn      = document.getElementById('a-btn');
+  msg.className  = 'msg';
+
+  if (!password) { msg.className='msg error'; msg.textContent='Enter the admin password.'; return; }
+  btn.disabled=true; btn.textContent='Verifying…';
+  try {
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Incorrect password.'; return; }
+    localStorage.setItem('axxspace_admin_token', data.token);
+    window.location.href = '/admin';
+  } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
+  finally { btn.disabled=false; btn.textContent='Access Admin Panel'; }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const active = document.querySelector('.panel.active').id;
+  if (active === 'panel-member')   memberLogin();
+  else if (active === 'panel-investor') investorLogin();
+  else adminLogin();
+});
+</script>
 </body>
 </html>

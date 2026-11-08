@@ -208,12 +208,12 @@
         </form>
     </div>
 
-    <!-- Accounts table -->
+    <!-- Member accounts table -->
     <div class="card">
       <div class="row-between">
         <div>
-          <h3>Accounts</h3>
-          <p class="muted">All contributor accounts and their current holdings.</p>
+          <h3>Member Accounts</h3>
+          <p class="muted">Member accounts and their current holdings.</p>
         </div>
         <div class="table-meta">
           <span id="last-refreshed"></span>
@@ -230,10 +230,34 @@
               <th>Email</th>
               <th>Units Held</th>
               <th>Value</th>
+              <th>Since</th>
               <th>Login</th>
             </tr>
           </thead>
           <tbody id="accounts-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Investor accounts table -->
+    <div class="card">
+      <h3>Investor Accounts</h3>
+      <p class="muted">Investor accounts provisioned by an admin. An investor may share an email with a member account.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Role</th>
+              <th>Email</th>
+              <th>Units Held</th>
+              <th>Value</th>
+              <th>Since</th>
+              <th>Login</th>
+            </tr>
+          </thead>
+          <tbody id="investors-body"></tbody>
         </table>
       </div>
     </div>

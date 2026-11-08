@@ -152,12 +152,25 @@ function renderContributorSelect(contributors) {
 }
 
 function renderAccounts(contributors) {
-  const body = document.getElementById("accounts-body");
-  if (!contributors.length) {
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">No accounts yet.</td></tr>`;
+  renderAccountTable(
+    "accounts-body",
+    contributors.filter((c) => c.role === "member"),
+    "No member accounts yet."
+  );
+  renderAccountTable(
+    "investors-body",
+    contributors.filter((c) => c.role === "investor"),
+    "No investor accounts yet."
+  );
+}
+
+function renderAccountTable(bodyId, accounts, emptyText) {
+  const body = document.getElementById(bodyId);
+  if (!accounts.length) {
+    body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px">${emptyText}</td></tr>`;
     return;
   }
-  body.innerHTML = contributors.map((c) => `
+  body.innerHTML = accounts.map((c) => `
     <tr>
       <td>${escapeHtml(c.name)}</td>
       <td><span class="pill">${escapeHtml(c.category)}</span></td>
@@ -165,6 +178,7 @@ function renderAccounts(contributors) {
       <td>${c.email ? escapeHtml(c.email) : "—"}</td>
       <td class="units">${fmtUnits(c.total_units)}</td>
       <td>${eur(c.total_value_eur)}</td>
+      <td>${fmtDate(c.created_at)}</td>
       <td>${c.email ? `<button type="button" class="btn btn-sm set-pw" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Set password</button>` : "—"}</td>
     </tr>`).join("");
 

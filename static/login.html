@@ -300,13 +300,9 @@
 const TOKEN_KEY = 'axxspace_member_token';
 const NAME_KEY  = 'axxspace_member_name';
 const ID_KEY    = 'axxspace_member_id';
-const INV_TOKEN = 'axxspace_investor_token';
-const INV_NAME  = 'axxspace_investor_name';
-const INV_ID    = 'axxspace_investor_id';
 
 // Already logged in? Redirect
 if (localStorage.getItem(TOKEN_KEY)) window.location.href = '/home';
-if (localStorage.getItem(INV_TOKEN)) window.location.href = '/investor';
 if (localStorage.getItem('axxspace_admin_token')) window.location.href = '/admin';
 
 function switchTab(tab) {
@@ -331,7 +327,7 @@ async function memberLogin() {
   try {
     const res  = await fetch('/api/members/login', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role: 'member' }),
     });
     const data = await res.json();
     if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
@@ -354,17 +350,17 @@ async function investorLogin() {
   if (!email || !password) { msg.className='msg error'; msg.textContent='Please fill in both fields.'; return; }
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
-    const res  = await fetch('/api/investors/login', {
+    const res  = await fetch('/api/members/login', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role: 'investor' }),
     });
     const data = await res.json();
     if (!res.ok) { msg.className='msg error'; msg.textContent=data.detail||'Login failed.'; return; }
-    localStorage.setItem(INV_TOKEN, data.token);
-    localStorage.setItem(INV_NAME,  data.name);
-    localStorage.setItem(INV_ID,    String(data.investor_id));
-    msg.className='msg success'; msg.textContent=`Welcome, ${data.name}! Loading your portfolio…`;
-    setTimeout(() => window.location.href = '/investor', 800);
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(NAME_KEY,  data.name);
+    localStorage.setItem(ID_KEY,    String(data.contributor_id));
+    msg.className='msg success'; msg.textContent=`Welcome, ${data.name}! Redirecting…`;
+    setTimeout(() => window.location.href = '/member', 800);
   } catch { msg.className='msg error'; msg.textContent='Connection error. Please try again.'; }
   finally { btn.disabled=false; btn.textContent='Access Investor Dashboard'; }
 }

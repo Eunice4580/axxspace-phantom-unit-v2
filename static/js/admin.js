@@ -154,7 +154,7 @@ function renderContributorSelect(contributors) {
 function renderAccounts(contributors) {
   const body = document.getElementById("accounts-body");
   if (!contributors.length) {
-    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">No accounts yet.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">No accounts yet.</td></tr>`;
     return;
   }
   body.innerHTML = contributors.map((c) => `
@@ -165,7 +165,31 @@ function renderAccounts(contributors) {
       <td>${c.email ? escapeHtml(c.email) : "—"}</td>
       <td class="units">${fmtUnits(c.total_units)}</td>
       <td>${eur(c.total_value_eur)}</td>
+      <td>${c.email ? `<button type="button" class="btn btn-sm set-pw" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Set password</button>` : "—"}</td>
     </tr>`).join("");
+
+  body.querySelectorAll(".set-pw").forEach((btn) =>
+    btn.addEventListener("click", () => setAccountPassword(btn.dataset.id, btn.dataset.name))
+  );
+}
+
+async function setAccountPassword(id, name) {
+  const password = window.prompt(`New login password for ${name} (min 6 characters):`);
+  if (password === null) return;
+  if (password.length < 6) {
+    toast("Password must be at least 6 characters.", false);
+    return;
+  }
+  try {
+    await api(`/api/contributors/${encodeURIComponent(id)}/password`, {
+      method: "PUT",
+      auth: true,
+      body: { password },
+    });
+    toast(`Password set for ${name}.`);
+  } catch (err) {
+    toast(err.message, false);
+  }
 }
 
 function renderRecent(entries) {
@@ -220,6 +244,7 @@ document.getElementById("member-form").addEventListener("submit", async (e) => {
         email: document.getElementById("m-email").value || null,
         category: document.getElementById("m-category").value,
         role: "member",
+        password: document.getElementById("m-password").value || null,
       },
     });
     e.target.reset();
@@ -241,6 +266,7 @@ document.getElementById("investor-form").addEventListener("submit", async (e) =>
         email: document.getElementById("i-email").value || null,
         category: document.getElementById("i-category").value,
         role: "investor",
+        password: document.getElementById("i-password").value || null,
       },
     });
     e.target.reset();

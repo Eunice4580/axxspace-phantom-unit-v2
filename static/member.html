@@ -461,6 +461,7 @@
       <div style="color:var(--muted);font-size:0.9rem;margin-top:0.2rem" id="profile-email">—</div>
       <div class="profile-meta">
         <span class="meta-pill cat" id="profile-cat">—</span>
+        <span class="meta-pill" id="profile-role">—</span>
         <span class="meta-pill rank" id="profile-rank">—</span>
         <span class="meta-pill" id="profile-joined">—</span>
       </div>
@@ -703,6 +704,7 @@ async function load() {
     document.getElementById('profile-name').textContent  = d.name;
     document.getElementById('profile-email').textContent = d.email || '—';
     document.getElementById('profile-cat').textContent   = d.category;
+    document.getElementById('profile-role').textContent  = d.role;
     document.getElementById('profile-rank').textContent  = `Rank #${d.rank}`;
 
     const joined = new Date(d.created_at);

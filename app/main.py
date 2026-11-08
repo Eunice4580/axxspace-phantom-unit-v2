@@ -100,6 +100,19 @@ def create_contributor(
     )
 
 
+@app.put("/api/contributors/{contributor_id}/password", status_code=status.HTTP_204_NO_CONTENT)
+def set_contributor_password(
+    contributor_id: int,
+    payload: schemas.ContributorPasswordUpdate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_admin),
+) -> None:
+    try:
+        crud.set_contributor_password(db, contributor_id, payload.password)
+    except crud.BusinessRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
 # --- Ledger ------------------------------------------------------------------
 @app.get("/api/ledger", response_model=list[schemas.LedgerEntryOut])
 def list_ledger(db: Session = Depends(get_db)) -> list[schemas.LedgerEntryOut]:
@@ -203,6 +216,11 @@ def login_page() -> FileResponse:
 @app.get("/member")
 def member_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "member.html")
+
+
+@app.get("/home")
+def home_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "home.html")
 
 
 # --- Task Submissions ---------------------------------------------------------

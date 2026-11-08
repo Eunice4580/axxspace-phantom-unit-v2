@@ -50,17 +50,21 @@ def remaining_units(db: Session) -> float:
 
 # --- Contributors ------------------------------------------------------------
 def create_contributor(db: Session, data: schemas.ContributorCreate) -> models.Contributor:
-    if data.email:
-        existing = get_contributor_by_email(db, data.email.strip(), data.role)
+    email = data.email.strip() if data.email else None
+    if data.password and email is None:
+        raise BusinessRuleError("An email is required to set a login password.")
+    if email:
+        existing = get_contributor_by_email(db, email, data.role)
         if existing is not None:
             raise BusinessRuleError(
                 f"A {data.role} account with that email already exists."
             )
     contributor = models.Contributor(
         name=data.name.strip(),
-        email=(data.email.strip() if data.email else None),
+        email=email,
         role=data.role,
         category=data.category.strip(),
+        password_hash=(hash_password(data.password) if data.password else None),
     )
     db.add(contributor)
     db.commit()
@@ -247,19 +251,18 @@ def get_contributor_by_email(db: Session, email: str, role: str) -> models.Contr
 
 
 def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.Contributor:
-    """Create a new contributor with a hashed password (self-registration).
+    """Create a member account via public self-registration.
 
-    The lookup is scoped to *data.role* so the same email can independently
-    register as a 'member' and as an 'investor' — they become two separate
-    contributor records, each with its own password and unit balance.
+    This path is always scoped to role='member'. Investor accounts can only be
+    provisioned by an admin through ``create_contributor``.
     """
-    existing = get_contributor_by_email(db, data.email, data.role)
+    role = "member"
+    email = data.email.strip()
+    existing = get_contributor_by_email(db, email, role)
     if existing is not None:
         if existing.password_hash is not None:
-            raise BusinessRuleError(
-                f"A {data.role} account with that email already exists."
-            )
-        # Admin-created contributor (no password yet) claims their account.
+            raise BusinessRuleError("A member account with that email already exists.")
+        # Admin-created member (no password yet) claims their account.
         existing.name = data.name.strip()
         existing.category = data.category.strip()
         existing.password_hash = hash_password(data.password)
@@ -269,12 +272,26 @@ def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.
 
     contributor = models.Contributor(
         name=data.name.strip(),
-        email=data.email.strip(),
-        role=data.role,
+        email=email,
+        role=role,
         category=data.category.strip(),
         password_hash=hash_password(data.password),
     )
     db.add(contributor)
+    db.commit()
+    db.refresh(contributor)
+    return contributor
+
+
+def set_contributor_password(
+    db: Session, contributor_id: int, password: str
+) -> models.Contributor:
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        raise BusinessRuleError("Contributor not found.")
+    if not contributor.email:
+        raise BusinessRuleError("This account has no email, so it cannot log in.")
+    contributor.password_hash = hash_password(password)
     db.commit()
     db.refresh(contributor)
     return contributor

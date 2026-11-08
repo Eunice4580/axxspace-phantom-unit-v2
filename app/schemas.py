@@ -23,6 +23,11 @@ class ContributorCreate(BaseModel):
     email: str | None = Field(default=None, max_length=200)
     category: str = Field(..., min_length=1, max_length=100)
     role: str = Field(default="member", pattern="^(member|investor)$")
+    password: str | None = Field(default=None, min_length=6)
+
+
+class ContributorPasswordUpdate(BaseModel):
+    password: str = Field(..., min_length=6)
 
 
 class ContributorOut(BaseModel):
@@ -98,7 +103,8 @@ class MemberRegisterRequest(BaseModel):
     email: str = Field(..., min_length=5, max_length=200)
     password: str = Field(..., min_length=6)
     category: str = Field(..., min_length=1, max_length=100)
-    role: str = Field(default="member", pattern="^(member|investor)$")
+    # Investor accounts are admin-provisioned only; self-registration is member-only.
+    role: str = Field(default="member", pattern="^member$")
 
 
 class MemberLoginRequest(BaseModel):

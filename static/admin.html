@@ -133,6 +133,10 @@
               <label for="m-category">Eligibility category</label>
               <select id="m-category" required></select>
             </div>
+            <div class="full">
+              <label for="m-password">Login password (optional, min 6 characters)</label>
+              <input id="m-password" type="password" minlength="6" autocomplete="new-password" />
+            </div>
           </div>
           <div style="height:14px"></div>
           <button class="btn btn-primary btn-block" type="submit">Create member account</button>
@@ -156,6 +160,10 @@
             <div>
               <label for="i-category">Eligibility category</label>
               <select id="i-category" required></select>
+            </div>
+            <div class="full">
+              <label for="i-password">Login password (optional, min 6 characters)</label>
+              <input id="i-password" type="password" minlength="6" autocomplete="new-password" />
             </div>
           </div>
           <div style="height:14px"></div>
@@ -222,6 +230,7 @@
               <th>Email</th>
               <th>Units Held</th>
               <th>Value</th>
+              <th>Login</th>
             </tr>
           </thead>
           <tbody id="accounts-body"></tbody>

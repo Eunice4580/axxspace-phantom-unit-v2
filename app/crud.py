@@ -1,41 +1,25 @@
 """Business logic: contributor management, unit awards and dashboard aggregation."""
-
 from __future__ import annotations
-
 from collections import defaultdict
-from datetime import datetime, timezone
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-
 from app import models, schemas
 from app.config import EUR_PER_UNIT, TOTAL_POOL_UNITS, UNIT_INCREMENT
 from app.auth import hash_password, verify_member_password
 
-
 class BusinessRuleError(ValueError):
     """Raised when an operation would violate a compensation-plan rule."""
 
-
 def _round_units(value: float) -> float:
-    """Round to one decimal place to avoid binary float drift on 0.1 multiples."""
     return round(value, 1)
 
-
 def validate_units(units: float) -> float:
-    """Ensure an award is positive and a clean multiple of 0.1 (spec section 2.2).
-
-    The increment is checked on the *raw* value (before any rounding) so that values like
-    0.15 are rejected rather than silently snapped to 0.1/0.2.
-    """
     if units <= 0:
         raise BusinessRuleError("Units awarded must be greater than zero.")
-    # A valid value is a whole number of tenths, e.g. 0.1 -> 1, 1.5 -> 15.
     tenths = units / UNIT_INCREMENT
     if abs(tenths - round(tenths)) > 1e-6:
         raise BusinessRuleError("Units must be in increments of 0.1 (e.g. 0.1, 0.5, 1.0).")
     return _round_units(units)
-
 
 def total_allocated_units(db: Session) -> float:
     total = db.execute(
@@ -43,38 +27,25 @@ def total_allocated_units(db: Session) -> float:
     ).scalar_one()
     return _round_units(float(total))
 
-
 def remaining_units(db: Session) -> float:
     return _round_units(TOTAL_POOL_UNITS - total_allocated_units(db))
 
-
 # --- Contributors ------------------------------------------------------------
 def create_contributor(db: Session, data: schemas.ContributorCreate) -> models.Contributor:
-    email = data.email.strip() if data.email else None
-    if data.password and email is None:
-        raise BusinessRuleError("An email is required to set a login password.")
-    if email:
-        existing = get_contributor_by_email(db, email, data.role)
-        if existing is not None:
-            raise BusinessRuleError(
-                f"A {data.role} account with that email already exists."
-            )
     contributor = models.Contributor(
         name=data.name.strip(),
-        email=email,
-        role=data.role,
+        email=(data.email.strip() if data.email else None),
         category=data.category.strip(),
         password_hash=(hash_password(data.password) if data.password else None),
+        is_approved=True,  # Admin-created contributors are always auto-approved
     )
     db.add(contributor)
     db.commit()
     db.refresh(contributor)
     return contributor
 
-
 def get_contributor(db: Session, contributor_id: int) -> models.Contributor | None:
     return db.get(models.Contributor, contributor_id)
-
 
 def contributor_total_units(db: Session, contributor_id: int) -> float:
     total = db.execute(
@@ -83,7 +54,6 @@ def contributor_total_units(db: Session, contributor_id: int) -> float:
         )
     ).scalar_one()
     return _round_units(float(total))
-
 
 def list_contributors(db: Session) -> list[schemas.ContributorOut]:
     contributors = (
@@ -97,30 +67,88 @@ def list_contributors(db: Session) -> list[schemas.ContributorOut]:
                 id=c.id,
                 name=c.name,
                 email=c.email,
-                role=c.role,
                 category=c.category,
                 created_at=c.created_at,
+                is_approved=c.is_approved,
                 total_units=total,
                 total_value_eur=_round_units(total) * EUR_PER_UNIT,
             )
         )
     return out
 
+def list_pending_contributors(db: Session) -> list[schemas.ContributorOut]:
+    """Return contributors who have registered but not yet been approved."""
+    contributors = (
+        db.execute(
+            select(models.Contributor)
+            .where(models.Contributor.is_approved == False)
+            .where(models.Contributor.password_hash != None)
+            .order_by(models.Contributor.created_at.desc())
+        ).scalars().all()
+    )
+    out: list[schemas.ContributorOut] = []
+    for c in contributors:
+        out.append(
+            schemas.ContributorOut(
+                id=c.id,
+                name=c.name,
+                email=c.email,
+                category=c.category,
+                created_at=c.created_at,
+                is_approved=c.is_approved,
+                total_units=0.0,
+                total_value_eur=0.0,
+            )
+        )
+    return out
+
+def approve_contributor(db: Session, contributor_id: int) -> models.Contributor | None:
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return None
+    contributor.is_approved = True
+    db.commit()
+    db.refresh(contributor)
+    return contributor
+
+def delete_contributor(db: Session, contributor_id: int) -> bool:
+    """Delete a contributor and all their ledger entries."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return False
+    db.delete(contributor)
+    db.commit()
+    return True
+
+def update_contributor(
+    db: Session,
+    contributor_id: int,
+    name: str,
+    email: str,
+    category: str,
+) -> models.Contributor | None:
+    """Update a contributor's name, email and category."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return None
+    contributor.name = name.strip()
+    contributor.email = email.strip().lower()
+    contributor.category = category.strip()
+    db.commit()
+    db.refresh(contributor)
+    return contributor
 
 # --- Ledger / awards ---------------------------------------------------------
 def award_units(db: Session, data: schemas.LedgerEntryCreate) -> models.LedgerEntry:
     units = validate_units(data.units_awarded)
-
     contributor = get_contributor(db, data.contributor_id)
     if contributor is None:
         raise BusinessRuleError("Contributor not found.")
-
     available = remaining_units(db)
     if units > available + 1e-9:
         raise BusinessRuleError(
             f"Award of {units:g} units exceeds the remaining pool of {available:g} units."
         )
-
     entry = models.LedgerEntry(
         contributor_id=contributor.id,
         task_description=data.task_description.strip(),
@@ -130,26 +158,9 @@ def award_units(db: Session, data: schemas.LedgerEntryCreate) -> models.LedgerEn
         remarks=(data.remarks.strip() if data.remarks else None),
     )
     db.add(entry)
-    db.flush()  # get entry.id before committing
-
-    # Auto-resolve any pending submission from this contributor so it doesn't
-    # stay stuck in the queue after units are awarded via the direct form.
-    pending = db.execute(
-        select(models.TaskSubmission).where(
-            models.TaskSubmission.contributor_id == contributor.id,
-            models.TaskSubmission.status == "pending",
-        )
-    ).scalars().first()
-    if pending is not None:
-        pending.status = "awarded"
-        pending.admin_note = "Awarded via direct Award Units form."
-        pending.ledger_entry_id = entry.id
-        pending.resolved_at = _utcnow()
-
     db.commit()
     db.refresh(entry)
     return entry
-
 
 def _entry_to_out(entry: models.LedgerEntry) -> schemas.LedgerEntryOut:
     return schemas.LedgerEntryOut(
@@ -165,13 +176,20 @@ def _entry_to_out(entry: models.LedgerEntry) -> schemas.LedgerEntryOut:
         date_awarded=entry.date_awarded,
     )
 
+def delete_ledger_entry(db: Session, entry_id: int) -> bool:
+    """Delete a single ledger entry by ID."""
+    entry = db.get(models.LedgerEntry, entry_id)
+    if entry is None:
+        return False
+    db.delete(entry)
+    db.commit()
+    return True
 
 def list_ledger(db: Session) -> list[schemas.LedgerEntryOut]:
     entries = db.execute(
         select(models.LedgerEntry).order_by(models.LedgerEntry.date_awarded.desc())
     ).scalars().all()
     return [_entry_to_out(e) for e in entries]
-
 
 # --- Dashboard aggregation ---------------------------------------------------
 def pool_stats(db: Session) -> schemas.PoolStats:
@@ -190,37 +208,25 @@ def pool_stats(db: Session) -> schemas.PoolStats:
         award_count=int(award_count),
     )
 
-
 def growth(db: Session) -> schemas.GrowthResponse:
-    """Build cumulative-unit time series for the whole pool and per contributor.
-
-    Each award contributes a step on the day it was made; values accumulate over time so
-    the dashboard can plot the growth of all accounts.
-    """
     entries = db.execute(
         select(models.LedgerEntry).order_by(models.LedgerEntry.date_awarded)
     ).scalars().all()
-
-    # Overall cumulative series keyed by calendar day.
     by_day: dict[str, float] = defaultdict(float)
     for e in entries:
         day = e.date_awarded.date().isoformat()
         by_day[day] += e.units_awarded
-
     overall: list[schemas.GrowthPoint] = []
     running = 0.0
     for day in sorted(by_day):
         running += by_day[day]
         overall.append(schemas.GrowthPoint(date=day, cumulative_units=_round_units(running)))
-
-    # Per-contributor cumulative series.
     per_contrib_days: dict[int, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     names: dict[int, str] = {}
     for e in entries:
         names[e.contributor_id] = e.contributor.name
         day = e.date_awarded.date().isoformat()
         per_contrib_days[e.contributor_id][day] += e.units_awarded
-
     per_contributor: list[schemas.ContributorGrowth] = []
     for cid, days in per_contrib_days.items():
         pts: list[schemas.GrowthPoint] = []
@@ -231,79 +237,40 @@ def growth(db: Session) -> schemas.GrowthResponse:
         per_contributor.append(
             schemas.ContributorGrowth(contributor_id=cid, name=names[cid], points=pts)
         )
-
     return schemas.GrowthResponse(overall=overall, per_contributor=per_contributor)
 
-
 # --- Member self-service -----------------------------------------------------
-def get_contributor_by_email(db: Session, email: str, role: str) -> models.Contributor | None:
-    """Return the contributor matching *email* and *role*, or None.
-
-    Because the same email may exist under different roles (member / investor),
-    the lookup must always filter on both columns.
-    """
+def get_contributor_by_email(db: Session, email: str) -> models.Contributor | None:
     return db.execute(
-        select(models.Contributor).where(
-            models.Contributor.email == email,
-            models.Contributor.role == role,
-        )
+        select(models.Contributor).where(models.Contributor.email == email)
     ).scalar_one_or_none()
 
-
 def register_member(db: Session, data: schemas.MemberRegisterRequest) -> models.Contributor:
-    """Create a member account via public self-registration.
-
-    This path is always scoped to role='member'. Investor accounts can only be
-    provisioned by an admin through ``create_contributor``.
-    """
-    role = "member"
-    email = data.email.strip()
-    existing = get_contributor_by_email(db, email, role)
+    existing = get_contributor_by_email(db, data.email)
     if existing is not None:
         if existing.password_hash is not None:
-            raise BusinessRuleError("A member account with that email already exists.")
-        # Admin-created member (no password yet) claims their account.
+            raise BusinessRuleError("An account with that email already exists.")
         existing.name = data.name.strip()
         existing.category = data.category.strip()
         existing.password_hash = hash_password(data.password)
+        existing.is_approved = True  # Auto-approved on registration
         db.commit()
         db.refresh(existing)
         return existing
-
     contributor = models.Contributor(
         name=data.name.strip(),
-        email=email,
-        role=role,
+        email=data.email.strip(),
         category=data.category.strip(),
         password_hash=hash_password(data.password),
+        is_approved=True,  # Auto-approved on registration
     )
     db.add(contributor)
     db.commit()
     db.refresh(contributor)
     return contributor
 
-
-def set_contributor_password(
-    db: Session, contributor_id: int, password: str
-) -> models.Contributor:
-    contributor = get_contributor(db, contributor_id)
-    if contributor is None:
-        raise BusinessRuleError("Contributor not found.")
-    if not contributor.email:
-        raise BusinessRuleError("This account has no email, so it cannot log in.")
-    contributor.password_hash = hash_password(password)
-    db.commit()
-    db.refresh(contributor)
-    return contributor
-
-
-def authenticate_member(db: Session, email: str, password: str, role: str) -> models.Contributor | None:
-    """Return the contributor if email + password + role all match, else None.
-
-    A valid investor login will NOT match a member-only account and vice-versa,
-    even if the email and password are identical.
-    """
-    contributor = get_contributor_by_email(db, email, role)
+def authenticate_member(db: Session, email: str, password: str) -> models.Contributor | None:
+    contributor = get_contributor_by_email(db, email)
     if contributor is None or contributor.password_hash is None:
         return None
     if not verify_member_password(password, contributor.password_hash):
@@ -311,36 +278,47 @@ def authenticate_member(db: Session, email: str, password: str, role: str) -> mo
     return contributor
 
 
+def reset_contributor_password(db: Session, contributor_id: int, new_password: str) -> bool:
+    """Admin: forcibly set a new password for a contributor. Returns True on success."""
+    contributor = get_contributor(db, contributor_id)
+    if contributor is None:
+        return False
+    contributor.password_hash = hash_password(new_password)
+    db.commit()
+    return True
+
+
+def reset_investor_password(db: Session, investor_id: int, new_password: str) -> bool:
+    """Admin: forcibly set a new password for an investor. Returns True on success."""
+    investor = db.get(models.Investor, investor_id)
+    if investor is None:
+        return False
+    investor.password_hash = hash_password(new_password)
+    db.commit()
+    return True
+
+
 def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfileOut | None:
-    """Return a full personal dashboard profile for one contributor."""
     contributor = get_contributor(db, contributor_id)
     if contributor is None:
         return None
-
     total = contributor_total_units(db, contributor_id)
-
-    # Rank = position in descending units leaderboard (1 = most units)
     all_contributors = list_contributors(db)
     sorted_contributors = sorted(all_contributors, key=lambda c: c.total_units, reverse=True)
     rank = next(
         (i + 1 for i, c in enumerate(sorted_contributors) if c.id == contributor_id), 0
     )
-
-    # Personal ledger
     entries = db.execute(
         select(models.LedgerEntry)
         .where(models.LedgerEntry.contributor_id == contributor_id)
         .order_by(models.LedgerEntry.date_awarded.desc())
     ).scalars().all()
     ledger = [_entry_to_out(e) for e in entries]
-
-    # Personal growth time series (ascending order)
     entries_asc = list(reversed(entries))
     by_day: dict[str, float] = defaultdict(float)
     for e in entries_asc:
         day = e.date_awarded.date().isoformat()
         by_day[day] += e.units_awarded
-
     growth_points: list[schemas.GrowthPoint] = []
     running = 0.0
     for day in sorted(by_day):
@@ -348,12 +326,10 @@ def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfil
         growth_points.append(
             schemas.GrowthPoint(date=day, cumulative_units=_round_units(running))
         )
-
     return schemas.MemberProfileOut(
         id=contributor.id,
         name=contributor.name,
         email=contributor.email,
-        role=contributor.role,
         category=contributor.category,
         created_at=contributor.created_at,
         total_units=total,
@@ -364,109 +340,572 @@ def get_member_profile(db: Session, contributor_id: int) -> schemas.MemberProfil
     )
 
 
-# --- Task Submissions --------------------------------------------------------
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+# ─────────────────────────────────────────────────────────────────────────────
+# Notifications
+# ─────────────────────────────────────────────────────────────────────────────
+
+def create_notification(
+    db: Session,
+    *,
+    contributor_id: int | None,   # None → admin notification
+    kind: str,
+    title: str,
+    body: str,
+    ref_id: int | None = None,
+) -> models.Notification:
+    n = models.Notification(
+        contributor_id=contributor_id,
+        kind=kind,
+        title=title,
+        body=body,
+        ref_id=ref_id,
+    )
+    db.add(n)
+    db.commit()
+    db.refresh(n)
+    return n
 
 
-def _submission_to_out(s: models.TaskSubmission) -> schemas.TaskSubmissionOut:
-    return schemas.TaskSubmissionOut(
-        id=s.id,
-        contributor_id=s.contributor_id,
-        contributor_name=s.contributor.name,
-        task_description=s.task_description,
-        task_reference=s.task_reference,
-        remarks=s.remarks,
-        status=s.status,
-        admin_note=s.admin_note,
-        ledger_entry_id=s.ledger_entry_id,
-        submitted_at=s.submitted_at,
-        resolved_at=s.resolved_at,
+def list_notifications(
+    db: Session, contributor_id: int | None
+) -> list[models.Notification]:
+    """Return notifications for a member (or admin when contributor_id is None)."""
+    from sqlalchemy import select as _sel
+    if contributor_id is None:
+        stmt = (
+            _sel(models.Notification)
+            .where(models.Notification.contributor_id.is_(None))
+            .order_by(models.Notification.created_at.desc())
+            .limit(100)
+        )
+    else:
+        stmt = (
+            _sel(models.Notification)
+            .where(models.Notification.contributor_id == contributor_id)
+            .order_by(models.Notification.created_at.desc())
+            .limit(100)
+        )
+    return list(db.execute(stmt).scalars().all())
+
+
+def mark_notification_read(
+    db: Session, notification_id: int, contributor_id: int | None
+) -> bool:
+    n = db.get(models.Notification, notification_id)
+    if n is None or n.contributor_id != contributor_id:
+        return False
+    n.is_read = True
+    db.commit()
+    return True
+
+
+def mark_all_notifications_read(db: Session, contributor_id: int | None) -> None:
+    from sqlalchemy import update as _upd
+    if contributor_id is None:
+        stmt = (
+            _upd(models.Notification)
+            .where(models.Notification.contributor_id.is_(None))
+            .values(is_read=True)
+        )
+    else:
+        stmt = (
+            _upd(models.Notification)
+            .where(models.Notification.contributor_id == contributor_id)
+            .values(is_read=True)
+        )
+    db.execute(stmt)
+    db.commit()
+
+
+def unread_notification_count(db: Session, contributor_id: int | None) -> int:
+    from sqlalchemy import select as _sel
+    if contributor_id is None:
+        stmt = _sel(func.count(models.Notification.id)).where(
+            models.Notification.contributor_id.is_(None),
+            models.Notification.is_read == False,  # noqa: E712
+        )
+    else:
+        stmt = _sel(func.count(models.Notification.id)).where(
+            models.Notification.contributor_id == contributor_id,
+            models.Notification.is_read == False,  # noqa: E712
+        )
+    return int(db.execute(stmt).scalar_one())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Chat rooms & messages
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _room_to_out(room: models.ChatRoom) -> schemas.ChatRoomOut:
+    return schemas.ChatRoomOut(
+        id=room.id,
+        name=room.name,
+        created_by_id=room.created_by_id,
+        is_admin_room=room.is_admin_room,
+        created_at=room.created_at,
+        member_ids=[m.contributor_id for m in room.members],
     )
 
 
-def create_submission(
-    db: Session, contributor_id: int, data: schemas.TaskSubmissionCreate
+def create_chat_room(
+    db: Session,
+    name: str,
+    creator_contributor_id: int | None,   # None = admin
+    is_admin_room: bool,
+    invitee_ids: list[int],
+) -> models.ChatRoom:
+    """Create a room, add creator + invitees as members, and send invitations."""
+    room = models.ChatRoom(
+        name=name,
+        created_by_id=creator_contributor_id,
+        is_admin_room=is_admin_room,
+    )
+    db.add(room)
+    db.flush()  # get room.id before commit
+
+    # Collect unique member IDs: creator (if member) + invitees
+    member_set: set[int] = set(invitee_ids)
+    if creator_contributor_id is not None:
+        member_set.add(creator_contributor_id)
+
+    for cid in member_set:
+        db.add(models.ChatRoomMember(room_id=room.id, contributor_id=cid))
+
+    db.commit()
+    db.refresh(room)
+
+    # Determine creator display name
+    if creator_contributor_id is not None:
+        creator = get_contributor(db, creator_contributor_id)
+        creator_name = creator.name if creator else "A member"
+    else:
+        creator_name = "Admin"
+
+    # Notify invitees (exclude the creator)
+    notify_ids = [i for i in member_set if i != creator_contributor_id]
+    for cid in notify_ids:
+        create_notification(
+            db,
+            contributor_id=cid,
+            kind="chat_invite",
+            title=f"You've been invited to \"{name}\"",
+            body=f"{creator_name} invited you to join the chat room \"{name}\".",
+            ref_id=room.id,
+        )
+
+    # Notify admin when a member creates a room
+    if creator_contributor_id is not None:
+        create_notification(
+            db,
+            contributor_id=None,   # admin notification
+            kind="chat_invite",
+            title=f"New chat room: \"{name}\"",
+            body=f"{creator_name} created a new chat room and invited {len(notify_ids)} member(s).",
+            ref_id=room.id,
+        )
+
+    return room
+
+
+def list_rooms_for_member(db: Session, contributor_id: int) -> list[schemas.ChatRoomOut]:
+    from sqlalchemy import select as _sel
+    stmt = (
+        _sel(models.ChatRoom)
+        .join(models.ChatRoomMember, models.ChatRoomMember.room_id == models.ChatRoom.id)
+        .where(models.ChatRoomMember.contributor_id == contributor_id)
+        .order_by(models.ChatRoom.created_at.desc())
+    )
+    rooms = db.execute(stmt).scalars().all()
+    return [_room_to_out(r) for r in rooms]
+
+
+def list_all_rooms(db: Session) -> list[schemas.ChatRoomOut]:
+    from sqlalchemy import select as _sel
+    rooms = db.execute(
+        _sel(models.ChatRoom).order_by(models.ChatRoom.created_at.desc())
+    ).scalars().all()
+    return [_room_to_out(r) for r in rooms]
+
+
+def get_room(db: Session, room_id: int) -> models.ChatRoom | None:
+    return db.get(models.ChatRoom, room_id)
+
+
+def is_room_member(db: Session, room_id: int, contributor_id: int) -> bool:
+    from sqlalchemy import select as _sel
+    row = db.execute(
+        _sel(models.ChatRoomMember).where(
+            models.ChatRoomMember.room_id == room_id,
+            models.ChatRoomMember.contributor_id == contributor_id,
+        )
+    ).scalar_one_or_none()
+    return row is not None
+
+
+def post_message(
+    db: Session,
+    room_id: int,
+    sender_id: int | None,
+    sender_name: str,
+    body: str,
+) -> schemas.ChatMessageOut:
+    msg = models.ChatMessage(
+        room_id=room_id,
+        sender_id=sender_id,
+        sender_name=sender_name,
+        body=body,
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return schemas.ChatMessageOut(
+        id=msg.id,
+        room_id=msg.room_id,
+        sender_id=msg.sender_id,
+        sender_name=msg.sender_name,
+        body=msg.body,
+        sent_at=msg.sent_at,
+    )
+
+
+def list_messages(db: Session, room_id: int) -> list[schemas.ChatMessageOut]:
+    from sqlalchemy import select as _sel
+    msgs = db.execute(
+        _sel(models.ChatMessage)
+        .where(models.ChatMessage.room_id == room_id)
+        .order_by(models.ChatMessage.sent_at)
+    ).scalars().all()
+    return [
+        schemas.ChatMessageOut(
+            id=m.id,
+            room_id=m.room_id,
+            sender_id=m.sender_id,
+            sender_name=m.sender_name,
+            body=m.body,
+            sent_at=m.sent_at,
+        )
+        for m in msgs
+    ]
+
+
+def get_latest_message_id(db: Session, room_ids: list[int]) -> int:
+    """Return the highest message id across the given rooms (0 if none)."""
+    if not room_ids:
+        return 0
+    from sqlalchemy import select as _sel
+    result = db.execute(
+        _sel(func.coalesce(func.max(models.ChatMessage.id), 0)).where(
+            models.ChatMessage.room_id.in_(room_ids)
+        )
+    ).scalar_one()
+    return int(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Patched award_units & delete_ledger_entry (emit notifications)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def award_units_with_notify(
+    db: Session, data: schemas.LedgerEntryCreate
+) -> models.LedgerEntry:
+    """award_units that also fires a notification and email to the recipient member."""
+    entry = award_units(db, data)
+    contributor = get_contributor(db, data.contributor_id)
+    if contributor:
+        create_notification(
+            db,
+            contributor_id=contributor.id,
+            kind="units_awarded",
+            title=f"+{entry.units_awarded:g} units awarded",
+            body=(
+                f"You received {entry.units_awarded:g} units for: "
+                f"{entry.task_description[:120]}"
+                f"{' …' if len(entry.task_description) > 120 else ''}."
+            ),
+        )
+    return entry
+
+
+def delete_ledger_entry_with_notify(db: Session, entry_id: int) -> bool:
+    """delete_ledger_entry that fires a notification to the affected member."""
+    entry = db.get(models.LedgerEntry, entry_id)
+    if entry is None:
+        return False
+    contributor_id = entry.contributor_id
+    units = entry.units_awarded
+    task = entry.task_description
+    ok = delete_ledger_entry(db, entry_id)
+    if ok:
+        create_notification(
+            db,
+            contributor_id=contributor_id,
+            kind="ledger_deleted",
+            title=f"Ledger entry removed (−{units:g} units)",
+            body=(
+                f"An admin removed a ledger entry of {units:g} units for: "
+                f"{task[:120]}{' …' if len(task) > 120 else ''}."
+            ),
+        )
+    return ok
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Investor management
+# ─────────────────────────────────────────────────────────────────────────────
+
+SHARE_PRICE_KES: float = 50.0
+
+
+def _investor_to_out(investor: models.Investor) -> schemas.InvestorOut:
+    return schemas.InvestorOut(
+        id=investor.id,
+        name=investor.name,
+        email=investor.email,
+        phone=investor.phone,
+        shares=investor.shares,
+        share_price_kes=SHARE_PRICE_KES,
+        total_value_kes=investor.shares * SHARE_PRICE_KES,
+        created_at=investor.created_at,
+    )
+
+
+def create_investor(db: Session, data: schemas.InvestorCreate) -> models.Investor:
+    """Create a new investor account (admin only)."""
+    existing = db.execute(
+        select(models.Investor).where(models.Investor.email == data.email.strip().lower())
+    ).scalar_one_or_none()
+    if existing is not None:
+        raise BusinessRuleError("An investor with that email already exists.")
+    investor = models.Investor(
+        name=data.name.strip(),
+        email=data.email.strip().lower(),
+        phone=data.phone.strip() if data.phone else None,
+        shares=data.shares,
+        password_hash=hash_password(data.password),
+    )
+    db.add(investor)
+    db.commit()
+    db.refresh(investor)
+    return investor
+
+
+def list_investors(db: Session) -> list[schemas.InvestorOut]:
+    investors = db.execute(
+        select(models.Investor).order_by(models.Investor.shares.desc(), models.Investor.name)
+    ).scalars().all()
+    return [_investor_to_out(i) for i in investors]
+
+
+def delete_investor(db: Session, investor_id: int) -> bool:
+    investor = db.get(models.Investor, investor_id)
+    if investor is None:
+        return False
+    db.delete(investor)
+    db.commit()
+    return True
+
+
+def authenticate_investor(
+    db: Session, email: str, password: str
+) -> models.Investor | None:
+    """Verify investor credentials. Returns None on any failure."""
+    investor = db.execute(
+        select(models.Investor).where(models.Investor.email == email.strip().lower())
+    ).scalar_one_or_none()
+    if investor is None:
+        return None
+    if not verify_member_password(password, investor.password_hash):
+        return None
+    return investor
+
+
+def is_member_email(db: Session, email: str) -> bool:
+    """Return True if this email belongs to a contributor (member), not an investor."""
+    return get_contributor_by_email(db, email.strip().lower()) is not None
+
+
+def is_investor_email(db: Session, email: str) -> bool:
+    """Return True if this email belongs to an investor."""
+    return db.execute(
+        select(models.Investor).where(models.Investor.email == email.strip().lower())
+    ).scalar_one_or_none() is not None
+
+
+def get_investor_profile(db: Session, investor_id: int) -> schemas.InvestorProfileOut | None:
+    investor = db.get(models.Investor, investor_id)
+    if investor is None:
+        return None
+    all_investors = list_investors(db)
+    sorted_investors = sorted(all_investors, key=lambda i: i.shares, reverse=True)
+    rank = next((i + 1 for i, inv in enumerate(sorted_investors) if inv.id == investor_id), 1)
+    total_shares = sum(i.shares for i in all_investors)
+    portfolio_pct = round((investor.shares / total_shares * 100) if total_shares else 0.0, 2)
+    return schemas.InvestorProfileOut(
+        id=investor.id,
+        name=investor.name,
+        email=investor.email,
+        phone=investor.phone,
+        shares=investor.shares,
+        share_price_kes=SHARE_PRICE_KES,
+        total_value_kes=investor.shares * SHARE_PRICE_KES,
+        created_at=investor.created_at,
+        rank=rank,
+        total_investors=len(all_investors),
+        portfolio_pct=portfolio_pct,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Task Submissions
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _submission_to_out(sub: models.TaskSubmission) -> schemas.TaskSubmissionOut:
+    return schemas.TaskSubmissionOut(
+        id=sub.id,
+        contributor_id=sub.contributor_id,
+        contributor_name=sub.contributor.name,
+        task_title=sub.task_title,
+        task_description=sub.task_description,
+        status=sub.status,
+        units_awarded=sub.units_awarded,
+        awarded_at=sub.awarded_at,
+        submitted_at=sub.submitted_at,
+        review_rating=sub.review_rating,
+        rejection_reason=sub.rejection_reason,
+    )
+
+
+def create_task_submission(
+    db: Session,
+    contributor_id: int,
+    data: schemas.TaskSubmissionCreate,
 ) -> models.TaskSubmission:
-    """Member submits a task for admin review."""
+    """Member submits a completed task for admin review."""
     sub = models.TaskSubmission(
         contributor_id=contributor_id,
+        task_title=data.task_title.strip(),
         task_description=data.task_description.strip(),
-        task_reference=(data.task_reference.strip() if data.task_reference else None),
-        remarks=(data.remarks.strip() if data.remarks else None),
+        status="pending",
     )
     db.add(sub)
     db.commit()
     db.refresh(sub)
+    # Notify admin about the new submission
+    contributor = get_contributor(db, contributor_id)
+    contributor_name = contributor.name if contributor else "A member"
+    create_notification(
+        db,
+        contributor_id=None,  # admin notification
+        kind="task_submitted",
+        title=f"New task submission from {contributor_name}",
+        body=f"{contributor_name} submitted: \"{data.task_title[:100]}\"",
+        ref_id=sub.id,
+    )
     return sub
 
 
-def list_submissions(
-    db: Session,
-    status: str | None = None,
-    contributor_id: int | None = None,
+def list_pending_submissions(db: Session) -> list[schemas.TaskSubmissionOut]:
+    """Admin: all submissions with status='pending', newest first."""
+    subs = db.execute(
+        select(models.TaskSubmission)
+        .where(models.TaskSubmission.status == "pending")
+        .order_by(models.TaskSubmission.submitted_at.desc())
+    ).scalars().all()
+    return [_submission_to_out(s) for s in subs]
+
+
+def list_member_submissions(
+    db: Session, contributor_id: int
 ) -> list[schemas.TaskSubmissionOut]:
-    """List submissions filtered by status and/or contributor. None = all."""
-    q = select(models.TaskSubmission).order_by(models.TaskSubmission.submitted_at.desc())
-    if status:
-        q = q.where(models.TaskSubmission.status == status)
-    if contributor_id is not None:
-        q = q.where(models.TaskSubmission.contributor_id == contributor_id)
-    rows = db.execute(q).scalars().all()
-    return [_submission_to_out(s) for s in rows]
+    """Member: all their own submissions, newest first."""
+    subs = db.execute(
+        select(models.TaskSubmission)
+        .where(models.TaskSubmission.contributor_id == contributor_id)
+        .order_by(models.TaskSubmission.submitted_at.desc())
+    ).scalars().all()
+    return [_submission_to_out(s) for s in subs]
 
 
-def resolve_submission(
+def award_submission(
     db: Session,
     submission_id: int,
-    data: schemas.SubmissionResolveRequest,
-) -> models.TaskSubmission:
-    """Admin resolves a submission: award, done, or cancel.
-
-    * ``award``  — units_awarded + approving_reviewer required; creates a ledger entry.
-    * ``done``   — marks complete without awarding units; admin_note required.
-    * ``cancel`` — rejects/cancels the submission; admin_note required.
-    """
+    award_data: schemas.AwardSubmissionRequest,
+) -> models.LedgerEntry:
+    """Admin awards units for a pending submission, creating a ledger entry."""
+    from datetime import datetime, timezone
     sub = db.get(models.TaskSubmission, submission_id)
     if sub is None:
         raise BusinessRuleError("Submission not found.")
     if sub.status != "pending":
-        raise BusinessRuleError(f"Submission is already {sub.status}.")
+        raise BusinessRuleError("Submission has already been processed.")
 
-    now = _utcnow()
+    # Build a LedgerEntryCreate from the submission + award data
+    ledger_data = schemas.LedgerEntryCreate(
+        contributor_id=sub.contributor_id,
+        task_description=f"[{sub.task_title}] {sub.task_description}",
+        units_awarded=award_data.units_awarded,
+        approving_reviewer=award_data.approving_reviewer,
+        task_reference=award_data.task_reference,
+        remarks=award_data.remarks,
+    )
+    # Create ledger entry (with units_awarded notification to member)
+    entry = award_units_with_notify(db, ledger_data)
 
-    if data.action == "award":
-        if not data.units_awarded or not data.approving_reviewer:
-            raise BusinessRuleError(
-                "units_awarded and approving_reviewer are required to award."
-            )
-        units = validate_units(data.units_awarded)
-        available = remaining_units(db)
-        if units > available + 1e-9:
-            raise BusinessRuleError(
-                f"Award of {units:g} units exceeds the remaining pool of {available:g} units."
-            )
-        entry = models.LedgerEntry(
-            contributor_id=sub.contributor_id,
-            task_description=sub.task_description,
-            task_reference=sub.task_reference,
-            units_awarded=units,
-            approving_reviewer=data.approving_reviewer.strip(),
-            remarks=data.admin_note,
+    # Mark submission as awarded and store rating
+    sub.status = "awarded"
+    sub.units_awarded = award_data.units_awarded
+    sub.review_rating = award_data.review_rating.strip()
+    sub.awarded_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # Fire a separate notification about the rating
+    contributor = get_contributor(db, sub.contributor_id)
+    if contributor:
+        create_notification(
+            db,
+            contributor_id=contributor.id,
+            kind="task_reviewed",
+            title=f"Task rated: {sub.review_rating}",
+            body=(
+                f'Your task "{sub.task_title[:80]}" was reviewed and '
+                f"rated: {sub.review_rating}."
+            ),
+            ref_id=sub.id,
         )
-        db.add(entry)
-        db.flush()
-        sub.status = "awarded"
-        sub.ledger_entry_id = entry.id
 
-    elif data.action == "done":
-        sub.status = "done"
+    return entry
 
-    elif data.action == "cancel":
-        sub.status = "cancelled"
 
-    sub.admin_note = (data.admin_note.strip() if data.admin_note else None)
-    sub.resolved_at = now
+def reject_submission(
+    db: Session,
+    submission_id: int,
+    rejection_reason: str,
+) -> models.TaskSubmission:
+    """Admin rejects a pending submission with a mandatory reason."""
+    sub = db.get(models.TaskSubmission, submission_id)
+    if sub is None:
+        raise BusinessRuleError("Submission not found.")
+    if sub.status != "pending":
+        raise BusinessRuleError("Submission has already been processed.")
+
+    sub.status = "rejected"
+    sub.rejection_reason = rejection_reason.strip()
     db.commit()
     db.refresh(sub)
+
+    # Notify the member about the rejection
+    contributor = get_contributor(db, sub.contributor_id)
+    if contributor:
+        create_notification(
+            db,
+            contributor_id=contributor.id,
+            kind="task_rejected",
+            title="Task submission not approved",
+            body=(
+                f'Your task "{sub.task_title[:80]}" was not approved. '
+                f"Reason: {rejection_reason[:200]}"
+            ),
+            ref_id=sub.id,
+        )
+
     return sub

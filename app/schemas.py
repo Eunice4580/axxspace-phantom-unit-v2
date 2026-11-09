@@ -1,47 +1,47 @@
 """Pydantic request/response schemas."""
-
 from __future__ import annotations
-
 from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, Field
-
+import re
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # --- Auth --------------------------------------------------------------------
 class LoginRequest(BaseModel):
     password: str
 
-
 class TokenResponse(BaseModel):
     token: str
     token_type: str = "bearer"
 
-
 # --- Contributors ------------------------------------------------------------
 class ContributorCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    email: str | None = Field(default=None, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200, description="Must be a valid Gmail address (e.g. user@gmail.com)")
     category: str = Field(..., min_length=1, max_length=100)
-    role: str = Field(default="member", pattern="^(member|investor)$")
-    password: str | None = Field(default=None, min_length=6)
+    password: str | None = Field(default=None, min_length=6)  # admin sets initial password
 
+    @field_validator("email")
+    @classmethod
+    def validate_gmail(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.fullmatch(r"[a-zA-Z0-9._%+\-]+@gmail\.com", v):
+            raise ValueError("Email must be a valid Gmail address (e.g. user@gmail.com).")
+        return v
 
-class ContributorPasswordUpdate(BaseModel):
-    password: str = Field(..., min_length=6)
-
+class ContributorUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200)
+    category: str = Field(..., min_length=1, max_length=100)
 
 class ContributorOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     name: str
     email: str | None
-    role: str
     category: str
     created_at: datetime
+    is_approved: bool = False
     total_units: float = 0.0
     total_value_eur: float = 0.0
-
 
 # --- Ledger ------------------------------------------------------------------
 class LedgerEntryCreate(BaseModel):
@@ -52,10 +52,15 @@ class LedgerEntryCreate(BaseModel):
     task_reference: str | None = Field(default=None, max_length=100)
     remarks: str | None = None
 
+class LedgerEntryUpdate(BaseModel):
+    task_description: str = Field(..., min_length=1)
+    units_awarded: float = Field(..., gt=0)
+    approving_reviewer: str = Field(..., min_length=1, max_length=200)
+    task_reference: str | None = Field(default=None, max_length=100)
+    remarks: str | None = None
 
 class LedgerEntryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     contributor_id: int
     contributor_name: str
@@ -66,7 +71,6 @@ class LedgerEntryOut(BaseModel):
     approving_reviewer: str
     remarks: str | None
     date_awarded: datetime
-
 
 # --- Stats / dashboard -------------------------------------------------------
 class PoolStats(BaseModel):
@@ -80,22 +84,18 @@ class PoolStats(BaseModel):
     contributor_count: int
     award_count: int
 
-
 class GrowthPoint(BaseModel):
     date: str
     cumulative_units: float
-
 
 class ContributorGrowth(BaseModel):
     contributor_id: int
     name: str
     points: list[GrowthPoint]
 
-
 class GrowthResponse(BaseModel):
     overall: list[GrowthPoint]
     per_contributor: list[ContributorGrowth]
-
 
 # --- Member Auth -------------------------------------------------------------
 class MemberRegisterRequest(BaseModel):
@@ -103,15 +103,14 @@ class MemberRegisterRequest(BaseModel):
     email: str = Field(..., min_length=5, max_length=200)
     password: str = Field(..., min_length=6)
     category: str = Field(..., min_length=1, max_length=100)
-    # Investor accounts are admin-provisioned only; self-registration is member-only.
-    role: str = Field(default="member", pattern="^member$")
-
 
 class MemberLoginRequest(BaseModel):
     email: str
     password: str
-    role: str = Field(default="member", pattern="^(member|investor)$")
 
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6)
 
 class MemberTokenResponse(BaseModel):
     token: str
@@ -119,12 +118,10 @@ class MemberTokenResponse(BaseModel):
     contributor_id: int
     name: str
 
-
 class MemberProfileOut(BaseModel):
     id: int
     name: str
     email: str | None
-    role: str
     category: str
     created_at: datetime
     total_units: float
@@ -134,34 +131,135 @@ class MemberProfileOut(BaseModel):
     growth_points: list[GrowthPoint]
 
 
-# --- Task Submissions ---------------------------------------------------------
+# --- Chat --------------------------------------------------------------------
+
+class ChatRoomCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    invitee_ids: list[int] = Field(default_factory=list)  # contributor IDs to invite
+
+
+class ChatRoomOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    created_by_id: int | None
+    is_admin_room: bool
+    created_at: datetime
+    member_ids: list[int] = []
+
+
+class ChatMessageCreate(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000)
+
+
+class ChatMessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    room_id: int
+    sender_id: int | None
+    sender_name: str
+    body: str
+    sent_at: datetime
+
+
+# --- Notifications -----------------------------------------------------------
+
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    kind: str
+    title: str
+    body: str
+    is_read: bool
+    ref_id: int | None
+    created_at: datetime
+
+
+# --- Investor ----------------------------------------------------------------
+
+class InvestorCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    email: str = Field(..., min_length=5, max_length=200)
+    phone: str | None = Field(default=None, max_length=30)
+    shares: float = Field(..., gt=0, description="Number of shares purchased")
+    password: str = Field(..., min_length=6)
+
+
+class InvestorOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    email: str
+    phone: str | None
+    shares: float
+    share_price_kes: float = 50.0
+    total_value_kes: float
+    created_at: datetime
+
+
+class InvestorLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class InvestorTokenResponse(BaseModel):
+    token: str
+    token_type: str = "bearer"
+    investor_id: int
+    name: str
+
+
+class InvestorSharePoint(BaseModel):
+    date: str
+    value_kes: float
+    shares: float
+
+
+class InvestorProfileOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: str | None
+    shares: float
+    share_price_kes: float
+    total_value_kes: float
+    created_at: datetime
+    # computed fields
+    rank: int            # rank among investors by shares
+    total_investors: int
+    portfolio_pct: float  # what % of total investor shares this investor holds
+
+
+# --- Task Submissions --------------------------------------------------------
+
 class TaskSubmissionCreate(BaseModel):
-    """Sent by a member when they submit a task for review."""
+    task_title: str = Field(..., min_length=1, max_length=300)
     task_description: str = Field(..., min_length=1)
-    task_reference: str | None = Field(default=None, max_length=100)
-    remarks: str | None = None
-
-
-class SubmissionResolveRequest(BaseModel):
-    """Sent by the admin to award, reject, or mark a submission as done."""
-    action: str = Field(..., pattern="^(award|done|cancel)$")
-    admin_note: str | None = None
-    # Required only when action='award'
-    units_awarded: float | None = None
-    approving_reviewer: str | None = None
 
 
 class TaskSubmissionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     contributor_id: int
     contributor_name: str
+    task_title: str
     task_description: str
-    task_reference: str | None
-    remarks: str | None
     status: str
-    admin_note: str | None
-    ledger_entry_id: int | None
+    units_awarded: float | None
+    awarded_at: datetime | None
     submitted_at: datetime
-    resolved_at: datetime | None
+    review_rating: str | None = None
+    rejection_reason: str | None = None
+
+
+class AwardSubmissionRequest(BaseModel):
+    units_awarded: float = Field(..., gt=0)
+    approving_reviewer: str = Field(..., min_length=1, max_length=200)
+    task_reference: str | None = Field(default=None, max_length=100)
+    remarks: str | None = None
+    review_rating: str = Field(..., min_length=1, max_length=50)
+
+
+class RejectSubmissionRequest(BaseModel):
+    """Admin rejects a pending submission. Rejection reason is mandatory."""
+    rejection_reason: str = Field(..., min_length=1, max_length=1000)

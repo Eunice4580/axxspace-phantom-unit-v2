@@ -455,6 +455,34 @@
       display: block;
     }
 
+    /* Action feedback toast */
+    .toast {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.65rem 1.15rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      max-width: 92vw;
+      text-align: center;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast-ok { border-color: rgba(16, 185, 129, 0.55); }
+    .toast-err { border-color: rgba(239, 68, 68, 0.6); }
+
     .section-title {
       font-size: 1rem;
       font-weight: 600;
@@ -1763,6 +1791,26 @@
       return false;
     }
 
+    // Floating confirmation after actions — the page gave no feedback before,
+    // so repeated clicks caused duplicate awards/deletes.
+    let _actionBusy = false;
+    function toast(message, ok = true) {
+      const t = document.createElement('div');
+      t.className = 'toast ' + (ok ? 'toast-ok' : 'toast-err');
+      t.textContent = message;
+      document.body.appendChild(t);
+      requestAnimationFrame(() => t.classList.add('show'));
+      setTimeout(() => {
+        t.classList.remove('show');
+        setTimeout(() => t.remove(), 300);
+      }, 3200);
+    }
+
+    // Fire post-mutation reloads in parallel instead of sequentially.
+    function refreshAfter(...loaders) {
+      Promise.all(loaders.map(fn => fn())).catch(() => {});
+    }
+
     function showPanel(name) {
       const panels = ['contributors', 'investors', 'ledger', 'submissions'];
       const tabs = [
@@ -1894,6 +1942,8 @@
       }
 
       const btn = document.getElementById('award-confirm-btn');
+      if (_actionBusy) return;
+      _actionBusy = true;
       btn.disabled = true;
       btn.textContent = '⏳ Awarding…';
 
@@ -1917,15 +1967,16 @@
         closeAwardModal();
         const row = document.getElementById(`sub-row-${subId}`);
         if (row) row.remove();
-        loadStats();
-        loadContributors();
-        loadLedger();
-        loadSubmissions();
+        const memberName = (_subsById[subId] || {}).contributor_name || 'member';
+        toast(`✅ Awarded ${units} unit${units === 1 ? '' : 's'} to ${memberName}`);
+        refreshAfter(loadStats, loadContributors, loadLedger, loadSubmissions);
       } catch (e) {
         msgEl.textContent = '❌ ' + e.message;
         msgEl.style.color = 'var(--error)';
         msgEl.style.display = 'block';
+        toast('❌ Award failed: ' + e.message, false);
       } finally {
+        _actionBusy = false;
         btn.disabled = false;
         btn.textContent = '✅ Award Units';
       }
@@ -1979,6 +2030,8 @@
       }
 
       const btn = document.getElementById('reject-confirm-btn');
+      if (_actionBusy) return;
+      _actionBusy = true;
       btn.disabled = true;
       btn.textContent = '⏳ Rejecting…';
 
@@ -1996,12 +2049,15 @@
         closeRejectModal();
         const row = document.getElementById(`sub-row-${subId}`);
         if (row) row.remove();
-        loadSubmissions();
+        toast('🚫 Submission rejected');
+        refreshAfter(loadSubmissions);
       } catch (e) {
         msgEl.textContent = '❌ ' + e.message;
         msgEl.style.color = 'var(--error)';
         msgEl.style.display = 'block';
+        toast('❌ Reject failed: ' + e.message, false);
       } finally {
+        _actionBusy = false;
         btn.disabled = false;
         btn.textContent = '🚫 Confirm Reject';
         toggleRejectBtn();
@@ -2047,7 +2103,7 @@
       <td><div class="action-cell">
         <button class="btn-edit" onclick="openEditContributorModal(${c.id},'${c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}','${(c.email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}','${c.category}')" title="Edit contributor">✏ Edit</button>
         <button class="btn-reset-pw" onclick="openResetPwModal(${c.id},'${c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}','contributor')" title="Reset password">🔑 Reset PW</button>
-        <button class="btn-delete" onclick="deleteContributor(${c.id},'${c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" title="Delete contributor">🗑 Delete</button>
+        <button class="btn-delete" onclick="deleteContributor(this, ${c.id})" title="Delete contributor">🗑 Delete</button>
       </div></td>
     </tr>`).join('');
     }
@@ -2068,7 +2124,7 @@
       <td style="color:var(--muted)">${e.approving_reviewer}</td>
       <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
         <button class="btn-delete" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);color:var(--accent)" onclick="editLedger(${e.id},${e.contributor_id},'${e.task_description.replace(/'/g, "\\'").replace(/"/g, '&quot;')}',${e.units_awarded},'${e.approving_reviewer.replace(/'/g, "\\'")}','${(e.task_reference || '').replace(/'/g, "\\'")}','${(e.remarks || '').replace(/'/g, "\\'")}')" title="Edit entry">✏ Edit</button>
-        <button class="btn-delete" onclick="deleteLedgerEntry(${e.id})" title="Delete entry">🗑 Delete</button>
+        <button class="btn-delete" onclick="deleteLedgerEntry(this, ${e.id})" title="Delete entry">🗑 Delete</button>
       </td>
     </tr>`).join('');
     }
@@ -2098,6 +2154,7 @@
       }
 
       try {
+        _actionBusy = true;
         const res = await fetch('/api/contributors', {
           method: 'POST', headers,
           body: JSON.stringify({ name, email: email.toLowerCase(), category, password: password || null })
@@ -2105,35 +2162,53 @@
         const d = await res.json();
         if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to add contributor.'; return; }
         msg.className = 'msg success'; msg.textContent = `Account created for ${d.name}. They can now log in.`;
+        toast(`✅ Account created for ${d.name}`);
         document.getElementById('c-name').value = '';
         emailEl.value = '';
         document.getElementById('c-pass').value = '';
         document.getElementById('c-pass2').value = '';
-        loadContributors(); loadStats();
+        refreshAfter(loadContributors, loadStats);
       } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+      finally { _actionBusy = false; }
     }
 
     // --- Delete contributor ------------------------------------------------------
-    async function deleteContributor(id, name) {
-      if (!confirm(`Delete contributor "${name}" and ALL their ledger entries? This cannot be undone.`)) return;
+    async function deleteContributor(btn, id) {
+      if (_actionBusy) return;
+      if (!confirm('Delete this contributor and ALL their ledger entries? This cannot be undone.')) return;
+      const orig = btn.textContent;
+      _actionBusy = true;
+      btn.disabled = true;
+      btn.textContent = '⏳…';
       try {
         const res = await fetch(`/api/contributors/${id}`, { method: 'DELETE', headers });
         if (handleAuthError(res)) return;
         if (res.status === 204) {
           document.getElementById(`ctr-${id}`)?.remove();
-          loadStats(); loadLedger(); loadContributors();
+          toast('🗑 Contributor deleted');
+          refreshAfter(loadStats, loadLedger, loadContributors);
         } else {
-          const d = await res.json();
-          alert(d.detail || 'Failed to delete contributor.');
+          const d = await res.json().catch(() => ({}));
+          toast('❌ ' + (d.detail || 'Failed to delete contributor.'), false);
         }
-      } catch { alert('Connection error.'); }
+      } catch { toast('❌ Connection error.', false); }
+      finally {
+        _actionBusy = false;
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     }
 
     // --- Delete & undo ledger entry ----------------------------------------------
     let _lastDeletedEntry = null;
 
-    async function deleteLedgerEntry(id) {
+    async function deleteLedgerEntry(btn, id) {
+      if (_actionBusy) return;
       if (!confirm('Delete this ledger entry? You can undo immediately after.')) return;
+      const orig = btn.textContent;
+      _actionBusy = true;
+      btn.disabled = true;
+      btn.textContent = '⏳…';
       try {
         const res0 = await fetch('/api/ledger');
         const all = await res0.json();
@@ -2144,13 +2219,19 @@
         if (res.status === 204) {
           document.getElementById(`led-${id}`)?.remove();
           document.getElementById('undo-btn').style.display = _lastDeletedEntry ? '' : 'none';
-          loadStats(); loadContributors();
+          toast('🗑 Ledger entry deleted — undo available');
+          refreshAfter(loadStats, loadContributors);
         } else {
           const d = await res.json();
-          alert(d.detail || 'Failed to delete ledger entry.');
+          toast('❌ ' + (d.detail || 'Failed to delete ledger entry.'), false);
           _lastDeletedEntry = null;
         }
-      } catch { alert('Connection error.'); }
+      } catch { toast('❌ Connection error.', false); }
+      finally {
+        _actionBusy = false;
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     }
 
     async function undoLastDelete() {
@@ -2171,7 +2252,8 @@
         if (res.ok) {
           _lastDeletedEntry = null;
           document.getElementById('undo-btn').style.display = 'none';
-          loadStats(); loadLedger(); loadContributors();
+          toast('↩️ Delete undone — entry restored');
+          refreshAfter(loadStats, loadLedger, loadContributors);
         } else {
           const d = await res.json();
           alert(d.detail || 'Undo failed.');
@@ -2229,6 +2311,7 @@
     }
 
     async function awardUnits() {
+      if (_actionBusy) return;
       const msg = document.getElementById('a-msg');
       msg.className = 'msg';
       const editId = document.getElementById('a-edit-id').value;
@@ -2243,6 +2326,7 @@
         if (!task_description || !units_awarded || !approving_reviewer) {
           msg.className = 'msg error'; msg.textContent = 'Task, units and reviewer are required.'; return;
         }
+        _actionBusy = true;
         try {
           const res = await fetch(`/api/ledger/${editId}`, {
             method: 'PUT', headers,
@@ -2251,26 +2335,31 @@
           const d = await res.json();
           if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to update entry.'; return; }
           msg.className = 'msg success'; msg.textContent = 'Entry updated successfully.';
+          toast('✅ Ledger entry updated');
           clearAwardForm();
-          loadStats(); loadLedger(); loadContributors();
+          refreshAfter(loadStats, loadLedger, loadContributors);
         } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+        finally { _actionBusy = false; }
       } else {
         // ── CREATE mode ──────────────────────────────────────────────────────────
         const contributor_id = parseInt(document.getElementById('a-contrib').value);
         if (!contributor_id || !task_description || !units_awarded || !approving_reviewer) {
           msg.className = 'msg error'; msg.textContent = 'Contributor, task, units and reviewer are required.'; return;
         }
+        _actionBusy = true;
         try {
           const res = await fetch('/api/ledger', { method: 'POST', headers, body: JSON.stringify({ contributor_id, task_description, units_awarded, approving_reviewer, task_reference, remarks }) });
           const d = await res.json();
           if (!res.ok) { msg.className = 'msg error'; msg.textContent = d.detail || 'Failed to award units.'; return; }
           msg.className = 'msg success'; msg.textContent = `Awarded ${units_awarded} units successfully.`;
+          toast(`✅ Awarded ${units_awarded} unit${units_awarded === 1 ? '' : 's'}`);
           document.getElementById('a-task').value = '';
           document.getElementById('a-units').value = '';
           document.getElementById('a-ref').value = '';
           document.getElementById('a-remarks').value = '';
-          loadStats(); loadLedger(); loadContributors();
+          refreshAfter(loadStats, loadLedger, loadContributors);
         } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+        finally { _actionBusy = false; }
       }
     }
 
@@ -2301,6 +2390,7 @@
       if (pass !== pass2) { msg.className = 'msg error'; msg.textContent = 'Passwords do not match.'; return; }
 
       try {
+        _actionBusy = true;
         const res = await fetch('/api/investors', {
           method: 'POST', headers,
           body: JSON.stringify({ name, email, phone, shares, password: pass })
@@ -2310,9 +2400,11 @@
         const kes = (d.shares * 50).toLocaleString();
         msg.className = 'msg success';
         msg.textContent = `Investor ${d.name} added — ${d.shares} shares · KES ${kes}`;
+        toast(`✅ Investor ${d.name} added — ${d.shares} shares`);
         ['inv-name', 'inv-email', 'inv-phone', 'inv-shares', 'inv-pass', 'inv-pass2'].forEach(id => document.getElementById(id).value = '');
-        loadInvestors();
+        refreshAfter(loadInvestors);
       } catch { msg.className = 'msg error'; msg.textContent = 'Connection error.'; }
+      finally { _actionBusy = false; }
     }
 
     async function loadInvestors() {
@@ -2342,25 +2434,36 @@
         <td style="color:var(--muted)">${new Date(inv.created_at).toLocaleDateString()}</td>
         <td><div class="action-cell">
           <button class="btn-reset-pw" onclick="openResetPwModal(${inv.id},'${inv.name.replace(/'/g, "\\'")}','investor')" title="Reset investor password">🔑 Reset PW</button>
-          <button class="btn-delete" onclick="deleteInvestor(${inv.id},'${inv.name.replace(/'/g, "\\'")}')">🗑 Delete</button>
+          <button class="btn-delete" onclick="deleteInvestor(this, ${inv.id})">🗑 Delete</button>
         </div></td>
       </tr>`).join('');
       } catch { /* silently fail on tab load */ }
     }
 
-    async function deleteInvestor(id, name) {
-      if (!confirm(`Delete investor "${name}"? This cannot be undone.`)) return;
+    async function deleteInvestor(btn, id) {
+      if (_actionBusy) return;
+      if (!confirm('Delete this investor? This cannot be undone.')) return;
+      const orig = btn.textContent;
+      _actionBusy = true;
+      btn.disabled = true;
+      btn.textContent = '⏳…';
       try {
         const res = await fetch(`/api/investors/${id}`, { method: 'DELETE', headers });
         if (handleAuthError(res)) return;
         if (res.status === 204) {
           document.getElementById(`inv-row-${id}`)?.remove();
-          loadInvestors();
+          toast('🗑 Investor deleted');
+          refreshAfter(loadInvestors);
         } else {
-          const d = await res.json();
-          alert(d.detail || 'Failed to delete investor.');
+          const d = await res.json().catch(() => ({}));
+          toast('❌ ' + (d.detail || 'Failed to delete investor.'), false);
         }
-      } catch { alert('Connection error.'); }
+      } catch { toast('❌ Connection error.', false); }
+      finally {
+        _actionBusy = false;
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     }
 
     // ── Admin Reset Password ─────────────────────────────────────────────────────
@@ -2414,7 +2517,7 @@
       finally { btn.disabled = false; btn.textContent = 'Set New Password'; }
     }
 
-    loadConfig(); loadStats(); loadContributors(); loadLedger(); loadSubmissions();
+    loadConfig(); refreshAfter(loadStats, loadContributors, loadLedger, loadSubmissions);
 
     // ── Theme toggle ─────────────────────────────────────────────────
     (function () {

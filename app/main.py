@@ -461,33 +461,40 @@ def investor_me(
     return profile
 
 # --- Static frontend ---------------------------------------------------------
+# Pages must never be served from a stale browser cache — no-cache forces
+# revalidation on every load while keeping ETag/Last-Modified validation.
+_NO_CACHE = {"Cache-Control": "no-cache, must-revalidate"}
+
+def _page(name: str) -> FileResponse:
+    return FileResponse(STATIC_DIR / name, headers=_NO_CACHE)
+
 @app.get("/")
 def index() -> RedirectResponse:
     return RedirectResponse(url="/login", status_code=302)
 
 @app.get("/home")
 def home_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "home.html")
+    return _page("home.html")
 
 @app.get("/admin")
 def admin_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "admin.html")
+    return _page("admin.html")
 
 @app.get("/login")
 def login_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "login.html")
+    return _page("login.html")
 
 @app.get("/chat")
 def chat_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "chat.html")
+    return _page("chat.html")
 
 @app.get("/member")
 def member_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "member.html")
+    return _page("member.html")
 
 @app.get("/investor")
 def investor_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "investor.html")
+    return _page("investor.html")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

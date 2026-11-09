@@ -1781,6 +1781,8 @@
 
     // ── Submissions (admin) ──────────────────────────────────────────────────
 
+    let _subsById = {};
+
     async function loadSubmissions() {
       const tbody = document.getElementById('subs-admin-body');
       tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
@@ -1788,6 +1790,10 @@
         const res = await fetch('/api/admin/submissions', { headers });
         if (handleAuthError(res)) return;
         const subs = await res.json();
+        // Keep raw submissions keyed by id so row buttons never embed
+        // title/description text in inline onclick strings (apostrophes
+        // there silently break the handler).
+        _subsById = Object.fromEntries(subs.map(s => [s.id, s]));
 
         // Update badge
         const badge = document.getElementById('sub-count-badge');
@@ -1812,11 +1818,11 @@
             <td style="color:var(--muted);font-size:0.82rem;max-width:240px;line-height:1.45">${s.task_description}</td>
             <td>
               <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
-                <button class="btn-undo" onclick="openAwardModal(${s.id},'${escHtml(s.task_title)}','${escHtml(s.task_description)}','${escHtml(s.contributor_name)}')"
+                <button class="btn-undo" onclick="openAwardModal(${s.id})"
                   style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.4);color:var(--success);white-space:nowrap">
                   🏆 Award
                 </button>
-                <button class="btn-reject" onclick="openRejectModal(${s.id},'${escHtml(s.task_title)}','${escHtml(s.contributor_name)}')">
+                <button class="btn-reject" onclick="openRejectModal(${s.id})">
                   🚫 Reject
                 </button>
               </div>
@@ -1827,15 +1833,12 @@
       }
     }
 
-    function escHtml(str) {
-      return str.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    function openAwardModal(subId, title, desc, memberName) {
+    function openAwardModal(subId) {
+      const s = _subsById[subId] || {};
       document.getElementById('award-sub-id').value  = subId;
-      document.getElementById('award-task-title').textContent = title;
-      document.getElementById('award-task-desc').textContent  = desc;
-      document.getElementById('award-member-name').textContent = memberName;
+      document.getElementById('award-task-title').textContent = s.task_title || '';
+      document.getElementById('award-task-desc').textContent  = s.task_description || '';
+      document.getElementById('award-member-name').textContent = s.contributor_name || '';
       document.getElementById('award-units').value    = '';
       document.getElementById('award-reviewer').value = '';
       document.getElementById('award-ref').value      = '';
@@ -1938,10 +1941,11 @@
     }
 
     // ── Reject modal ───────────────────────────────────────────────────────
-    function openRejectModal(subId, title, memberName) {
+    function openRejectModal(subId) {
+      const s = _subsById[subId] || {};
       document.getElementById('reject-sub-id').value = subId;
-      document.getElementById('reject-task-title').textContent = title;
-      document.getElementById('reject-member-name').textContent = memberName;
+      document.getElementById('reject-task-title').textContent = s.task_title || '';
+      document.getElementById('reject-member-name').textContent = s.contributor_name || '';
       document.getElementById('reject-reason').value = '';
       document.getElementById('reject-modal-msg').style.display = 'none';
       toggleRejectBtn();
